@@ -1,0 +1,34 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared-config
+  namespace: networking
+data:
+  config.yaml: |
+    # Cloudflare Tunnel Configuration
+    # This file defines the routing rules for the tunnel
+
+    # Tunnel ID
+    tunnel: 67f9c7d3-6182-4f5b-946c-c5c676edd958
+    credentials-file: /etc/cloudflared/credentials.json
+
+    # Metrics endpoint for monitoring
+    metrics: 0.0.0.0:2000
+
+    # Ingress rules - order matters!
+    ingress:
+      # Route for Nextcloud
+      - hostname: cloud.urosevicvuk.dev
+        service: https://traefik.networking:443
+        originRequest:
+          # Tell cloudflared to expect this hostname in the TLS certificate
+          originServerName: cloud.urosevicvuk.dev
+          # Enable TLS verification (proper security)
+          noTLSVerify: false
+          # Connection settings
+          connectTimeout: 30s
+          tlsTimeout: 10s
+
+      # Catch-all rule (required by cloudflared)
+      - service: http_status:404
