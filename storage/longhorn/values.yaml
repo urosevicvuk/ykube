@@ -26,3 +26,6 @@ resources:
 
 ingress:
   enabled: false
+
+preUpgradeChecker:
+  jobEnabled: false
