@@ -1,0 +1,52 @@
+# Traefik Helm values for K3s cluster
+# Ingress controller with NodePort for Cloudflare Tunnel integration
+
+# Service configuration
+service:
+  type: NodePort
+
+# Port configuration
+ports:
+  web:
+    port: 8000
+    exposedPort: 80
+    nodePort: 30080
+    protocol: TCP
+  websecure:
+    port: 8443
+    exposedPort: 443
+    nodePort: 30443
+    protocol: TCP
+    tls:
+      enabled: true
+
+# Enable dashboard (only accessible via port-forward in production)
+ingressRoute:
+  dashboard:
+    enabled: false
+
+# Logs
+logs:
+  general:
+    level: INFO
+  access:
+    enabled: true
+
+# Providers
+providers:
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: true
+  kubernetesIngress:
+    enabled: true
+    publishedService:
+      enabled: true
+
+# Resource limits
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "256Mi"
