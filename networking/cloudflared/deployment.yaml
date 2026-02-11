@@ -20,10 +20,10 @@ spec:
           image: cloudflare/cloudflared:latest
           args:
             - tunnel
-            - --no-autoupdate
-            - run
             - --config
             - /etc/cloudflared/config.yaml
+            - --no-autoupdate
+            - run
           volumeMounts:
             - name: config
               mountPath: /etc/cloudflared/config.yaml
