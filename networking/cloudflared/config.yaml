@@ -30,5 +30,14 @@ data:
           connectTimeout: 30s
           tlsTimeout: 10s
 
+      # Route for Grafana
+      - hostname: dashboard.urosevicvuk.dev
+        service: https://traefik.networking:443
+        originRequest:
+          originServerName: dashboard.urosevicvuk.dev
+          noTLSVerify: false
+          connectTimeout: 30s
+          tlsTimeout: 10s
+
       # Catch-all rule (required by cloudflared)
       - service: http_status:404

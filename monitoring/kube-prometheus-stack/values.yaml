@@ -1,0 +1,42 @@
+# kube-prometheus-stack overrides
+# Only override what differs from defaults — everything else stays as-is
+
+# Prometheus
+prometheus:
+  prometheusSpec:
+    # Persist metrics across pod restarts (default is emptyDir = lost on restart)
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: longhorn
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+    # 7 days retention (default is 10d, saving storage on homelab)
+    retention: 7d
+
+# Grafana
+grafana:
+  # Persist dashboards and settings
+  persistence:
+    enabled: true
+    storageClassName: longhorn
+    size: 2Gi
+  # Admin credentials from SealedSecret
+  admin:
+    existingSecret: grafana-admin-credentials
+    userKey: admin-user
+    passwordKey: admin-password
+
+# Alertmanager — enabled by default, just adding persistence
+alertmanager:
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: longhorn
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 1Gi
