@@ -4,6 +4,8 @@
 # Service configuration
 service:
   type: NodePort
+  externalIPs:
+    - 192.168.0.33
 
 # Port configuration
 ports:
