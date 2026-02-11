@@ -39,5 +39,14 @@ data:
           connectTimeout: 30s
           tlsTimeout: 10s
 
+      # Route for ArgoCD
+      - hostname: argocd.urosevicvuk.dev
+        service: https://traefik.networking:443
+        originRequest:
+          originServerName: argocd.urosevicvuk.dev
+          noTLSVerify: false
+          connectTimeout: 30s
+          tlsTimeout: 10s
+
       # Catch-all rule (required by cloudflared)
       - service: http_status:404
