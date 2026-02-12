@@ -1,21 +1,19 @@
 # Traefik Helm values for K3s cluster
 # Ingress controller with NodePort for Cloudflare Tunnel integration
 
-# Service configuration
+# Service configuration — LoadBalancer lets k3s ServiceLB assign an IP
 service:
-  type: NodePort
+  type: LoadBalancer
 
 # Port configuration
 ports:
   web:
     port: 8000
     exposedPort: 80
-    nodePort: 30080
     protocol: TCP
   websecure:
     port: 8443
     exposedPort: 443
-    nodePort: 30443
     protocol: TCP
     tls:
       enabled: true
@@ -41,10 +39,6 @@ providers:
     enabled: true
     publishedService:
       enabled: true
-
-# Additional Traefik arguments
-additionalArguments:
-  - "--providers.kubernetesingress.ingressendpoint.ip=192.168.0.33"
 
 # Resource limits
 resources:
