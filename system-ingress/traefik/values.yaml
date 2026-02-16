@@ -42,12 +42,12 @@ providers:
     publishedService:
       enabled: true
 
-# Gateway API
+# Gateway API — GatewayClass auto-created by Helm, Gateway managed by us
 gatewayClass:
   enabled: true
 
 gateway:
-  enabled: false    # We manage our own Gateway for cert-manager TLS control
+  enabled: false
 
 # Resource limits
 resources:
