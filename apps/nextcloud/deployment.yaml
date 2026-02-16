@@ -23,10 +23,6 @@ spec:
           ports:
             - containerPort: 80
               name: http
-          securityContext:
-            runAsUser: 33
-            runAsGroup: 33
-            allowPrivilegeEscalation: false
           livenessProbe:
             httpGet:
               path: /status.php
