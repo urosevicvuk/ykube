@@ -41,9 +41,10 @@ providers:
       enabled: true
 
 # Gateway API
-kubernetesGateway:
-  enabled: true
-  namespacePolicy: All
+experimental:
+  kubernetesGateway:
+    enabled: true
+    namespacePolicy: All
 
 # Resource limits
 resources:
