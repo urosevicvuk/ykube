@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: nextcloud
+  namespace: apps
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: system-ingress
+      sectionName: websecure
+  hostnames:
+    - cloud.urosevicvuk.dev
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: nextcloud
+          port: 80

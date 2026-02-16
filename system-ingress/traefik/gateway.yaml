@@ -1,0 +1,29 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: traefik-gateway
+  namespace: system-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  gatewayClassName: traefik
+  listeners:
+    - name: web
+      port: 8000
+      protocol: HTTP
+      hostname: "*.urosevicvuk.dev"
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: websecure
+      port: 8443
+      protocol: HTTPS
+      hostname: "*.urosevicvuk.dev"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: wildcard-urosevicvuk-dev-tls
+            kind: Secret
+      allowedRoutes:
+        namespaces:
+          from: All

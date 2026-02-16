@@ -1,19 +1,25 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: nextcloud
+  name: cert-manager
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://github.com/urosevicvuk/ykube.git
-    targetRevision: HEAD
-    path: apps/nextcloud
+  sources:
+    - repoURL: https://charts.jetstack.io
+      chart: cert-manager
+      targetRevision: v1.14.0
+      helm:
+        valueFiles:
+          - $values/system-ingress/cert-manager/values.yaml
+    - repoURL: https://github.com/urosevicvuk/ykube.git
+      targetRevision: HEAD
+      ref: values
   destination:
     server: https://kubernetes.default.svc
-    namespace: apps
+    namespace: system-ingress
   syncPolicy:
     automated:
       prune: true

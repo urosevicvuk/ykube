@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "kubernetes": {
+    "managerFilePatterns": [
+      "/apps/**/*.yaml/",
+      "/system-ingress/cloudflared/**/*.yaml/"
+    ]
+  },
+  "argocd": {
+    "managerFilePatterns": ["/argocd/**/*.yaml/"]
+  },
+  "packageRules": [
+    {
+      "description": "Group container image updates",
+      "matchManagers": ["kubernetes"],
+      "groupName": "container images"
+    },
+    {
+      "description": "Group Helm chart updates",
+      "matchManagers": ["argocd"],
+      "groupName": "helm charts"
+    }
+  ]
+}

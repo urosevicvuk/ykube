@@ -1,0 +1,59 @@
+# Traefik Helm values for K3s cluster
+# Ingress controller with Gateway API support
+
+# Service configuration — LoadBalancer lets k3s ServiceLB assign an IP
+service:
+  type: LoadBalancer
+
+# Port configuration
+ports:
+  web:
+    port: 8000
+    exposedPort: 80
+    protocol: TCP
+  websecure:
+    port: 8443
+    exposedPort: 443
+    protocol: TCP
+    tls:
+      enabled: true
+
+# Enable dashboard (only accessible via port-forward in production)
+ingressRoute:
+  dashboard:
+    enabled: false
+
+# Logs
+logs:
+  general:
+    level: INFO
+  access:
+    enabled: true
+
+# Providers
+providers:
+  kubernetesGateway:
+    enabled: true
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: true
+  kubernetesIngress:
+    enabled: true
+    publishedService:
+      enabled: true
+
+# Gateway API
+gatewayClass:
+  enabled: true
+
+gateway:
+  enabled: false    # We manage our own Gateway for cert-manager TLS control
+
+# Resource limits
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "256Mi"

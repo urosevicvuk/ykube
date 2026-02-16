@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grafana
+  namespace: system-monitoring
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: system-ingress
+      sectionName: websecure
+  hostnames:
+    - dashboard.urosevicvuk.dev
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: kube-prometheus-stack-grafana
+          port: 80

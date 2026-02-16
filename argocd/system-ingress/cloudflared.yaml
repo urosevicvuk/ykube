@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: root
+  name: cloudflared
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -10,16 +10,16 @@ spec:
   source:
     repoURL: https://github.com/urosevicvuk/ykube.git
     targetRevision: HEAD
-    path: argocd
-    directory:
-      recurse: true
+    path: system-ingress/cloudflared
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: system-ingress
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
     retry:
       limit: 5
       backoff:

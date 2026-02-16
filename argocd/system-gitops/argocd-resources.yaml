@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: root
+  name: argocd-resources
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -10,9 +10,7 @@ spec:
   source:
     repoURL: https://github.com/urosevicvuk/ykube.git
     targetRevision: HEAD
-    path: argocd
-    directory:
-      recurse: true
+    path: system-gitops/argocd
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
