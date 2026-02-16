@@ -32,8 +32,6 @@ logs:
 
 # Providers
 providers:
-  kubernetesGateway:
-    enabled: true
   kubernetesCRD:
     enabled: true
     allowCrossNamespace: true
@@ -42,12 +40,10 @@ providers:
     publishedService:
       enabled: true
 
-# Gateway API — GatewayClass auto-created by Helm, Gateway managed by us
-gatewayClass:
+# Gateway API
+kubernetesGateway:
   enabled: true
-
-gateway:
-  enabled: false
+  namespacePolicy: All
 
 # Resource limits
 resources:
