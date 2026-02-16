@@ -5,7 +5,7 @@ metadata:
   namespace: apps
 spec:
   parentRefs:
-    - name: traefik-gateway
+    - name: main-gateway
       namespace: system-ingress
       sectionName: websecure
   hostnames:
