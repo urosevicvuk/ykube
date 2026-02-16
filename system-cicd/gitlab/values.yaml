@@ -41,6 +41,8 @@ global:
     enableUsagePing: false
 
 # Disable all bundled sub-charts
+installCertmanager: false
+
 nginx-ingress:
   enabled: false
 
@@ -52,6 +54,12 @@ redis:
 
 prometheus:
   install: false
+
+# Bundled MinIO for object storage (artifacts, uploads, LFS, packages)
+minio:
+  persistence:
+    storageClass: longhorn
+    size: 10Gi
 
 # Container Registry
 registry:

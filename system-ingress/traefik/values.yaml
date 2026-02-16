@@ -46,7 +46,6 @@ experimental:
     enabled: true
     namespacePolicy: All
 
-
 # Resource limits
 resources:
   requests:
