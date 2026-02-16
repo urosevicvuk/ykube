@@ -34,6 +34,9 @@ global:
 
   time_zone: UTC
 
+  minio:
+    enabled: false
+
   appConfig:
     enableUsagePing: false
 
@@ -130,6 +133,3 @@ gitlab:
   grafana:
     enabled: false
 
-# Disable MinIO — use filesystem for now
-minio:
-  enabled: false
