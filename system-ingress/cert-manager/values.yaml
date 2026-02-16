@@ -4,11 +4,8 @@
 # Install CRDs
 installCRDs: true
 
-# Gateway API support
-config:
-  apiVersion: controller.config.cert-manager.io/v1alpha1
-  kind: ControllerConfiguration
-  enableGatewayAPI: true
+# Gateway API support (alpha feature gate in v1.14)
+featureGates: "ExperimentalGatewayAPISupport=true"
 
 # Resource limits
 resources:
