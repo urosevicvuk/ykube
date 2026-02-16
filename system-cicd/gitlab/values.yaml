@@ -38,9 +38,6 @@ global:
     enableUsagePing: false
 
 # Disable all bundled sub-charts
-certmanager:
-  install: false
-
 nginx-ingress:
   enabled: false
 
