@@ -21,10 +21,6 @@ spec:
           image: postgres:16.8-alpine
           ports:
             - containerPort: 5432
-          securityContext:
-            runAsUser: 999
-            runAsGroup: 999
-            allowPrivilegeEscalation: false
           livenessProbe:
             exec:
               command:

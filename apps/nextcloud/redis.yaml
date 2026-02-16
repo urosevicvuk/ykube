@@ -20,13 +20,6 @@ spec:
           image: redis:7.4.2-alpine
           ports:
             - containerPort: 6379
-          securityContext:
-            runAsUser: 999
-            runAsGroup: 999
-            readOnlyRootFilesystem: true
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
           livenessProbe:
             exec:
               command:
