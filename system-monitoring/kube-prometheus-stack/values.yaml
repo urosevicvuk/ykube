@@ -23,6 +23,13 @@ grafana:
     enabled: true
     storageClassName: longhorn
     size: 2Gi
+  # Loki datasource for log aggregation
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      url: http://loki.system-monitoring:3100
+      access: proxy
+      isDefault: false
   # Admin credentials from SealedSecret
   admin:
     existingSecret: grafana-admin-credentials

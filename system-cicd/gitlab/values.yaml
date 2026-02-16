@@ -1,0 +1,138 @@
+global:
+  edition: ce
+
+  hosts:
+    domain: urosevicvuk.dev
+    https: true
+    gitlab:
+      name: git.urosevicvuk.dev
+    registry:
+      name: registry.urosevicvuk.dev
+
+  # Disable chart-managed ingress — we use Gateway API HTTPRoutes
+  ingress:
+    enabled: false
+    configureCertmanager: false
+
+  # External PostgreSQL (deployed separately)
+  psql:
+    host: gitlab-postgres
+    port: 5432
+    database: gitlabhq_production
+    username: gitlab
+    password:
+      useSecret: true
+      secret: gitlab-db-credentials
+      key: postgres-password
+
+  # External Redis (deployed separately)
+  redis:
+    host: gitlab-redis
+    port: 6379
+    auth:
+      enabled: false
+
+  time_zone: UTC
+
+  appConfig:
+    enableUsagePing: false
+
+# Disable all bundled sub-charts
+certmanager:
+  install: false
+
+nginx-ingress:
+  enabled: false
+
+postgresql:
+  install: false
+
+redis:
+  install: false
+
+prometheus:
+  install: false
+
+# Container Registry
+registry:
+  enabled: true
+  ingress:
+    enabled: false
+
+# GitLab components
+gitlab:
+  webservice:
+    minReplicas: 1
+    maxReplicas: 1
+    ingress:
+      enabled: false
+    resources:
+      requests:
+        cpu: 200m
+        memory: 2Gi
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+
+  sidekiq:
+    minReplicas: 1
+    maxReplicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+
+  gitaly:
+    persistence:
+      enabled: true
+      size: 50Gi
+      storageClass: longhorn
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+
+  gitlab-shell:
+    minReplicas: 1
+    maxReplicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+
+  toolbox:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+  migrations:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+  kas:
+    enabled: false
+
+  grafana:
+    enabled: false
+
+# Disable MinIO — use filesystem for now
+minio:
+  enabled: false

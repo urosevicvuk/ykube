@@ -3,7 +3,9 @@
   "extends": ["config:recommended"],
   "kubernetes": {
     "managerFilePatterns": [
-      "/apps/**/*.yaml/",
+      "/apps-external/**/*.yaml/",
+      "/apps-internal/**/*.yaml/",
+      "/system-cicd/**/*.yaml/",
       "/system-ingress/cloudflared/**/*.yaml/"
     ]
   },

@@ -1,0 +1,37 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-registries
+  annotations:
+    policies.kyverno.io/title: Restrict Image Registries
+    policies.kyverno.io/description: >-
+      Restrict container images to trusted registries only.
+      Allows Docker Hub (library and namespaced), ghcr.io, quay.io,
+      registry.k8s.io, and the local GitLab registry.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: restrict-registries
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      validate:
+        message: >-
+          Images must come from trusted registries: docker.io, ghcr.io, quay.io,
+          registry.k8s.io, or registry.urosevicvuk.dev.
+        foreach:
+          - list: "request.object.spec.containers"
+            deny:
+              conditions:
+                all:
+                  - key: "{{element.image}}"
+                    operator: AnyNotIn
+                    value:
+                      - "docker.io/*"
+                      - "ghcr.io/*"
+                      - "quay.io/*"
+                      - "registry.k8s.io/*"
+                      - "registry.urosevicvuk.dev/*"

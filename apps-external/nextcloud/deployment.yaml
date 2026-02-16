@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nextcloud
-  namespace: apps
+  namespace: apps-external
   labels:
     app: nextcloud
 spec:
@@ -91,7 +91,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: nextcloud
-  namespace: apps
+  namespace: apps-external
 spec:
   selector:
     app: nextcloud

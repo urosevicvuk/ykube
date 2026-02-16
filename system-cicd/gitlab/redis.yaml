@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: redis
-  namespace: apps
+  name: gitlab-redis
+  namespace: system-cicd
   labels:
-    app: redis
+    app: gitlab-redis
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: redis
+      app: gitlab-redis
   template:
     metadata:
       labels:
-        app: redis
+        app: gitlab-redis
     spec:
       containers:
         - name: redis
@@ -36,20 +36,20 @@ spec:
             periodSeconds: 10
           resources:
             requests:
-              cpu: "50m"
-              memory: "64Mi"
+              cpu: 50m
+              memory: 64Mi
             limits:
-              cpu: "200m"
-              memory: "128Mi"
+              cpu: 200m
+              memory: 256Mi
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis
-  namespace: apps
+  name: gitlab-redis
+  namespace: system-cicd
 spec:
   selector:
-    app: redis
+    app: gitlab-redis
   ports:
     - port: 6379
       targetPort: 6379

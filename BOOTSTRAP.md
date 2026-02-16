@@ -20,7 +20,7 @@ kubectl apply --server-side -f \
 
 ## 3. Install ArgoCD
 ```bash
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml --server-side=true --force-conflicts
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.0/manifests/install.yaml --server-side=true --force-conflicts
 ```
 
 Wait for pods:

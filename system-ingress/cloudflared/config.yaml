@@ -48,5 +48,32 @@ data:
           connectTimeout: 30s
           tlsTimeout: 10s
 
+      # Route for GitLab
+      - hostname: git.urosevicvuk.dev
+        service: https://traefik.system-ingress:443
+        originRequest:
+          originServerName: git.urosevicvuk.dev
+          noTLSVerify: false
+          connectTimeout: 30s
+          tlsTimeout: 10s
+
+      # Route for GitLab Registry
+      - hostname: registry.urosevicvuk.dev
+        service: https://traefik.system-ingress:443
+        originRequest:
+          originServerName: registry.urosevicvuk.dev
+          noTLSVerify: false
+          connectTimeout: 30s
+          tlsTimeout: 10s
+
+      # Route for Vault
+      - hostname: vault.urosevicvuk.dev
+        service: https://traefik.system-ingress:443
+        originRequest:
+          originServerName: vault.urosevicvuk.dev
+          noTLSVerify: false
+          connectTimeout: 30s
+          tlsTimeout: 10s
+
       # Catch-all rule (required by cloudflared)
       - service: http_status:404

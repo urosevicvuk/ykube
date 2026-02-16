@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: gitlab
+  namespace: system-cicd
+spec:
+  parentRefs:
+    - name: main-gateway
+      namespace: system-ingress
+      sectionName: websecure
+  hostnames:
+    - git.urosevicvuk.dev
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: gitlab-webservice-default
+          port: 8181
