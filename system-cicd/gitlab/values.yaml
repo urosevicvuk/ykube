@@ -67,6 +67,10 @@ registry:
   ingress:
     enabled: false
 
+# Skip upgrade check — this is a fresh install
+upgradeCheck:
+  enabled: false
+
 # GitLab components
 gitlab:
   webservice:
