@@ -35,7 +35,7 @@ global:
   time_zone: UTC
 
   minio:
-    enabled: false
+    enabled: true
 
   appConfig:
     enableUsagePing: false
