@@ -17,6 +17,11 @@ spec:
     - repoURL: https://github.com/urosevicvuk/ykube.git
       targetRevision: HEAD
       ref: values
+    - repoURL: https://github.com/urosevicvuk/ykube.git
+      targetRevision: HEAD
+      path: system-monitoring/kube-prometheus-stack
+      directory:
+        include: '{secrets.yaml,grafana-route.yaml}'
   destination:
     server: https://kubernetes.default.svc
     namespace: system-monitoring

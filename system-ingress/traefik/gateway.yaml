@@ -5,6 +5,7 @@ metadata:
   namespace: system-ingress
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   gatewayClassName: traefik
   listeners:

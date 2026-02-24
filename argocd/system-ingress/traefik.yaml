@@ -17,6 +17,11 @@ spec:
     - repoURL: https://github.com/urosevicvuk/ykube.git
       targetRevision: HEAD
       ref: values
+    - repoURL: https://github.com/urosevicvuk/ykube.git
+      targetRevision: HEAD
+      path: system-ingress/traefik
+      directory:
+        include: '{gateway.yaml}'
   destination:
     server: https://kubernetes.default.svc
     namespace: system-ingress
