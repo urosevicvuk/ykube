@@ -17,6 +17,11 @@ spec:
     - repoURL: https://github.com/urosevicvuk/ykube.git
       targetRevision: HEAD
       ref: values
+    - repoURL: https://github.com/urosevicvuk/ykube.git
+      targetRevision: HEAD
+      path: apps-external/stirling-pdf
+      directory:
+        include: '{stirling-pdf-route.yaml}'
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-external
