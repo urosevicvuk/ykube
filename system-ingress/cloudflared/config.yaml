@@ -66,6 +66,15 @@ data:
           connectTimeout: 30s
           tlsTimeout: 10s
 
+      # Route to Sterling PDF
+      - hostname: pdf.urosevicvuk.dev
+        service: https://traefik.system-ingress:443
+        originRequest:
+          originServerName: pdf.urosevicvuk.dev
+          noTLSVerify: false
+          connectTimeout: 30s
+          tlsTimeout: 10s
+
       # Route for Vault
       - hostname: vault.urosevicvuk.dev
         service: https://traefik.system-ingress:443

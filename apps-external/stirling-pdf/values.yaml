@@ -1,0 +1,19 @@
+# Stirling PDF Helm values
+# Full reference: https://github.com/Stirling-Tools/Stirling-PDF-chart/blob/main/charts/stirling-pdf/values.yaml
+
+fullnameOverride: stirling-pdf
+
+envs:
+  - name: SECURITY_ENABLELOGIN
+    value: "false"
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 2Gi
+
+persistence:
+  enabled: false
