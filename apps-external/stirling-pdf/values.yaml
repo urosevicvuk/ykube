@@ -10,10 +10,16 @@ envs:
 resources:
   requests:
     cpu: 200m
-    memory: 256Mi
+    memory: 512Mi
   limits:
-    cpu: "1"
-    memory: 2Gi
+    cpu: "2"
+    memory: 4Gi
+
+probes:
+  liveness:
+    initialDelaySeconds: 60
+  readiness:
+    initialDelaySeconds: 60
 
 persistence:
   enabled: false
