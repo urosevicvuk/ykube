@@ -30,24 +30,6 @@ data:
           connectTimeout: 30s
           tlsTimeout: 10s
 
-      # Route for Grafana
-      - hostname: dashboard.urosevicvuk.dev
-        service: https://traefik.system-ingress:443
-        originRequest:
-          originServerName: dashboard.urosevicvuk.dev
-          noTLSVerify: false
-          connectTimeout: 30s
-          tlsTimeout: 10s
-
-      # Route for ArgoCD
-      - hostname: argocd.urosevicvuk.dev
-        service: https://traefik.system-ingress:443
-        originRequest:
-          originServerName: argocd.urosevicvuk.dev
-          noTLSVerify: false
-          connectTimeout: 30s
-          tlsTimeout: 10s
-
       # Route for GitLab
       - hostname: git.urosevicvuk.dev
         service: https://traefik.system-ingress:443
@@ -71,15 +53,6 @@ data:
         service: https://traefik.system-ingress:443
         originRequest:
           originServerName: pdf.urosevicvuk.dev
-          noTLSVerify: false
-          connectTimeout: 30s
-          tlsTimeout: 10s
-
-      # Route for Vault
-      - hostname: vault.urosevicvuk.dev
-        service: https://traefik.system-ingress:443
-        originRequest:
-          originServerName: vault.urosevicvuk.dev
           noTLSVerify: false
           connectTimeout: 30s
           tlsTimeout: 10s
