@@ -145,3 +145,7 @@ gitlab:
   grafana:
     enabled: false
 
+# Runner — use internal service URL instead of public hostname
+gitlab-runner:
+  gitlabUrl: http://gitlab-webservice-default.system-cicd:8181
+
