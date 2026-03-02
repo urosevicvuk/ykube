@@ -2,6 +2,14 @@
 
 Run these commands once after `nixos-rebuild switch` on a new cluster.
 
+## Quick start
+
+```bash
+./scripts/bootstrap.sh
+```
+
+This handles steps 1-4 automatically. Then continue from step 5 below.
+
 ## Prerequisites
 - K3s running: `systemctl status k3s`
 - kubectl working: `kubectl get nodes`
@@ -29,6 +37,9 @@ Wait for pods:
 ```bash
 kubectl get pods -n argocd -w
 ```
+
+> **Note:** This imperative install bootstraps ArgoCD (chicken-and-egg problem).
+> After `root.yaml` is applied, ArgoCD manages its own Helm-based upgrades via git.
 
 ## 4. Install Sealed Secrets
 ```bash
@@ -64,7 +75,7 @@ kubectl create secret generic gitlab-db-credentials -n system-cicd \
   --from-literal=postgres-password='<your-password>' \
   --dry-run=client -o yaml | \
   kubeseal --controller-name=sealed-secrets --controller-namespace=system-security --format yaml \
-  > system-cicd/gitlab/secrets.yaml
+  > system/gitlab/secrets.yaml
 
 # Cloudflared credentials (system-ingress namespace)
 # Copy your tunnel credentials JSON, then:
@@ -72,14 +83,14 @@ kubectl create secret generic cloudflared-credentials -n system-ingress \
   --from-file=credentials.json=<path-to-tunnel-credentials> \
   --dry-run=client -o yaml | \
   kubeseal --controller-name=sealed-secrets --controller-namespace=system-security --format yaml \
-  > system-ingress/cloudflared/secrets.yaml
+  > system/cloudflared/secrets.yaml
 
 # Cloudflare API token (system-ingress namespace)
 kubectl create secret generic cloudflare-api-token -n system-ingress \
   --from-literal=api-token='<your-cf-api-token>' \
   --dry-run=client -o yaml | \
   kubeseal --controller-name=sealed-secrets --controller-namespace=system-security --format yaml \
-  > system-ingress/cert-manager/secrets.yaml
+  > system/cert-manager/secrets.yaml
 
 # Grafana admin credentials (system-monitoring namespace)
 kubectl create secret generic grafana-admin-credentials -n system-monitoring \
@@ -87,14 +98,14 @@ kubectl create secret generic grafana-admin-credentials -n system-monitoring \
   --from-literal=admin-password='<your-password>' \
   --dry-run=client -o yaml | \
   kubeseal --controller-name=sealed-secrets --controller-namespace=system-security --format yaml \
-  > system-monitoring/kube-prometheus-stack/secrets.yaml
+  > system/kube-prometheus-stack/secrets.yaml
 ```
 
 Commit and push all re-sealed secrets before proceeding.
 
 ## 6. Apply root application
 ```bash
-kubectl apply -f argocd/root.yaml
+kubectl apply -f root.yaml
 ```
 
 ArgoCD takes over from here and deploys everything in the repo.
