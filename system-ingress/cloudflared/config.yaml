@@ -18,19 +18,16 @@ data:
 
     # Ingress rules - order matters!
     ingress:
-      # Route for Nextcloud
+      # Nextcloud
       - hostname: cloud.urosevicvuk.dev
         service: https://traefik.system-ingress:443
         originRequest:
-          # Tell cloudflared to expect this hostname in the TLS certificate
           originServerName: cloud.urosevicvuk.dev
-          # Enable TLS verification (proper security)
           noTLSVerify: false
-          # Connection settings
           connectTimeout: 30s
           tlsTimeout: 10s
 
-      # Route for GitLab
+      # GitLab
       - hostname: git.urosevicvuk.dev
         service: https://traefik.system-ingress:443
         originRequest:
@@ -39,7 +36,7 @@ data:
           connectTimeout: 30s
           tlsTimeout: 10s
 
-      # Route for GitLab Registry
+      # GitLab Registry
       - hostname: registry.urosevicvuk.dev
         service: https://traefik.system-ingress:443
         originRequest:
@@ -48,7 +45,7 @@ data:
           connectTimeout: 30s
           tlsTimeout: 10s
 
-      # Route to Sterling PDF
+      # Sterling PDF
       - hostname: pdf.urosevicvuk.dev
         service: https://traefik.system-ingress:443
         originRequest:
