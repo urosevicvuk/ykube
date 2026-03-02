@@ -1,25 +1,30 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: promtail
+  name: traefik
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   sources:
-    - repoURL: https://grafana.github.io/helm-charts
-      chart: promtail
-      targetRevision: 6.16.6
+    - repoURL: https://traefik.github.io/charts
+      chart: traefik
+      targetRevision: 28.0.0
       helm:
         valueFiles:
-          - $values/system-monitoring/promtail/values.yaml
+          - $values/system/traefik/values.yaml
     - repoURL: https://github.com/urosevicvuk/ykube.git
       targetRevision: HEAD
       ref: values
+    - repoURL: https://github.com/urosevicvuk/ykube.git
+      targetRevision: HEAD
+      path: system/traefik
+      directory:
+        include: '{gateway.yaml}'
   destination:
     server: https://kubernetes.default.svc
-    namespace: system-monitoring
+    namespace: system-ingress
   syncPolicy:
     automated:
       prune: true

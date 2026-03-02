@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/urosevicvuk/ykube.git
     targetRevision: HEAD
-    path: argocd
+    path: root
     directory:
       recurse: true
   destination:

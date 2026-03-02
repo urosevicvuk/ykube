@@ -1,30 +1,30 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kube-prometheus-stack
+  name: gitlab
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   sources:
-    - repoURL: https://prometheus-community.github.io/helm-charts
-      chart: kube-prometheus-stack
-      targetRevision: 81.6.1
+    - repoURL: https://charts.gitlab.io
+      chart: gitlab
+      targetRevision: 9.8.4
       helm:
         valueFiles:
-          - $values/system-monitoring/kube-prometheus-stack/values.yaml
+          - $values/system/gitlab/values.yaml
     - repoURL: https://github.com/urosevicvuk/ykube.git
       targetRevision: HEAD
       ref: values
     - repoURL: https://github.com/urosevicvuk/ykube.git
       targetRevision: HEAD
-      path: system-monitoring/kube-prometheus-stack
+      path: system/gitlab
       directory:
-        include: '{secrets.yaml,grafana-route.yaml}'
+        include: '{postgres.yaml,redis.yaml,gitlab-route.yaml,registry-route.yaml,secrets.yaml}'
   destination:
     server: https://kubernetes.default.svc
-    namespace: system-monitoring
+    namespace: system-cicd
   syncPolicy:
     automated:
       prune: true

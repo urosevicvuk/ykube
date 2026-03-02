@@ -5,12 +5,12 @@
     "managerFilePatterns": [
       "/apps-external/**/*.yaml/",
       "/apps-internal/**/*.yaml/",
-      "/system-cicd/**/*.yaml/",
-      "/system-ingress/cloudflared/**/*.yaml/"
+      "/system/gitlab/**/*.yaml/",
+      "/system/cloudflared/**/*.yaml/"
     ]
   },
   "argocd": {
-    "managerFilePatterns": ["/argocd/**/*.yaml/"]
+    "managerFilePatterns": ["/root/**/*.yaml/"]
   },
   "packageRules": [
     {
