@@ -8,6 +8,10 @@ echo "=== Cluster Bootstrap ==="
 
 # 1. Create namespaces
 echo "Creating namespaces..."
+if kubectl get namespace argocd &>/dev/null; then
+  echo "Waiting for argocd namespace to finish deleting..."
+  kubectl wait --for=delete namespace/argocd --timeout=120s 2>/dev/null || true
+fi
 kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 kubectl create namespace system-security --dry-run=client -o yaml | kubectl apply -f -
 
@@ -25,6 +29,7 @@ helm install argocd argo/argo-cd \
   --namespace argocd \
   --version "${ARGOCD_CHART_VERSION}" \
   --values "${REPO_ROOT}/system/argocd/values.yaml" \
+  --skip-crds \
   --wait --timeout 5m
 
 # 4. Apply root application

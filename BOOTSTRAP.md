@@ -36,6 +36,7 @@ helm install argocd argo/argo-cd \
   --namespace argocd \
   --version 9.4.5 \
   --values system/argocd/values.yaml \
+  --skip-crds \
   --wait --timeout 5m
 ```
 
