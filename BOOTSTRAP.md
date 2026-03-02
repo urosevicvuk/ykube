@@ -28,18 +28,20 @@ kubectl apply --server-side -f \
   https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/standard-install.yaml
 ```
 
-## 3. Install ArgoCD
+## 3. Install ArgoCD via Helm
 ```bash
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.0/manifests/install.yaml --server-side=true --force-conflicts
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update argo
+helm install argocd argo/argo-cd \
+  --namespace argocd \
+  --version 9.4.5 \
+  --values system/argocd/values.yaml \
+  --wait --timeout 5m
 ```
 
-Wait for pods:
-```bash
-kubectl get pods -n argocd -w
-```
-
-> **Note:** This imperative install bootstraps ArgoCD (chicken-and-egg problem).
-> After `root.yaml` is applied, ArgoCD manages its own Helm-based upgrades via git.
+> **Note:** We use the same Helm chart version and values as `root/system-argocd.yaml`.
+> This ensures labels/selectors match when ArgoCD later manages itself via GitOps.
+> After `root.yaml` is applied, ArgoCD manages its own upgrades via git.
 
 ## 4. Install Sealed Secrets
 ```bash

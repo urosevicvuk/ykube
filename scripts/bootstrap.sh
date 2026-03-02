@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ARGOCD_VERSION="v3.3.0"
+ARGOCD_CHART_VERSION="9.4.5"
 
 echo "=== Cluster Bootstrap ==="
 
@@ -16,15 +16,16 @@ echo "Installing Gateway API CRDs..."
 kubectl apply --server-side -f \
   https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/standard-install.yaml
 
-# 3. Install ArgoCD (imperative — chicken-and-egg)
-echo "Installing ArgoCD ${ARGOCD_VERSION}..."
-kubectl apply -n argocd --server-side --force-conflicts -f \
-  "https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/manifests/install.yaml"
-
-echo "Waiting for ArgoCD to be ready..."
-kubectl -n argocd rollout status deployment/argocd-server --timeout=300s
-kubectl -n argocd rollout status deployment/argocd-repo-server --timeout=300s
-kubectl -n argocd rollout status deployment/argocd-applicationset-controller --timeout=300s
+# 3. Install ArgoCD via Helm (same chart + values as system-argocd.yaml)
+# This ensures labels/selectors match when ArgoCD later manages itself.
+echo "Installing ArgoCD via Helm (chart ${ARGOCD_CHART_VERSION})..."
+helm repo add argo https://argoproj.github.io/argo-helm 2>/dev/null || true
+helm repo update argo
+helm install argocd argo/argo-cd \
+  --namespace argocd \
+  --version "${ARGOCD_CHART_VERSION}" \
+  --values "${REPO_ROOT}/system/argocd/values.yaml" \
+  --wait --timeout 5m
 
 # 4. Apply root application
 echo "Applying root application..."
@@ -33,7 +34,7 @@ kubectl apply -f "${REPO_ROOT}/root.yaml"
 echo ""
 echo "=== Bootstrap complete ==="
 echo "ArgoCD will now manage all applications from git."
-echo "After first sync, ArgoCD manages its own Helm-based upgrades."
+echo "ArgoCD manages its own Helm upgrades — labels match from day one."
 echo ""
 echo "Next steps:"
 echo "  1. Install Sealed Secrets: helm install sealed-secrets sealed-secrets/sealed-secrets -n system-security"
