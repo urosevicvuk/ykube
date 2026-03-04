@@ -11,5 +11,7 @@ ingress:
 
 persistence:
   storageClassName: longhorn
+  accessModes:
+    - ReadWriteOnce
   size: 5Gi
 
