@@ -1,0 +1,15 @@
+# OpenProject Helm values
+# Chart: openproject v13.3.0
+# Full reference: https://github.com/opf/helm-charts/blob/main/charts/openproject/values.yaml
+
+openproject:
+  host: "openproject.raf-project.com"
+  https: true
+
+ingress:
+  enabled: false
+
+persistence:
+  storageClassName: longhorn
+  size: 5Gi
+

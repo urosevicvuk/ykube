@@ -54,5 +54,14 @@ data:
           connectTimeout: 30s
           tlsTimeout: 10s
 
+      # OpenProject
+      - hostname: openproject.raf-project.com
+        service: https://traefik.system-ingress:443
+        originRequest:
+          originServerName: openproject.raf-project.com
+          noTLSVerify: false
+          connectTimeout: 30s
+          tlsTimeout: 10s
+
       # Catch-all rule (required by cloudflared)
       - service: http_status:404

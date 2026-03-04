@@ -28,3 +28,22 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    - name: web-raf
+      port: 8000
+      protocol: HTTP
+      hostname: "*.raf-project.com"
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: websecure-raf
+      port: 8443
+      protocol: HTTPS
+      hostname: "*.raf-project.com"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: wildcard-raf-project-com-tls
+            kind: Secret
+      allowedRoutes:
+        namespaces:
+          from: All
