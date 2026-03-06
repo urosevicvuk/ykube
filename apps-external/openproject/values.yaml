@@ -9,6 +9,35 @@ openproject:
 ingress:
   enabled: false
 
+#Kyverno policies
+resources:
+  requests:
+    cpu: "250m"
+    memory: "512Mi"
+  limits:
+    cpu: "4"
+    memory: "4Gi"
+
+postgresql:
+  primary:
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "1"
+        memory: "512Mi"
+
+memcached:
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: " 200m"
+      memory: "128Mi"
+
+#Storage
 persistence:
   storageClassName: longhorn
   accessModes:
