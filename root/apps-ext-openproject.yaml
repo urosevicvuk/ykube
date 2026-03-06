@@ -23,7 +23,7 @@ spec:
       targetRevision: HEAD
       path: apps-external/openproject
       directory:
-        include: "{route.yaml}"
+        include: "{route.yaml,secrets.yaml}"
 
   destination:
     server: https://kubernetes.default.svc

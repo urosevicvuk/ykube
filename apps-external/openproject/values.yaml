@@ -19,6 +19,11 @@ resources:
     memory: "4Gi"
 
 postgresql:
+  auth:
+    existingSecret: openproject-postgresql-secrets
+    secretKeys:
+      adminPasswordKey: postgres-password
+      userPasswordKey: password
   primary:
     resources:
       requests:
