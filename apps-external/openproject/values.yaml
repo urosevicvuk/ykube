@@ -34,8 +34,17 @@ memcached:
       cpu: "50m"
       memory: "64Mi"
     limits:
-      cpu: " 200m"
+      cpu: "200m"
       memory: "128Mi"
+
+seederJob:
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "2"
+      memory: "1Gi"
 
 #Storage
 persistence:
