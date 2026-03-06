@@ -3,14 +3,14 @@
   "extends": ["config:recommended"],
   "kubernetes": {
     "managerFilePatterns": [
-      "/apps-external/**/*.yaml/",
-      "/apps-internal/**/*.yaml/",
-      "/system/gitlab/**/*.yaml/",
-      "/system/cloudflared/**/*.yaml/"
+      "/apps-external/.+\\.yaml$/",
+      "/apps-internal/.+\\.yaml$/",
+      "/system/gitlab/.+\\.yaml$/",
+      "/system/cloudflared/.+\\.yaml$/"
     ]
   },
   "argocd": {
-    "managerFilePatterns": ["/root/**/*.yaml/"]
+    "managerFilePatterns": ["/root/.+\\.yaml$/"]
   },
   "packageRules": [
     {
