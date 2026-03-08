@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: nextcloud
-          image: nextcloud:31.0.14
+          image: nextcloud:33.0.0
           ports:
             - containerPort: 80
               name: http
