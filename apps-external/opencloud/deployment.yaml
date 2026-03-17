@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencloud
+  namespace: apps-external
+  labels:
+    app: opencloud
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: opencloud
+  template:
+    metadata:
+      labels:
+        app: opencloud
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: opencloud
+          image: opencloudeu/opencloud:5.2.0
+          command: ["sh", "-c", "opencloud init || true; opencloud server"]
+          ports:
+            - containerPort: 9200
+              name: http
+          env:
+            - name: OC_URL
+              value: "https://cloud.urosevicvuk.dev"
+            - name: PROXY_HTTP_ADDR
+              value: "0.0.0.0:9200"
+            - name: PROXY_TLS
+              value: "false"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/opencloud
+            - name: data
+              mountPath: /var/lib/opencloud
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          livenessProbe:
+            httpGet:
+              port: 9200
+              path: /
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              port: 9200
+              path: /
+            initialDelaySeconds: 15
+            periodSeconds: 10
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: opencloud-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: opencloud-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opencloud
+  namespace: apps-external
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  selector:
+    app: opencloud
+  ports:
+    - port: 9200
+      targetPort: 9200

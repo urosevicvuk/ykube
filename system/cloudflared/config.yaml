@@ -18,7 +18,7 @@ data:
 
     # Ingress rules - order matters!
     ingress:
-      # Nextcloud
+      # OpenCloud
       - hostname: cloud.urosevicvuk.dev
         service: https://traefik.system-ingress:443
         originRequest:
