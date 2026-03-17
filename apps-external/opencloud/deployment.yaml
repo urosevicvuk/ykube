@@ -34,6 +34,8 @@ spec:
           env:
             - name: OC_URL
               value: "https://cloud.urosevicvuk.dev"
+            - name: OC_INSECURE
+              value: "true"
             - name: PROXY_HTTP_ADDR
               value: "0.0.0.0:9200"
             - name: PROXY_TLS
