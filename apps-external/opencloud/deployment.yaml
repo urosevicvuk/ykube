@@ -18,6 +18,7 @@ spec:
     metadata:
       labels:
         app: opencloud
+        app.kubernetes.io/name: opencloud
     spec:
       securityContext:
         runAsUser: 1000
@@ -25,7 +26,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: opencloud
-          image: opencloudeu/opencloud:5.2.0
+          image: docker.io/opencloudeu/opencloud-rolling:5.2.0
           command: ["sh", "-c", "opencloud init || true; opencloud server"]
           ports:
             - containerPort: 9200
