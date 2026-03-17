@@ -27,6 +27,15 @@ data:
           connectTimeout: 30s
           tlsTimeout: 10s
 
+      # Excalidraw
+      - hostname: draw.urosevicvuk.dev
+        service: https://traefik.system-ingress:443
+        originRequest:
+          originServerName: draw.urosevicvuk.dev
+          noTLSVerify: false
+          connectTimeout: 30s
+          tlsTimeout: 10s
+
       # GitLab
       - hostname: git.urosevicvuk.dev
         service: https://traefik.system-ingress:443
