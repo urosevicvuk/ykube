@@ -1,0 +1,34 @@
+defaultSettings:
+  defaultReplicaCount: 1
+  storageMinimalAvailablePercentage: 20
+  backupTarget: ""
+  nodeDrainPolicy: block-if-contains-last-replica
+
+persistence:
+  defaultClass: true
+  defaultClassReplicaCount: 1
+  reclaimPolicy: Retain
+
+service:
+  ui:
+    type: ClusterIP
+  manager:
+    type: ClusterIP
+
+resources:
+  limits:
+    cpu: 250m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+ingress:
+  enabled: false
+
+preUpgradeChecker:
+  jobEnabled: false
+
+metrics:
+  serviceMonitor:
+    enabled: true

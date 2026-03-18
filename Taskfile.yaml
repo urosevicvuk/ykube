@@ -1,0 +1,47 @@
+version: "3"
+
+vars:
+  REGISTRY: registry.urosevicvuk.dev
+
+tasks:
+  build:
+    desc: Build a container image
+    cmds:
+      - docker build -t {{.REGISTRY}}/{{.IMAGE}}:{{.TAG}} {{.CONTEXT}}
+    requires:
+      vars: [IMAGE, TAG, CONTEXT]
+
+  push:
+    desc: Push a container image to registry
+    cmds:
+      - docker push {{.REGISTRY}}/{{.IMAGE}}:{{.TAG}}
+    requires:
+      vars: [IMAGE, TAG]
+
+  sign:
+    desc: Sign a container image with cosign
+    cmds:
+      - cosign sign --key cosign.key {{.REGISTRY}}/{{.IMAGE}}:{{.TAG}}
+    requires:
+      vars: [IMAGE, TAG]
+
+  build-push-sign:
+    desc: Build, push, and sign a container image
+    cmds:
+      - task: build
+        vars: { IMAGE: "{{.IMAGE}}", TAG: "{{.TAG}}", CONTEXT: "{{.CONTEXT}}" }
+      - task: push
+        vars: { IMAGE: "{{.IMAGE}}", TAG: "{{.TAG}}" }
+      - task: sign
+        vars: { IMAGE: "{{.IMAGE}}", TAG: "{{.TAG}}" }
+    requires:
+      vars: [IMAGE, TAG, CONTEXT]
+
+  kustomize-validate:
+    desc: Validate all kustomize overlays
+    cmds:
+      - |
+        for dir in $(find . -name "kustomization.yaml" -exec dirname {} \;); do
+          echo "Validating $dir..."
+          kubectl kustomize "$dir" > /dev/null || echo "FAILED: $dir"
+        done

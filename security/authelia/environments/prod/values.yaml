@@ -1,0 +1,107 @@
+ingress:
+  enabled: false
+
+pod:
+  extraVolumeMounts:
+    - name: users
+      mountPath: /config/users_database.yml
+      subPath: users_database.yml
+      readOnly: true
+  extraVolumes:
+    - name: users
+      secret:
+        secretName: authelia-users
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+configMap:
+  theme: dark
+
+  authentication_backend:
+    file:
+      enabled: true
+      path: /config/users_database.yml
+
+  session:
+    cookies:
+      - domain: urosevicvuk.dev
+        subdomain: auth
+        default_redirection_url: https://urosevicvuk.dev
+
+  storage:
+    postgres:
+      enabled: true
+      address: tcp://authelia-pg-rw.authelia:5432
+      database: authelia
+      username: authelia
+      password:
+        disabled: false
+        secret_name: authelia-db-credentials
+        path: password
+
+  access_control:
+    default_policy: one_factor
+
+  notifier:
+    filesystem:
+      enabled: true
+
+  identity_providers:
+    oidc:
+      enabled: true
+      hmac_secret:
+        disabled: false
+        secret_name: authelia-secrets
+        path: hmac-secret
+      jwks:
+        - key_id: ''
+          algorithm: RS256
+          use: sig
+          key:
+            path: /secrets/oidc/oidc-private-key
+      cors:
+        allowed_origins_from_client_redirect_uris: true
+      clients:
+        - client_id: argocd
+          client_name: ArgoCD
+          client_secret:
+            path: /secrets/oidc/argocd-client-secret
+          public: false
+          authorization_policy: two_factor
+          redirect_uris:
+            - https://argocd.urosevicvuk.dev/auth/callback
+          scopes:
+            - openid
+            - groups
+            - email
+            - profile
+        - client_id: grafana
+          client_name: Grafana
+          client_secret:
+            path: /secrets/oidc/grafana-client-secret
+          public: false
+          authorization_policy: one_factor
+          redirect_uris:
+            - https://dashboard.urosevicvuk.dev/login/generic_oauth
+          scopes:
+            - openid
+            - groups
+            - email
+            - profile
+
+secret:
+  existingSecret: authelia-secrets
+  additionalSecrets:
+    oidc:
+      items:
+        - key: oidc-private-key
+          path: oidc-private-key
+        - key: argocd-client-secret
+          path: argocd-client-secret
+        - key: grafana-client-secret
+          path: grafana-client-secret

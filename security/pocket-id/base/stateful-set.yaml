@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pocket-id
+  namespace: pocket-id
+  labels:
+    app: pocket-id
+spec:
+  serviceName: pocket-id
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pocket-id
+  template:
+    metadata:
+      labels:
+        app: pocket-id
+    spec:
+      containers:
+        - name: pocket-id
+          image: stonith404/pocket-id:v1.5.0
+          ports:
+            - containerPort: 80
+              name: http
+          env:
+            - name: PUBLIC_APP_URL
+              value: https://id.urosevicvuk.dev
+            - name: TRUST_PROXY
+              value: "true"
+          envFrom:
+            - secretRef:
+                name: pocket-id-encryption-key
+          volumeMounts:
+            - name: data
+              mountPath: /app/backend/data
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: longhorn
+        resources:
+          requests:
+            storage: 1Gi

@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: searxng
+  namespace: searxng
+  labels:
+    app: searxng
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: searxng
+  template:
+    metadata:
+      labels:
+        app: searxng
+    spec:
+      containers:
+        - name: searxng
+          image: docker.io/searxng/searxng:2024.12.23-53e7e8ea5
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: SEARXNG_BASE_URL
+              value: "https://search.urosevicvuk.dev"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/searxng/settings.yml
+              subPath: settings.yml
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              port: 8080
+              path: /healthz
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              port: 8080
+              path: /healthz
+            initialDelaySeconds: 10
+            periodSeconds: 10
+        - name: redis
+          image: docker.io/redis:7.4.2-alpine
+          ports:
+            - containerPort: 6379
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+      volumes:
+        - name: config
+          configMap:
+            name: searxng-config

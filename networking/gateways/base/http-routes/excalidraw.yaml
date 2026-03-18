@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: excalidraw
+  namespace: excalidraw
+spec:
+  parentRefs:
+    - name: cloudflare-gateway
+      namespace: cloudflare
+      sectionName: http
+  hostnames:
+    - draw.urosevicvuk.dev
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: excalidraw
+          port: 80

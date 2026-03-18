@@ -1,0 +1,74 @@
+expose:
+  type: clusterIP
+  tls:
+    enabled: false
+
+externalURL: https://harbor.urosevicvuk.dev
+
+persistence:
+  enabled: true
+  persistentVolumeClaim:
+    registry:
+      storageClass: longhorn
+      size: 50Gi
+    jobservice:
+      jobLog:
+        storageClass: longhorn
+        size: 1Gi
+    trivy:
+      storageClass: longhorn
+      size: 5Gi
+
+database:
+  type: external
+  external:
+    host: harbor-pg-rw.harbor
+    port: 5432
+    username: harbor
+    coreDatabase: harbor
+    existingSecret: harbor-db-credentials
+    sslmode: disable
+
+redis:
+  type: internal
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+
+portal:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+core:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+registry:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+trivy:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

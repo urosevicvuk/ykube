@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: raf-project-com-wildcard
+  namespace: cert-manager
+spec:
+  secretName: raf-project-com-wildcard-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.raf-project.com"
+    - "raf-project.com"

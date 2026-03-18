@@ -1,0 +1,23 @@
+version: "3"
+
+tasks:
+  apply:
+    desc: Apply an infrastructure step
+    cmds:
+      - cd {{.CLI_ARGS}} && tofu init && tofu apply
+    preconditions:
+      - test -d {{.CLI_ARGS}}
+
+  plan:
+    desc: Plan an infrastructure step
+    cmds:
+      - cd {{.CLI_ARGS}} && tofu init && tofu plan
+    preconditions:
+      - test -d {{.CLI_ARGS}}
+
+  destroy:
+    desc: Destroy an infrastructure step
+    cmds:
+      - cd {{.CLI_ARGS}} && tofu destroy
+    preconditions:
+      - test -d {{.CLI_ARGS}}

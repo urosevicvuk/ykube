@@ -1,0 +1,18 @@
+# Infrastructure state
+infrastructure/**/*.tfstate
+infrastructure/**/*.tfstate.backup
+infrastructure/**/.terraform/
+infrastructure/**/*.auto.tfvars
+infrastructure/**/secrets.auto.tfvars
+
+# Secrets
+*.key
+*.pem
+!flake.lock
+
+# Nix
+result
+.direnv/
+
+# OS
+.DS_Store

@@ -1,0 +1,21 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: harbor-pg
+  namespace: harbor
+spec:
+  instances: 1
+  storage:
+    storageClass: longhorn
+    size: 5Gi
+  bootstrap:
+    initdb:
+      database: harbor
+      owner: harbor
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

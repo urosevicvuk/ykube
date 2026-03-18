@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-800"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://helm.releases.hashicorp.com
+      chart: vault
+      targetRevision: 0.32.0
+      helm:
+        valueFiles:
+          - $ykube/security/vault/environments/prod/values.yaml
+    - repoURL: https://github.com/urosevicvuk/ykube.git
+      targetRevision: HEAD
+      ref: ykube
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vault
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: searxng-config
+  namespace: searxng
+data:
+  settings.yml: |
+    use_default_settings: true
+    server:
+      secret_key: "change-me-in-vault"
+      limiter: false
+      image_proxy: true
+      port: 8080
+      bind_address: "0.0.0.0"
+    ui:
+      default_theme: simple
+      theme_args:
+        simple_style: dark
+    search:
+      safe_search: 0
+      autocomplete: "duckduckgo"
+    redis:
+      url: "redis://localhost:6379/0"
+    engines: []

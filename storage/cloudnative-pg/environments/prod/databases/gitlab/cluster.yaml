@@ -1,0 +1,30 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: gitlab-pg
+  namespace: gitlab
+spec:
+  instances: 1
+  storage:
+    storageClass: longhorn
+    size: 10Gi
+  postgresql:
+    parameters:
+      shared_buffers: 256MB
+      effective_cache_size: 512MB
+    pg_hba:
+      - host all all 0.0.0.0/0 md5
+  bootstrap:
+    initdb:
+      database: gitlabhq_production
+      owner: gitlab
+      postInitSQL:
+        - CREATE EXTENSION IF NOT EXISTS pg_trgm;
+        - CREATE EXTENSION IF NOT EXISTS btree_gist;
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
