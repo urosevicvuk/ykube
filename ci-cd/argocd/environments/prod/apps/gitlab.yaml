@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitlab
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://charts.gitlab.io
+      chart: gitlab
+      targetRevision: 9.9.3
+      helm:
+        valueFiles:
+          - $ykube/ci-cd/gitlab/environments/prod/values.yaml
+    - repoURL: https://github.com/urosevicvuk/ykube.git
+      targetRevision: HEAD
+      ref: ykube
+    - repoURL: https://github.com/urosevicvuk/ykube.git
+      targetRevision: HEAD
+      path: ci-cd/gitlab/environments/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gitlab
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

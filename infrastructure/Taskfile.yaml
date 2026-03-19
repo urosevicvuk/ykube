@@ -1,23 +1,56 @@
 version: "3"
 
+vars:
+  KUBECONFIG: "~/.kube/config"
+
 tasks:
-  apply:
-    desc: Apply an infrastructure step
+  bootstrap:
+    desc: Full cluster bootstrap (runs all stages in order)
     cmds:
-      - cd {{.CLI_ARGS}} && tofu init && tofu apply
-    preconditions:
-      - test -d {{.CLI_ARGS}}
+      - task: 01-cilium
+      - task: 02-argocd
+      - task: 03-vault-init
+      - task: 04-vault-secrets
+
+  01-cilium:
+    desc: Install Gateway API CRDs and Cilium
+    dir: 01-cilium
+    cmds:
+      - tofu init
+      - tofu apply -auto-approve -var="kubeconfig_path={{.KUBECONFIG}}"
+
+  02-argocd:
+    desc: Install ArgoCD and apply app-of-apps
+    dir: 02-argocd
+    cmds:
+      - tofu init
+      - tofu apply -auto-approve -var="kubeconfig_path={{.KUBECONFIG}}"
+
+  03-vault-init:
+    desc: Initialize and unseal Vault, configure ESO integration
+    dir: 03-vault-init
+    cmds:
+      - tofu init
+      - tofu apply -auto-approve -var="kubeconfig_path={{.KUBECONFIG}}"
+
+  04-vault-secrets:
+    desc: Generate and provision all Vault secrets
+    dir: 04-vault-secrets
+    cmds:
+      - tofu init
+      - tofu apply -var="kubeconfig_path={{.KUBECONFIG}}"
+    interactive: true
 
   plan:
-    desc: Plan an infrastructure step
+    desc: Plan an infrastructure stage
     cmds:
-      - cd {{.CLI_ARGS}} && tofu init && tofu plan
+      - cd {{.CLI_ARGS}} && tofu init && tofu plan -var="kubeconfig_path={{.KUBECONFIG}}"
     preconditions:
       - test -d {{.CLI_ARGS}}
 
   destroy:
-    desc: Destroy an infrastructure step
+    desc: Destroy an infrastructure stage
     cmds:
-      - cd {{.CLI_ARGS}} && tofu destroy
+      - cd {{.CLI_ARGS}} && tofu destroy -var="kubeconfig_path={{.KUBECONFIG}}"
     preconditions:
       - test -d {{.CLI_ARGS}}

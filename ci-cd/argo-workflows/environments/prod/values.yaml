@@ -1,0 +1,25 @@
+crds:
+  install: true
+  keep: true
+
+singleNamespace: false
+
+workflow:
+  serviceAccount:
+    create: true
+    name: argo-workflow
+  rbac:
+    create: true
+
+controller:
+  workflowNamespaces:
+    - default
+    - argo-workflows
+  metricsConfig:
+    enabled: true
+  serviceMonitor:
+    enabled: true
+
+server:
+  extraArgs:
+    - --auth-mode=server

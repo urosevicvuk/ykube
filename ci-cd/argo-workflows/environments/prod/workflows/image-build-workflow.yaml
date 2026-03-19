@@ -1,0 +1,116 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: image-build
+  namespace: argo-workflows
+spec:
+  entrypoint: build-push-sign
+  serviceAccountName: argo-workflow
+  arguments:
+    parameters:
+      - name: repo-url
+        value: "https://github.com/urosevicvuk/ykube.git"
+      - name: revision
+        value: "main"
+      - name: image-name
+        value: ""
+      - name: context
+        value: "."
+      - name: registry
+        value: "registry.urosevicvuk.dev"
+  volumes:
+    - name: cosign-keys
+      secret:
+        secretName: cosign-key-pair
+    - name: harbor-creds
+      secret:
+        secretName: harbor-dagger-robot-secret
+  templates:
+    - name: build-push-sign
+      steps:
+        - - name: clone
+            template: git-clone
+        - - name: build-and-push
+            template: buildah-build-push
+        - - name: sign
+            template: cosign-sign
+
+    - name: git-clone
+      inputs:
+        artifacts:
+          - name: source
+            path: /workspace
+            git:
+              repo: "{{workflow.parameters.repo-url}}"
+              revision: "{{workflow.parameters.revision}}"
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args:
+          - |
+            cd /workspace
+            SHORT_SHA=$(cat .git/HEAD | cut -c1-8)
+            echo "$SHORT_SHA" > /tmp/tag
+        volumeMounts: []
+      outputs:
+        artifacts:
+          - name: source
+            path: /workspace
+        parameters:
+          - name: tag
+            valueFrom:
+              path: /tmp/tag
+
+    - name: buildah-build-push
+      inputs:
+        artifacts:
+          - name: source
+            path: /workspace
+      container:
+        image: quay.io/buildah/stable:latest
+        command: [sh, -c]
+        args:
+          - |
+            set -euo pipefail
+            REGISTRY="{{workflow.parameters.registry}}"
+            IMG="{{workflow.parameters.image-name}}"
+            TAG="{{steps.clone.outputs.parameters.tag}}"
+            CONTEXT="{{workflow.parameters.context}}"
+
+            # Login to Harbor
+            HARBOR_PASS=$(cat /secrets/harbor/password)
+            buildah login -u "robot\$dagger" -p "$HARBOR_PASS" "$REGISTRY"
+
+            # Build
+            cd /workspace
+            buildah bud -t "$REGISTRY/$IMG:$TAG" "$CONTEXT"
+            buildah push "$REGISTRY/$IMG:$TAG"
+            buildah push "$REGISTRY/$IMG:latest" 2>/dev/null || true
+
+            echo "$REGISTRY/$IMG:$TAG" > /tmp/image-ref
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: harbor-creds
+            mountPath: /secrets/harbor
+            readOnly: true
+      outputs:
+        parameters:
+          - name: image-ref
+            valueFrom:
+              path: /tmp/image-ref
+
+    - name: cosign-sign
+      container:
+        image: bitnami/cosign:latest
+        command: [sh, -c]
+        args:
+          - |
+            set -euo pipefail
+            IMAGE_REF="{{steps.build-and-push.outputs.parameters.image-ref}}"
+            export COSIGN_PASSWORD=$(cat /secrets/cosign/cosign.password)
+            cosign sign --key /secrets/cosign/cosign.key "$IMAGE_REF" --yes
+        volumeMounts:
+          - name: cosign-keys
+            mountPath: /secrets/cosign
+            readOnly: true

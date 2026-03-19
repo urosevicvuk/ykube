@@ -1,40 +1,56 @@
-# Infrastructure - Talos + Proxmox
+# Infrastructure Bootstrap
 
-Template for future migration from K3s to Talos Linux on Proxmox.
+OpenTofu-based bootstrap automation for K3s cluster.
+Adapted from [h8s](https://github.com/okwilkins/h8s) for K3s instead of Talos.
 
 ## Directory Structure
 
 ```
-00-talos-factory/       - Talos factory image configuration
-01-proxmox-provision/   - Proxmox VM provisioning (OpenTofu)
-02-talos-provision/     - Talos machine config generation
-03-talos-bootstrap/     - Talos cluster bootstrap
-04-sealed-secrets-provision/ - (unused - using Vault + ESO)
-05-argocd-provision/    - ArgoCD bootstrap on Talos
-06-external-secrets-provision/ - ESO + Vault bootstrap
-07-vault-resources-provision/  - Vault policies and auth config
-platform-config/        - Shared platform configuration
-scripts/                - Helper scripts
-shared/                 - Shared OpenTofu modules
+01-cilium/          - Gateway API CRDs + Cilium CNI
+02-argocd/          - ArgoCD + app-of-apps
+03-vault-init/      - Vault init, unseal, and ESO configuration
+04-vault-secrets/   - Generate and provision all secrets
+scripts/            - Helper scripts (vault-bootstrap.sh)
 ```
 
 ## Prerequisites
 
-- Proxmox VE host accessible via SSH
-- Talos factory image built for your hardware
-- OpenTofu installed (via `nix develop`)
-- `talosctl` installed (via `nix develop`)
+- K3s running with: `--disable-kube-proxy --flannel-backend=none --disable-network-policy`
+- kubeconfig at `~/.kube/config`
+- Nix dev shell active: `nix develop` or `direnv allow`
+- Cloudflare tunnel token and API token ready
 
-## Usage
-
-Each numbered directory is applied in order. Copy `secrets.auto.tfvars.example`
-to `secrets.auto.tfvars` and fill in values before running.
+## Quick Start
 
 ```bash
-task infra:apply -- 01-proxmox-provision
+cd infrastructure
+task bootstrap
 ```
 
-## Notes
+This runs all 4 stages in order. Stage 04 will prompt for Cloudflare tokens.
 
-This is a template adapted from [h8s](https://github.com/okwilkins/h8s).
-Customize for your hardware before use.
+## Individual Stages
+
+```bash
+task 01-cilium       # Install Cilium
+task 02-argocd       # Install ArgoCD + app-of-apps
+task 03-vault-init   # Init + unseal Vault
+task 04-vault-secrets # Provision secrets (needs tokens)
+```
+
+## Chart Version Sync
+
+Stages 01 and 02 read Helm chart versions directly from the ArgoCD
+Application YAMLs in `ci-cd/argocd/environments/prod/apps/`. This means
+Renovate bumps propagate automatically — no duplicate version pins.
+
+## Vault Keys
+
+Stage 03 saves Vault unseal keys and root token to
+`03-vault-init/vault-keys.json`. Back this up securely and never commit it.
+
+## After Bootstrap
+
+- ArgoCD syncs everything from the repo automatically
+- Vault must be manually unsealed after pod restarts
+- GitLab runner registration is manual (see BOOTSTRAP.md)

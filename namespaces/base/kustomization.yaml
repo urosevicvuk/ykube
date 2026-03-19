@@ -7,6 +7,7 @@ resources:
   - authelia.yaml
   - cert-manager.yaml
   - cloudflare.yaml
+  - cnpg-system.yaml
   - cosign.yaml
   - excalidraw.yaml
   - external-secrets.yaml

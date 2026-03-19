@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo-workflows
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://argoproj.github.io/argo-helm
+      chart: argo-workflows
+      targetRevision: 1.0.3
+      helm:
+        valueFiles:
+          - $ykube/ci-cd/argo-workflows/environments/prod/values.yaml
+    - repoURL: https://github.com/urosevicvuk/ykube.git
+      targetRevision: HEAD
+      ref: ykube
+    - repoURL: https://github.com/urosevicvuk/ykube.git
+      targetRevision: HEAD
+      path: ci-cd/argo-workflows/environments/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argo-workflows
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - SkipSchemaValidation=true

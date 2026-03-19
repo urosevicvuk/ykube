@@ -28,6 +28,8 @@
           kubeseal
           sops
           age
+          buildah
+          cosign
         ];
       };
     });

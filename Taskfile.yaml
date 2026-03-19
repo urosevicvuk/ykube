@@ -1,38 +1,59 @@
 version: "3"
 
+includes:
+  infra:
+    taskfile: infrastructure/Taskfile.yaml
+    dir: infrastructure
+
 vars:
   REGISTRY: registry.urosevicvuk.dev
 
 tasks:
-  build:
-    desc: Build a container image
+  registry-login:
+    desc: Login to Harbor registry
     cmds:
-      - docker build -t {{.REGISTRY}}/{{.IMAGE}}:{{.TAG}} {{.CONTEXT}}
+      - buildah login {{.REGISTRY}}
+
+  build:
+    desc: Build a container image with buildah
+    cmds:
+      - buildah bud -t {{.REGISTRY}}/{{.IMAGE}}:{{.TAG}} {{.CONTEXT}}
     requires:
       vars: [IMAGE, TAG, CONTEXT]
 
   push:
     desc: Push a container image to registry
     cmds:
-      - docker push {{.REGISTRY}}/{{.IMAGE}}:{{.TAG}}
+      - buildah push {{.REGISTRY}}/{{.IMAGE}}:{{.TAG}}
     requires:
       vars: [IMAGE, TAG]
 
-  sign:
+  push-latest:
+    desc: Push with latest tag
+    cmds:
+      - buildah tag {{.REGISTRY}}/{{.IMAGE}}:{{.TAG}} {{.REGISTRY}}/{{.IMAGE}}:latest
+      - buildah push {{.REGISTRY}}/{{.IMAGE}}:latest
+    requires:
+      vars: [IMAGE, TAG]
+
+  cosign-sign:
     desc: Sign a container image with cosign
     cmds:
-      - cosign sign --key cosign.key {{.REGISTRY}}/{{.IMAGE}}:{{.TAG}}
+      - cosign sign --key cosign.key {{.REGISTRY}}/{{.IMAGE}}:{{.TAG}} --yes
     requires:
       vars: [IMAGE, TAG]
 
-  build-push-sign:
-    desc: Build, push, and sign a container image
+  publish:
+    desc: Build, push, and sign a container image (full CI pipeline)
     cmds:
+      - task: registry-login
       - task: build
         vars: { IMAGE: "{{.IMAGE}}", TAG: "{{.TAG}}", CONTEXT: "{{.CONTEXT}}" }
       - task: push
         vars: { IMAGE: "{{.IMAGE}}", TAG: "{{.TAG}}" }
-      - task: sign
+      - task: push-latest
+        vars: { IMAGE: "{{.IMAGE}}", TAG: "{{.TAG}}" }
+      - task: cosign-sign
         vars: { IMAGE: "{{.IMAGE}}", TAG: "{{.TAG}}" }
     requires:
       vars: [IMAGE, TAG, CONTEXT]

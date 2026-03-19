@@ -18,6 +18,8 @@ spec:
     initdb:
       database: gitlabhq_production
       owner: gitlab
+      secret:
+        name: gitlab-db-credentials
       postInitSQL:
         - CREATE EXTENSION IF NOT EXISTS pg_trgm;
         - CREATE EXTENSION IF NOT EXISTS btree_gist;

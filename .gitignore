@@ -2,8 +2,10 @@
 infrastructure/**/*.tfstate
 infrastructure/**/*.tfstate.backup
 infrastructure/**/.terraform/
+infrastructure/**/.terraform.lock.hcl
 infrastructure/**/*.auto.tfvars
 infrastructure/**/secrets.auto.tfvars
+infrastructure/**/vault-keys.json
 
 # Secrets
 *.key
