@@ -34,6 +34,24 @@ spec:
               value: ":8080"
             - name: DB_PATH
               value: "/data/morel.db"
+            - name: SMTP_HOST
+              value: "smtp.gmail.com"
+            - name: SMTP_PORT
+              value: "587"
+            - name: SMTP_FROM
+              value: "noreply@morel.rs"
+            - name: NOTIFY_TO
+              value: "office.moreldoo@gmail.com"
+            - name: SMTP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: morel-smtp-creds
+                  key: smtp-user
+            - name: SMTP_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: morel-smtp-creds
+                  key: smtp-pass
           volumeMounts:
             - name: data
               mountPath: /data
