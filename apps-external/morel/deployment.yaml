@@ -21,6 +21,8 @@ spec:
         app: morel
         app.kubernetes.io/name: morel
     spec:
+      imagePullSecrets:
+        - name: gitlab-registry-creds
       containers:
         - name: morel
           image: registry.urosevicvuk.dev/morel/website:v0.1.0
