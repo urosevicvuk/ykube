@@ -13,6 +13,22 @@ spec:
   dnsNames:
     - "*.raf-project.com"
 ---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-morel-rs-tls
+  namespace: system-ingress
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  secretName: wildcard-morel-rs-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - "morel.rs"
+    - "*.morel.rs"
+---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -58,6 +74,25 @@ spec:
         mode: Terminate
         certificateRefs:
           - name: wildcard-raf-project-com-tls
+            kind: Secret
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: web-morel
+      port: 8000
+      protocol: HTTP
+      hostname: "morel.rs"
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: websecure-morel
+      port: 8443
+      protocol: HTTPS
+      hostname: "morel.rs"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: wildcard-morel-rs-tls
             kind: Secret
       allowedRoutes:
         namespaces:

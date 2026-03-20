@@ -72,5 +72,14 @@ data:
           connectTimeout: 30s
           tlsTimeout: 10s
 
+      # Morel
+      - hostname: morel.rs
+        service: https://traefik.system-ingress:443
+        originRequest:
+          originServerName: morel.rs
+          noTLSVerify: false
+          connectTimeout: 30s
+          tlsTimeout: 10s
+
       # Catch-all rule (required by cloudflared)
       - service: http_status:404

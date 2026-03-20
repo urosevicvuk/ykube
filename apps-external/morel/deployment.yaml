@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: morel
+  namespace: apps-external
+  labels:
+    app: morel
+    app.kubernetes.io/name: morel
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: morel
+  template:
+    metadata:
+      labels:
+        app: morel
+        app.kubernetes.io/name: morel
+    spec:
+      containers:
+        - name: morel
+          image: registry.urosevicvuk.dev/morel/website:v0.1.0
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: LISTEN_ADDR
+              value: ":8080"
+            - name: DB_PATH
+              value: "/data/morel.db"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              port: 8080
+              path: /healthz
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              port: 8080
+              path: /healthz
+            initialDelaySeconds: 3
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: morel-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: morel
+  namespace: apps-external
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  selector:
+    app: morel
+  ports:
+    - port: 8080
+      targetPort: 8080
