@@ -25,7 +25,7 @@ spec:
         - name: gitlab-registry-creds
       containers:
         - name: morel
-          image: registry.urosevicvuk.dev/morel/website:v1.0.2
+          image: registry.urosevicvuk.dev/morel/website:v1.1.0
           ports:
             - containerPort: 8080
               name: http
