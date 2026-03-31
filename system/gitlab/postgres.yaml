@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:16.8-alpine
+          image: postgres:16.13-alpine
           ports:
             - containerPort: 5432
           livenessProbe:
