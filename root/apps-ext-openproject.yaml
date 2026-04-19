@@ -10,7 +10,7 @@ spec:
   sources:
     - repoURL: https://charts.openproject.org
       chart: openproject
-      targetRevision: "13.3.0"
+      targetRevision: "13.5.0"
       helm:
         valueFiles:
           - $values/apps-external/openproject/values.yaml
