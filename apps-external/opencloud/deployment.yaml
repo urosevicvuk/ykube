@@ -26,7 +26,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: opencloud
-          image: docker.io/opencloudeu/opencloud-rolling:5.2.0
+          image: docker.io/opencloudeu/opencloud-rolling:6.1.0
           command: ["sh", "-c", "opencloud init || true; opencloud server"]
           ports:
             - containerPort: 9200
