@@ -13,13 +13,13 @@ spec:
       targetRevision: "3.1.0"
       helm:
         valueFiles:
-          - $values/apps-external/stirling-pdf/values.yaml
+          - $values/manifests/apps/stirling-pdf/environments/prod/values.yaml
     - repoURL: https://github.com/urosevicvuk/ykube.git
       targetRevision: HEAD
       ref: values
     - repoURL: https://github.com/urosevicvuk/ykube.git
       targetRevision: HEAD
-      path: apps-external/stirling-pdf
+      path: manifests/apps/stirling-pdf
       directory:
         include: '{stirling-pdf-route.yaml}'
   destination:

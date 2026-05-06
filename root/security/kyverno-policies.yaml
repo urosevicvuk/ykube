@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/urosevicvuk/ykube.git
     targetRevision: HEAD
-    path: system/kyverno/policies
+    path: manifests/security/kyverno/policies
   destination:
     server: https://kubernetes.default.svc
     namespace: system-security

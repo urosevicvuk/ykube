@@ -13,13 +13,13 @@ spec:
       targetRevision: 81.6.1
       helm:
         valueFiles:
-          - $values/system/kube-prometheus-stack/values.yaml
+          - $values/manifests/observability/kube-prometheus-stack/environments/prod/values.yaml
     - repoURL: https://github.com/urosevicvuk/ykube.git
       targetRevision: HEAD
       ref: values
     - repoURL: https://github.com/urosevicvuk/ykube.git
       targetRevision: HEAD
-      path: system/kube-prometheus-stack
+      path: manifests/observability/kube-prometheus-stack
       directory:
         include: '{secrets.yaml,grafana-route.yaml}'
   destination:

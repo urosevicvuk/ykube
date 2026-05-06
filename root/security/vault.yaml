@@ -13,13 +13,13 @@ spec:
       targetRevision: 0.32.0
       helm:
         valueFiles:
-          - $values/system/vault/values.yaml
+          - $values/manifests/security/vault/environments/prod/values.yaml
     - repoURL: https://github.com/urosevicvuk/ykube.git
       targetRevision: HEAD
       ref: values
     - repoURL: https://github.com/urosevicvuk/ykube.git
       targetRevision: HEAD
-      path: system/vault
+      path: manifests/security/vault
       directory:
         include: '{vault-route.yaml}'
   destination:

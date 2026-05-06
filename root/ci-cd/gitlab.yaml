@@ -13,13 +13,13 @@ spec:
       targetRevision: 9.8.4
       helm:
         valueFiles:
-          - $values/system/gitlab/values.yaml
+          - $values/manifests/ci-cd/gitlab/environments/prod/values.yaml
     - repoURL: https://github.com/urosevicvuk/ykube.git
       targetRevision: HEAD
       ref: values
     - repoURL: https://github.com/urosevicvuk/ykube.git
       targetRevision: HEAD
-      path: system/gitlab
+      path: manifests/ci-cd/gitlab
       directory:
         include: '{postgres.yaml,redis.yaml,gitlab-route.yaml,registry-route.yaml,secrets.yaml}'
   destination:

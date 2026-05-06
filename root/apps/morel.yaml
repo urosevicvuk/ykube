@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/urosevicvuk/ykube.git
     targetRevision: HEAD
-    path: apps-external/morel
+    path: manifests/apps/morel
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-external

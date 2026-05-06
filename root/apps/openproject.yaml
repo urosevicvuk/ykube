@@ -13,7 +13,7 @@ spec:
       targetRevision: "13.3.0"
       helm:
         valueFiles:
-          - $values/apps-external/openproject/values.yaml
+          - $values/manifests/apps/openproject/environments/prod/values.yaml
 
     - repoURL: https://github.com/urosevicvuk/ykube.git
       targetRevision: HEAD
@@ -21,7 +21,7 @@ spec:
 
     - repoURL: https://github.com/urosevicvuk/ykube.git
       targetRevision: HEAD
-      path: apps-external/openproject
+      path: manifests/apps/openproject
       directory:
         include: "{route.yaml,secrets.yaml}"
 
