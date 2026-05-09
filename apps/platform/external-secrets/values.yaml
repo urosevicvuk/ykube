@@ -1,0 +1,23 @@
+# External Secrets Operator. Pulls secrets from Vault into k8s Secrets.
+
+installCRDs: true
+
+# ServiceAccount that authenticates to Vault via Kubernetes auth method.
+# TF stage 07 binds this SA to a Vault policy allowing reads on kv/*.
+serviceAccount:
+  create: true
+  name: external-secrets
+
+webhook:
+  serviceAccount:
+    create: true
+    name: external-secrets-webhook
+
+certController:
+  serviceAccount:
+    create: true
+    name: external-secrets-cert-controller
+
+# Metrics for kube-prometheus-stack.
+serviceMonitor:
+  enabled: true

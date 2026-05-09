@@ -1,0 +1,16 @@
+# Upstream Gateway API CRDs (standard channel).
+#
+# Cilium does NOT install these — its chart only enables Gateway API support;
+# the CRDs themselves come from kubernetes-sigs/gateway-api.
+#
+# First-sync ordering note: cilium and gateway-api both sync at platform's
+# default wave (0). On a fresh cluster cilium may briefly fail because the
+# Gateway API CRDs haven't applied yet — Argo retries and converges. Expected.
+#
+# Renovate-tracked: bump the ref below to update the CRDs.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # renovate: depName=kubernetes-sigs/gateway-api
+  - https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/standard-install.yaml

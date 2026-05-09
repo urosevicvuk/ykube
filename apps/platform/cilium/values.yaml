@@ -1,0 +1,92 @@
+# Cilium values, tuned for Talos Linux on Proxmox.
+#
+# Talos prerequisites (set in machine config, NOT here):
+#   cluster.network.cni.name: none      # we install Cilium ourselves
+#   cluster.proxy.disabled: true        # Cilium replaces kube-proxy
+#
+# References:
+#   - https://www.talos.dev/latest/kubernetes-guides/network/deploying-cilium/
+#   - https://docs.cilium.io/en/stable/installation/k8s-install-helm/
+
+# Use Kubernetes IPAM (consistent with Talos defaults).
+ipam:
+  mode: kubernetes
+
+# Replace kube-proxy entirely. This is required by Talos when proxy is disabled.
+kubeProxyReplacement: true
+
+# KubePrism is Talos' in-cluster API endpoint, served at localhost:7445 on every node.
+# This is the recommended apiserver target on Talos because it avoids the chicken-and-egg
+# of needing the LB IP for the apiserver before Cilium has set up LB IPs.
+k8sServiceHost: localhost
+k8sServicePort: "7445"
+
+# Talos mounts cgroup2 itself; Cilium's automount fights with that.
+cgroup:
+  autoMount:
+    enabled: false
+  hostRoot: /sys/fs/cgroup
+
+# Talos requires explicit capability sets — Cilium's defaults assume host-managed cgroups.
+securityContext:
+  capabilities:
+    ciliumAgent:
+      - CHOWN
+      - KILL
+      - NET_ADMIN
+      - NET_RAW
+      - IPC_LOCK
+      - SYS_ADMIN
+      - SYS_RESOURCE
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    cleanCiliumState:
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_RESOURCE
+
+# Gateway API: Cilium installs Gateway API CRDs and a GatewayClass automatically.
+# This eliminates the need for a separate gateway-api-crds Application.
+gatewayAPI:
+  enabled: true
+
+# L2 announcements replace MetalLB. Combined with kubeProxyReplacement, lets Cilium
+# advertise LB IPs on the LAN via ARP/NDP. Pool + policy live in separate manifests
+# so they can be tweaked independently of the chart values.
+l2announcements:
+  enabled: true
+externalIPs:
+  enabled: true
+
+# Hubble for observability. Relay aggregates flows; UI is web frontend.
+# Expose UI via the Cilium Gateway later; until then, port-forward.
+hubble:
+  enabled: true
+  relay:
+    enabled: true
+  ui:
+    enabled: true
+  metrics:
+    enableOpenMetrics: true
+    enabled:
+      - dns
+      - drop
+      - tcp
+      - flow
+      - port-distribution
+      - icmp
+      - http
+
+# Single-stack IPv4 for the homelab. Flip if you go dual-stack.
+ipv4:
+  enabled: true
+ipv6:
+  enabled: false
+
+# Operator: 1 replica is enough for homelab. The chart defaults to 2.
+operator:
+  replicas: 1
+
+# CRDs are baked into the chart and tracked via ServerSideApply (see ApplicationSet syncOptions).

@@ -1,0 +1,8 @@
+# TODO: configure cloudflared
+# This is a placeholder. Wire up the helm chart + values + per-app resources here.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cloudflared
+
+resources:
+  - namespace.yaml

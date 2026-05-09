@@ -1,0 +1,55 @@
+# ArgoCD self-management values.
+# Minimal homelab config — single replica everywhere, no HA.
+# HA + ingress + SSO get layered in later via the same file.
+
+crds:
+  install: true
+  keep: true
+
+global:
+  domain: argocd.urosevicvuk.dev
+
+# Single-instance, no HA. Plenty for homelab.
+controller:
+  replicas: 1
+
+server:
+  replicas: 1
+  # Server runs in HTTP mode; TLS is terminated upstream by the Cilium Gateway
+  # once the gateway app is wired. Until then `kubectl port-forward` works.
+  extraArgs:
+    - --insecure
+
+repoServer:
+  replicas: 1
+
+applicationSet:
+  replicas: 1
+
+notifications:
+  enabled: true
+
+dex:
+  enabled: true
+
+redis:
+  enabled: true
+
+redis-ha:
+  enabled: false
+
+configs:
+  cm:
+    create: true
+    # Required so kustomizations using `helmCharts:` render correctly across the repo.
+    # LoadRestrictionsNone allows the bootstrap/ kustomization to reference ../projects/*
+    # and ../appsets/* — by default kustomize forbids cross-directory resource refs.
+    kustomize.buildOptions: "--enable-helm --load-restrictor=LoadRestrictionsNone"
+    # Allow this argocd to manage AppProjects in the default project (the root app lives there).
+    application.resourceTrackingMethod: annotation
+  params:
+    server.insecure: "true"
+  # TODO: declare the ykube repo here once a credential is provisioned via ESO.
+  # For the initial bootstrap with a public repo, ArgoCD discovers it implicitly
+  # from the Application source URL, so this can stay empty.
+  repositories: {}

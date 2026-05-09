@@ -1,0 +1,21 @@
+# Cilium L2 announcement policy.
+# Tells Cilium to ARP-announce LB IPs on every node's primary interface.
+# Without this the LB IPs are assigned but unreachable from the LAN.
+apiVersion: cilium.io/v2alpha1
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: default
+  namespace: kube-system
+spec:
+  # Empty selector → applies to every Service of type=LoadBalancer.
+  serviceSelector:
+    matchLabels: {}
+  # Empty selector → all nodes participate.
+  nodeSelector:
+    matchLabels: {}
+  # Match all interfaces on each node. Tighten if you have multi-homed nodes
+  # and want LB traffic on a specific NIC only.
+  interfaces:
+    - ^.*$
+  externalIPs: true
+  loadBalancerIPs: true

@@ -1,0 +1,13 @@
+# Cilium LoadBalancer IP pool.
+# These IPs are handed out to Services of type=LoadBalancer.
+# TODO: replace placeholder range with the real LAN range once on-site.
+# Must be: same L2 segment as cluster nodes, OUTSIDE DHCP scope, contiguous.
+apiVersion: cilium.io/v2alpha1
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: lan
+  namespace: kube-system
+spec:
+  blocks:
+    - start: 192.168.1.240
+      stop: 192.168.1.250

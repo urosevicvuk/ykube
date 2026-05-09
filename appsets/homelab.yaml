@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: homelab
+  namespace: argocd
+spec:
+  generators:
+    - git:
+        repoURL: https://github.com/urosevicvuk/ykube
+        revision: main
+        directories:
+          - path: apps/homelab/*
+  template:
+    metadata:
+      name: 'homelab-{{path.basename}}'
+      annotations:
+        argocd.argoproj.io/sync-wave: "30"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: homelab
+      source:
+        repoURL: https://github.com/urosevicvuk/ykube
+        targetRevision: main
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{path.basename}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true

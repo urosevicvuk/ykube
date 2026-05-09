@@ -1,0 +1,7 @@
+# TODO: port stirling-pdf from the legacy apps-external/stirling-pdf/ tree
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: stirling-pdf
+
+resources:
+  - namespace.yaml
