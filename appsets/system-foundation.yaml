@@ -1,7 +1,11 @@
+# Foundation: services every other pod uses at runtime.
+# external-secrets (Secrets backend), longhorn (storage class),
+# vault (secrets store — chart-deployed; init+unseal happens out-of-band
+# in TF stage 06), kyverno (admission webhook).
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: system-storage
+  name: system-foundation
   namespace: argocd
 spec:
   generators:
@@ -9,12 +13,12 @@ spec:
         repoURL: https://github.com/urosevicvuk/ykube
         revision: main
         directories:
-          - path: apps/system/storage/*
+          - path: apps/system/foundation/*
   template:
     metadata:
-      name: 'storage-{{path.basename}}'
+      name: 'foundation-{{path.basename}}'
       annotations:
-        argocd.argoproj.io/sync-wave: "10"
+        argocd.argoproj.io/sync-wave: "-100"
       finalizers:
         - resources-finalizer.argocd.argoproj.io
     spec:
@@ -33,3 +37,4 @@ spec:
         syncOptions:
           - CreateNamespace=true
           - ServerSideApply=true
+          - PruneLast=true

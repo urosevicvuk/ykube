@@ -1,7 +1,10 @@
+# Platform: shared services workloads consume.
+# cloudnative-pg (postgres operator), harbor (registry), forgejo (SCM),
+# argo-workflows + argo-events (workflow engine).
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: system-security
+  name: system-platform
   namespace: argocd
 spec:
   generators:
@@ -9,12 +12,12 @@ spec:
         repoURL: https://github.com/urosevicvuk/ykube
         revision: main
         directories:
-          - path: apps/system/security/*
+          - path: apps/system/platform/*
   template:
     metadata:
-      name: 'security-{{path.basename}}'
+      name: 'platform-{{path.basename}}'
       annotations:
-        argocd.argoproj.io/sync-wave: "0"
+        argocd.argoproj.io/sync-wave: "-40"
       finalizers:
         - resources-finalizer.argocd.argoproj.io
     spec:
@@ -33,3 +36,4 @@ spec:
         syncOptions:
           - CreateNamespace=true
           - ServerSideApply=true
+          - PruneLast=true

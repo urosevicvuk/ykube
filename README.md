@@ -4,13 +4,12 @@ GitOps source of truth for the `firelink` Talos cluster. ArgoCD reconciles
 everything in this repo into the cluster; nothing is applied imperatively
 after the initial bootstrap.
 
-Bootstrap walkthrough lives in [`rework/guide.md`](rework/guide.md). See
-the **Bootstrap procedure** section there.
+Bootstrap walkthrough lives in [`rework/guide.md`](rework/guide.md).
 
 ```
             ┌──────────────────────────────────────────────────────────┐
             │                bootstrap/root-app.yaml                   │
-            │             (one-shot kubectl apply, default proj)       │
+            │              (one-shot kubectl apply, default proj)      │
             └─────────────────────────┬────────────────────────────────┘
                                       │ creates
             ┌─────────────────────────┼────────────────────────────────┐
@@ -23,9 +22,9 @@ the **Bootstrap procedure** section there.
             └─────────────────────────┴────────────────────────────────┘
                                       │
             ┌─────────────────────────▼────────────────────────────────┐
-            │   Generated Applications, namespaced + isolated by       │
-            │   AppProject. Each pulls a kustomization that wraps a    │
-            │   Helm chart (helmCharts:) plus per-app resources.       │
+            │   Generated Applications, isolated by AppProject. Each   │
+            │   pulls a kustomization that wraps a Helm chart          │
+            │   (helmCharts:) plus per-app resources.                  │
             └──────────────────────────────────────────────────────────┘
 ```
 
@@ -38,11 +37,11 @@ ykube/
 ├── appsets/                  # 10 ApplicationSets
 ├── apps/
 │   ├── system/               # cluster plumbing + shared services (one AppProject, 5 AppSets)
-│   │   ├── networking/       # cilium, gateway-api, gateway, cert-manager, external-dns, cloudflared
-│   │   ├── security/         # vault, external-secrets, kyverno
-│   │   ├── storage/          # longhorn, cloudnative-pg, harbor
+│   │   ├── foundation/       # external-secrets, longhorn, vault, kyverno
+│   │   ├── networking/       # cilium, gateway-api, cert-manager, external-dns, cloudflared, gateway
+│   │   ├── platform/         # cloudnative-pg, harbor, forgejo, argo-workflows, argo-events
 │   │   ├── observability/    # kube-prometheus-stack, loki, alloy
-│   │   └── ci-cd/            # argocd, argo-workflows, argo-events, forgejo
+│   │   └── argocd/           # argocd self-takeover (last to sync)
 │   ├── homelab/              # personal apps on urosevicvuk.dev
 │   ├── morel/                # morel.rs tenant
 │   ├── eko-servis/           # eko-servis tenant (no domain yet)
@@ -55,36 +54,52 @@ ykube/
 
 ## Conventions
 
-- **AppProject = trust boundary.** `system` allows cluster-scoped resources (CRDs).
-  Tenant projects (`homelab`, `morel`, `eko-servis`, `ofnir`, `raf`) have
-  `clusterResourceWhitelist: []` — workloads can't install CRDs.
-- **AppSet = sync-wave bucket.** Each AppSet stamps a wave on every Application it
-  generates. The split into per-domain AppSets (instead of one per project) is what
-  makes ordering meaningful:
+### AppProjects = trust boundaries
 
-  | AppSet                 | Wave  | Apps                                                |
-  |------------------------|-------|-----------------------------------------------------|
-  | system-networking      | -100  | cilium, gateway-api, cert-manager, external-dns, … |
-  | system-security        | 0     | vault, external-secrets, kyverno                    |
-  | system-storage         | 10    | longhorn, cloudnative-pg, harbor                    |
-  | system-observability   | 20    | kube-prometheus-stack, loki, alloy                  |
-  | system-ci-cd           | 30    | argocd (self-takeover), argo-workflows, …, forgejo  |
-  | homelab + tenant AppSets | 40+ | application workloads                               |
+`system` allows cluster-scoped resources (CRDs). Tenant projects (`homelab`,
+`morel`, `eko-servis`, `ofnir`, `raf`) have `clusterResourceWhitelist: []` —
+workloads cannot install CRDs.
 
-  Intra-app ordering (CRDs before custom resources) uses
-  `argocd.argoproj.io/sync-wave` on individual manifests.
-- **Helm via Kustomize.** Charts are wrapped with `helmCharts:` in
-  `kustomization.yaml`. This requires
-  `kustomize.buildOptions: --enable-helm --load-restrictor=LoadRestrictionsNone`
-  in `argocd-cm` — set in `apps/system/ci-cd/argocd/values.yaml`.
-  `LoadRestrictionsNone` is needed because `bootstrap/kustomization.yaml`
-  references `../projects/*` and `../appsets/*` outside its own directory.
-- **Secrets.** No secrets in Git. Vault + External Secrets Operator. Every secret
-  is an `ExternalSecret` referencing `kv/<path>` in Vault. Bootstrap-time
-  Vault unseal + seed happen via OpenTofu (deferred work).
-- **Naming.** Soulslike convention. Cluster node `firelink`, LAN DNS `newlondo`.
-  Application names: `<domain>-<dirname>` for system apps (e.g. `networking-cilium`),
-  `<project>-<dirname>` for tenants (e.g. `morel-morel`).
+### AppSets = sync-wave buckets
+
+| AppSet                 | Wave  | Apps                                                              |
+|------------------------|-------|-------------------------------------------------------------------|
+| system-foundation      | -100  | external-secrets, longhorn, vault, kyverno                        |
+| system-networking      | -80   | cilium, gateway-api, cert-manager, external-dns, cloudflared, gateway |
+| system-platform        | -40   | cloudnative-pg, harbor, forgejo, argo-workflows, argo-events      |
+| system-observability   | -20   | kube-prometheus-stack, loki, alloy                                |
+| homelab + tenants      | 0     | application workloads                                              |
+| system-argocd          | +100  | argocd self-takeover (last)                                        |
+
+Note: ArgoCD removed cross-Application health gating in 1.8 (see
+[#24212](https://github.com/argoproj/argo-cd/issues/24212)). Application-level
+sync waves give a creation-order *head start* but don't strictly serialize.
+Within an Application, sync waves on individual resources still gate on
+Healthy — that's where the real ordering happens (CRDs at wave 0,
+ClusterIssuers at wave 5, HTTPRoutes at wave 10, etc.).
+
+### Helm via Kustomize
+
+Charts wrapped with `helmCharts:` in `kustomization.yaml`. This requires
+`kustomize.buildOptions: --enable-helm --load-restrictor=LoadRestrictionsNone`
+in `argocd-cm` — set in `apps/system/argocd/values.yaml`.
+`LoadRestrictionsNone` is needed because `bootstrap/kustomization.yaml`
+references `../projects/*` and `../appsets/*` outside its own directory.
+
+### Secrets
+
+No secrets in Git. Vault + External Secrets Operator. Every secret is an
+`ExternalSecret` referencing `kv/<path>` in Vault. Vault is *chart-deployed*
+by Argo (not seed-installed by Terraform); TF only does the imperative
+init+unseal once Vault's pods are running.
+
+### Naming
+
+Soulslike convention. Cluster node `firelink`, LAN DNS `newlondo`.
+Application names: `<domain>-<dirname>` for system apps (e.g.
+`foundation-vault`, `networking-cilium`, `platform-cloudnative-pg`),
+`<project>-<dirname>` for tenants (e.g. `morel-morel`), and just `argocd`
+for the self-takeover.
 
 ## Adding an app
 
@@ -98,7 +113,28 @@ ykube/
 
 No new Application file, no AppSet to edit.
 
-## Bootstrap, in one sentence
+## Bootstrap
 
-After OpenTofu brings up Talos + seeds Cilium + ArgoCD + Vault:
-`kubectl apply -f bootstrap/root-app.yaml` — ArgoCD takes everything else.
+The full procedure is in [`rework/guide.md`](rework/guide.md). Summary:
+
+1. **TF stages 00–04**: provision Talos cluster + seed Cilium.
+2. **TF stage 05**: seed ArgoCD + `kubectl apply -f bootstrap/root-app.yaml`.
+   Argo creates AppProjects + AppSets, AppSets generate Applications, and
+   the cluster starts converging. Vault chart deploys but pods come up sealed.
+3. **TF stage 06**: imperative `vault operator init/unseal` + enable kubernetes auth.
+4. **TF stage 07**: write seed secrets to `kv/*` paths.
+5. ESO ClusterSecretStore now resolves; ExternalSecrets across the cluster
+   materialize their target Secrets; ClusterIssuers go Ready; certificates
+   issue. Cluster is converged.
+
+### Expected first-sync transients
+
+These resolve themselves via Argo's reconcile retry; **no manual
+intervention needed**.
+
+- ServiceMonitor manifests in cert-manager / external-secrets fail at first
+  apply because their CRD comes from kube-prometheus-stack (which syncs
+  later). Resolves on next reconcile (~3 min).
+- ExternalSecrets in cert-manager remain Pending until TF stages 06+07 finish.
+- ClusterIssuers stay `False/Pending` until their cloudflare-api-token
+  Secret materializes from ESO.
