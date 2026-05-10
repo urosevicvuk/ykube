@@ -35,6 +35,8 @@ spec:
           prune: true
           selfHeal: true
         syncOptions:
-          - CreateNamespace=true
+          # Each app declares its own Namespace via kustomization resources.
+          # Keeping CreateNamespace off avoids stray empty namespaces for
+          # apps that target a pre-existing namespace (e.g. cilium → kube-system).
           - ServerSideApply=true
           - PruneLast=true

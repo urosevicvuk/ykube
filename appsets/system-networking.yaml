@@ -31,6 +31,6 @@ spec:
           prune: true
           selfHeal: true
         syncOptions:
-          - CreateNamespace=true
+          # Apps own their Namespace resource (or target kube-system / cluster scope).
           - ServerSideApply=true
           - PruneLast=true

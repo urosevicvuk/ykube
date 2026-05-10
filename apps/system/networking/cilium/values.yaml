@@ -47,8 +47,10 @@ securityContext:
       - SYS_ADMIN
       - SYS_RESOURCE
 
-# Gateway API: Cilium installs Gateway API CRDs and a GatewayClass automatically.
-# This eliminates the need for a separate gateway-api-crds Application.
+# Gateway API: enabled here only flips Cilium into Gateway-API mode and creates
+# the `cilium` GatewayClass. Cilium does NOT install the Gateway API CRDs —
+# that's why `apps/system/networking/gateway-api/` exists as a separate app
+# (upstream kubernetes-sigs/gateway-api standard channel). Both must be present.
 gatewayAPI:
   enabled: true
 

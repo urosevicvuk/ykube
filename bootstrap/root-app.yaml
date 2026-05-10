@@ -19,5 +19,5 @@ spec:
       prune: true
       selfHeal: true
     syncOptions:
-      - CreateNamespace=true
+      # argocd Namespace is created by the seed install in TF stage 05.
       - ServerSideApply=true

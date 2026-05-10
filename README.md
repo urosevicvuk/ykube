@@ -105,10 +105,17 @@ for the self-takeover.
 
 1. Pick the right place: `apps/system/<domain>/<name>/` for plumbing,
    `apps/<tenant>/<name>/` for workloads.
-2. Drop in `kustomization.yaml` (with `helmCharts:` if it's a chart).
-   Add a `namespace.yaml` only if you need to label/annotate the namespace
-   (PSS, ESO selectors, etc.) — otherwise the AppSet's `CreateNamespace=true`
-   handles it.
+2. Drop in:
+   - `namespace.yaml` declaring the target Namespace (with any PSS labels,
+     ESO selectors, etc. you need). AppSets do **not** carry
+     `CreateNamespace=true` — every app owns its Namespace explicitly.
+   - `kustomization.yaml` with the namespace listed in `resources:` and a
+     top-level `namespace: <name>` directive so every rendered resource is
+     pinned to that namespace. Add `helmCharts:` if it's a chart.
+   - Exceptions: apps that target a pre-existing namespace (cilium →
+     `kube-system`) skip `namespace.yaml`. Apps that ship only cluster-scoped
+     resources (gateway-api CRDs) skip both `namespace.yaml` and the
+     `namespace:` directive.
 3. Commit and push. The matching ApplicationSet picks it up on next sync.
 
 No new Application file, no AppSet to edit.

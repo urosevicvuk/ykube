@@ -1,7 +1,8 @@
 # Cilium installs into kube-system per Talos+Cilium convention.
-# The platform ApplicationSet template sets destination.namespace='{{path.basename}}'
-# which becomes "cilium" — Argo will create that namespace empty (cruft, harmless)
-# while all actual resources land in kube-system as set below.
+# The AppSet's destination.namespace is "cilium" (from {{path.basename}}) but
+# kustomize rewrites every namespaced resource here to kube-system, and the
+# AppSet no longer carries CreateNamespace=true — so no stray empty namespace
+# is created. kube-system itself is created by Talos at cluster init.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: kube-system
