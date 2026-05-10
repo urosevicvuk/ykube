@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: infrastructure
+  name: system-networking
   namespace: argocd
 spec:
   generators:
@@ -9,16 +9,16 @@ spec:
         repoURL: https://github.com/urosevicvuk/ykube
         revision: main
         directories:
-          - path: apps/infrastructure/*
+          - path: apps/system/networking/*
   template:
     metadata:
-      name: 'infrastructure-{{path.basename}}'
+      name: 'networking-{{path.basename}}'
       annotations:
-        argocd.argoproj.io/sync-wave: "20"
+        argocd.argoproj.io/sync-wave: "-100"
       finalizers:
         - resources-finalizer.argocd.argoproj.io
     spec:
-      project: infrastructure
+      project: system
       source:
         repoURL: https://github.com/urosevicvuk/ykube
         targetRevision: main

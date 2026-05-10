@@ -1,16 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: platform
+  name: system
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   description: |
-    Cluster plumbing: ArgoCD self-management, Cilium (CNI + Gateway API + L2),
-    cert-manager, External Secrets Operator, external-dns, gateway resources,
-    kube-prometheus-stack, loki, promtail, cloudflared, cloudnative-pg.
-    Allowed cluster-scoped resources because most platform components ship CRDs.
+    Cluster plumbing + shared services. Domain split via ApplicationSets:
+    networking (cilium, gateway, cert-manager, external-dns, cloudflared),
+    security (vault, ESO, kyverno),
+    storage (longhorn, cnpg, harbor),
+    observability (kube-prometheus-stack, loki, alloy),
+    ci-cd (argocd, argo-workflows, argo-events, forgejo).
+    Allowed cluster-scoped resources because most components ship CRDs.
   sourceRepos:
     - https://github.com/urosevicvuk/ykube
   destinations:

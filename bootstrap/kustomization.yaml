@@ -1,15 +1,17 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../projects/platform.yaml
-  - ../projects/infrastructure.yaml
+  - ../projects/system.yaml
   - ../projects/homelab.yaml
   - ../projects/morel.yaml
   - ../projects/eko-servis.yaml
   - ../projects/ofnir.yaml
   - ../projects/raf.yaml
-  - ../appsets/platform.yaml
-  - ../appsets/infrastructure.yaml
+  - ../appsets/system-networking.yaml
+  - ../appsets/system-security.yaml
+  - ../appsets/system-storage.yaml
+  - ../appsets/system-observability.yaml
+  - ../appsets/system-ci-cd.yaml
   - ../appsets/homelab.yaml
   - ../appsets/morel.yaml
   - ../appsets/eko-servis.yaml

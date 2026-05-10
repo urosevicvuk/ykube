@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: platform
+  name: system-storage
   namespace: argocd
 spec:
   generators:
@@ -9,16 +9,16 @@ spec:
         repoURL: https://github.com/urosevicvuk/ykube
         revision: main
         directories:
-          - path: apps/platform/*
+          - path: apps/system/storage/*
   template:
     metadata:
-      name: 'platform-{{path.basename}}'
+      name: 'storage-{{path.basename}}'
       annotations:
-        argocd.argoproj.io/sync-wave: "0"
+        argocd.argoproj.io/sync-wave: "10"
       finalizers:
         - resources-finalizer.argocd.argoproj.io
     spec:
-      project: platform
+      project: system
       source:
         repoURL: https://github.com/urosevicvuk/ykube
         targetRevision: main
