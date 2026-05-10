@@ -1,0 +1,17 @@
+# State files contain cluster PKI — back up to Bitwarden, never commit.
+states/*.tfstate
+states/*.tfstate.backup
+states/.terraform.tfstate.lock.info
+
+# Per-stage TF init output and lock files (re-derived on `tofu init`).
+*/.terraform/
+*/.terraform.lock.hcl
+
+# Per-operator TF vars (Proxmox creds, node MACs, secrets).
+shared/secrets.auto.tfvars
+shared/common.auto.tfvars
+
+# Generated cluster credentials. Back these up too.
+03-talos-configure/secrets/talosconfig.yaml
+03-talos-configure/secrets/kubeconfig.yaml
+06-vault-init/secrets/vault-init.json

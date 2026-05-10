@@ -27,6 +27,7 @@
             # Talos + Proxmox bootstrap
             talosctl
             opentofu          # OpenTofu (Terraform fork) — used for the bootstrap pipeline
+            go-task           # Taskfile runner — orchestrates infrastructure/ stages
 
             # Cilium
             cilium-cli
@@ -43,15 +44,19 @@
             git
             curl
             openssl
+            netcat-gnu        # nc — used by stage 03 to wait for Talos APId
           ];
 
           shellHook = ''
+            export INFRA_ROOT="$PWD/infrastructure"
             echo "ykube dev shell"
-            echo "  kubectl  $(kubectl version --client 2>/dev/null | head -1)"
-            echo "  helm     $(helm version --short 2>/dev/null)"
-            echo "  argocd   $(argocd version --client --short 2>/dev/null | head -1)"
-            echo "  talosctl $(talosctl version --client --short 2>/dev/null | head -1)"
-            echo "  tofu     $(tofu version 2>/dev/null | head -1)"
+            echo "  kubectl    $(kubectl version --client 2>/dev/null | head -1)"
+            echo "  helm       $(helm version --short 2>/dev/null)"
+            echo "  argocd     $(argocd version --client --short 2>/dev/null | head -1)"
+            echo "  talosctl   $(talosctl version --client --short 2>/dev/null | head -1)"
+            echo "  tofu       $(tofu version 2>/dev/null | head -1)"
+            echo "  task       $(task --version 2>/dev/null)"
+            echo "  INFRA_ROOT=$INFRA_ROOT"
           '';
         };
       });

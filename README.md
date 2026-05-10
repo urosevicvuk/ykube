@@ -122,17 +122,29 @@ No new Application file, no AppSet to edit.
 
 ## Bootstrap
 
-The full procedure is in [`rework/guide.md`](rework/guide.md). Summary:
+End-to-end pipeline lives in [`infrastructure/`](infrastructure/README.md).
+TL;DR:
 
-1. **TF stages 00–04**: provision Talos cluster + seed Cilium.
-2. **TF stage 05**: seed ArgoCD + `kubectl apply -f bootstrap/root-app.yaml`.
-   Argo creates AppProjects + AppSets, AppSets generate Applications, and
-   the cluster starts converging. Vault chart deploys but pods come up sealed.
-3. **TF stage 06**: imperative `vault operator init/unseal` + enable kubernetes auth.
-4. **TF stage 07**: write seed secrets to `kv/*` paths.
-5. ESO ClusterSecretStore now resolves; ExternalSecrets across the cluster
-   materialize their target Secrets; ClusterIssuers go Ready; certificates
-   issue. Cluster is converged.
+```bash
+nix develop
+cp infrastructure/shared/secrets.auto.tfvars.example infrastructure/shared/secrets.auto.tfvars
+$EDITOR infrastructure/shared/secrets.auto.tfvars   # fill in Proxmox + node IPs + MACs
+task -d infrastructure cluster:bootstrap
+```
+
+This drives 8 OpenTofu stages in order:
+
+1. **00 talos-factory** — register custom Talos schematic (qemu-guest-agent, iscsi-tools, util-linux-tools).
+2. **01 proxmox-iso-upload** — SFTP the ISO to each Proxmox host.
+3. **02 proxmox-provision** — create the 3 VMs.
+4. **03 talos-configure** — apply machine configs, bootstrap etcd, retrieve kubeconfig.
+5. **04 cilium** — seed-install Cilium CNI (`lifecycle.ignore_changes = all` so Argo can take over).
+6. **05 argocd** — seed-install ArgoCD + `kubectl apply -f bootstrap/root-app.yaml`. GitOps takes over from here.
+7. **06 vault-init** — init + unseal Vault, mount kv-v2, enable k8s auth, create the ESO policy + role.
+8. **07 vault-resources-provision** — write bootstrap secrets to `kv/*` (currently the cloudflare-api-token).
+
+After stage 07: ESO ClusterSecretStore resolves → ExternalSecrets materialize
+→ cert-manager ClusterIssuers go Ready → certs issue → cluster fully converged.
 
 ### Expected first-sync transients
 
