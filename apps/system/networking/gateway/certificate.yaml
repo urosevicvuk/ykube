@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-urosevicvuk-dev
+  namespace: gateway
+spec:
+  secretName: wildcard-urosevicvuk-dev-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: '*.urosevicvuk.dev'
+  dnsNames:
+    - urosevicvuk.dev
+    - '*.urosevicvuk.dev'

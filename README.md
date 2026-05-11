@@ -38,7 +38,7 @@ ykube/
 ├── apps/
 │   ├── system/               # cluster plumbing + shared services (one AppProject, 5 AppSets)
 │   │   ├── foundation/       # external-secrets, longhorn, vault, kyverno
-│   │   ├── networking/       # cilium, gateway-api, cert-manager, external-dns, cloudflared, gateway
+│   │   ├── networking/       # cilium, cert-manager, external-dns, cloudflared, gateway
 │   │   ├── platform/         # cloudnative-pg, harbor, forgejo, argo-workflows, argo-events
 │   │   ├── observability/    # kube-prometheus-stack, loki, alloy
 │   │   └── argocd/           # argocd self-takeover (last to sync)
@@ -65,7 +65,7 @@ workloads cannot install CRDs.
 | AppSet                 | Wave  | Apps                                                              |
 |------------------------|-------|-------------------------------------------------------------------|
 | system-foundation      | -100  | external-secrets, longhorn, vault, kyverno                        |
-| system-networking      | -80   | cilium, gateway-api, cert-manager, external-dns, cloudflared, gateway |
+| system-networking      | -80   | cilium, cert-manager, external-dns, cloudflared, gateway          |
 | system-platform        | -40   | cloudnative-pg, harbor, forgejo, argo-workflows, argo-events      |
 | system-observability   | -20   | kube-prometheus-stack, loki, alloy                                |
 | homelab + tenants      | 0     | application workloads                                              |
@@ -112,10 +112,8 @@ for the self-takeover.
    - `kustomization.yaml` with the namespace listed in `resources:` and a
      top-level `namespace: <name>` directive so every rendered resource is
      pinned to that namespace. Add `helmCharts:` if it's a chart.
-   - Exceptions: apps that target a pre-existing namespace (cilium →
-     `kube-system`) skip `namespace.yaml`. Apps that ship only cluster-scoped
-     resources (gateway-api CRDs) skip both `namespace.yaml` and the
-     `namespace:` directive.
+   - Exception: apps that target a pre-existing namespace (cilium →
+     `kube-system`) skip `namespace.yaml`.
 3. Commit and push. The matching ApplicationSet picks it up on next sync.
 
 No new Application file, no AppSet to edit.

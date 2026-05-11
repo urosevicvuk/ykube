@@ -1,7 +1,16 @@
-# TODO: configure vault
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: vault
 
 resources:
   - namespace.yaml
+  - httproute.yaml
+
+helmCharts:
+  - name: vault
+    repo: https://helm.releases.hashicorp.com
+    version: 0.32.0  # renovate: depName=hashicorp/vault
+    releaseName: vault
+    namespace: vault
+    valuesFile: values.yaml
+    includeCRDs: true
