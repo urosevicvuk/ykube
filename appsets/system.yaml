@@ -1,7 +1,12 @@
+# Single AppSet for all system plumbing. The foundation/networking/platform/
+# observability subdirectories are kept for human navigation, but they don't
+# drive AppSet sharding — Argo just retries failed first-sync attempts until
+# the cluster converges (selfHeal + ServerSideApply). argocd self-takeover is
+# in its own AppSet at wave +100 for upgrade safety; see system-argocd.yaml.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: system-networking
+  name: system
   namespace: argocd
 spec:
   generators:
@@ -9,12 +14,12 @@ spec:
         repoURL: https://github.com/urosevicvuk/ykube
         revision: main
         directories:
-          - path: apps/system/networking/*
+          - path: apps/system/*/*
+          - path: apps/system/argocd/*
+            exclude: true
   template:
     metadata:
-      name: 'networking-{{path.basename}}'
-      annotations:
-        argocd.argoproj.io/sync-wave: "-80"
+      name: '{{path[2]}}-{{path.basename}}'
       finalizers:
         - resources-finalizer.argocd.argoproj.io
     spec:
@@ -31,6 +36,5 @@ spec:
           prune: true
           selfHeal: true
         syncOptions:
-          # Apps own their Namespace resource (or target kube-system / cluster scope).
           - ServerSideApply=true
           - PruneLast=true

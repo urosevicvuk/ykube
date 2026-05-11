@@ -7,10 +7,7 @@ resources:
   - ../projects/eko-servis.yaml
   - ../projects/ofnir.yaml
   - ../projects/raf.yaml
-  - ../appsets/system-foundation.yaml
-  - ../appsets/system-networking.yaml
-  - ../appsets/system-platform.yaml
-  - ../appsets/system-observability.yaml
+  - ../appsets/system.yaml
   - ../appsets/system-argocd.yaml
   - ../appsets/homelab.yaml
   - ../appsets/morel.yaml

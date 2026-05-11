@@ -60,23 +60,24 @@ ykube/
 `morel`, `eko-servis`, `ofnir`, `raf`) have `clusterResourceWhitelist: []` —
 workloads cannot install CRDs.
 
-### AppSets = sync-wave buckets
+### AppSets
 
-| AppSet                 | Wave  | Apps                                                              |
-|------------------------|-------|-------------------------------------------------------------------|
-| system-foundation      | -100  | external-secrets, longhorn, vault, kyverno                        |
-| system-networking      | -80   | cilium, cert-manager, external-dns, cloudflared, gateway          |
-| system-platform        | -40   | cloudnative-pg, harbor, forgejo, argo-workflows, argo-events      |
-| system-observability   | -20   | kube-prometheus-stack, loki, alloy                                |
-| homelab + tenants      | 0     | application workloads                                              |
-| system-argocd          | +100  | argocd self-takeover (last)                                        |
+| AppSet                 | Wave  | Scope                                                              |
+|------------------------|-------|--------------------------------------------------------------------|
+| system                 | 0     | scans `apps/system/*/*` (foundation, networking, platform, observability) |
+| homelab, morel, ofnir, eko-servis, raf | 0 | tenants (one AppSet per AppProject) |
+| system-argocd          | +100  | argocd self-takeover — last for upgrade safety                     |
 
-Note: ArgoCD removed cross-Application health gating in 1.8 (see
-[#24212](https://github.com/argoproj/argo-cd/issues/24212)). Application-level
-sync waves give a creation-order *head start* but don't strictly serialize.
-Within an Application, sync waves on individual resources still gate on
-Healthy — that's where the real ordering happens (CRDs at wave 0,
-ClusterIssuers at wave 5, HTTPRoutes at wave 10, etc.).
+Argo's cross-Application health gating was removed in 1.8
+([#24212](https://github.com/argoproj/argo-cd/issues/24212)), so engineering
+sync waves between Applications buys little. Argo's automated retry +
+`selfHeal: true` + `ServerSideApply=true` converges first-sync transients
+(CRDs racing resources, ServiceMonitor refs before kube-prom-stack lands).
+Intra-Application sync waves still gate on Healthy — that's where ordering
+inside a chart actually matters.
+
+The only load-bearing wave: `system-argocd` at +100 so argocd upgrades itself
+last. A bad chart bump won't strand mid-sync apps on the old controller.
 
 ### Helm via Kustomize
 
