@@ -42,7 +42,7 @@ configs:
   cm:
     create: true
     # Required so kustomizations using `helmCharts:` render correctly across the repo.
-    # LoadRestrictionsNone allows the bootstrap/ kustomization to reference ../projects/*
+    # LoadRestrictionsNone allows the root/ kustomization to reference ../projects/*
     # and ../appsets/* — by default kustomize forbids cross-directory resource refs.
     kustomize.buildOptions: "--enable-helm --load-restrictor=LoadRestrictionsNone"
     # Allow this argocd to manage AppProjects in the default project (the root app lives there).

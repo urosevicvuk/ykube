@@ -1,6 +1,7 @@
-# task -d infrastructure/ <task-name>
+# task -d terraform/ <task-name>
 #
 # All commands assume INFRA_ROOT is set — the dev shell (flake.nix) does this.
+# (The env var name still says "INFRA" for historical reasons; it points at terraform/.)
 # If running outside the shell:
 #   export INFRA_ROOT="$(pwd)"
 
@@ -83,7 +84,7 @@ tasks:
       - tofu destroy -var-file=../shared/secrets.auto.tfvars -auto-approve
 
   argocd:install:
-    desc: 05 — seed-install ArgoCD and apply bootstrap/root-app.yaml
+    desc: 05 — seed-install ArgoCD and apply root/app-of-apps.yaml
     dir: '{{.TASKFILE_DIR}}/05-argocd'
     cmds:
       - tofu init

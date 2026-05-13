@@ -1,22 +1,23 @@
-# Stage 05: seed-install ArgoCD, then kubectl apply bootstrap/root-app.yaml.
+# Stage 05: seed-install ArgoCD, then kubectl apply root/app-of-apps.yaml.
 #
 # Same pattern as stage 04: TF helm-installs once with values + version pulled
-# from apps/system/argocd/, then ignore_changes = all so Argo can self-manage
-# its own chart upgrades via the system-argocd ApplicationSet (sync-wave +100).
+# from root/ (where the argo-cd chart + values now live as part of the
+# app-of-apps kustomization), then ignore_changes = all so Argo can self-manage
+# its own chart upgrades. The root Application IS the argocd self-manager.
 #
 # After this stage finishes, the root Application is created. From there:
 # Argo creates AppProjects + AppSets, AppSets generate Applications, and the
 # whole cluster starts converging. Stage 06/07 still need to run to unblock
-# the ESO/cert-manager chain — see infrastructure/README.md.
+# the ESO/cert-manager chain — see terraform/README.md.
 
 locals {
   repo_root = "${path.module}/../.."
 
-  argocd_dir           = "${local.repo_root}/apps/system/argocd"
+  argocd_dir           = "${local.repo_root}/root"
   argocd_kustomization = yamldecode(file("${local.argocd_dir}/kustomization.yaml"))
   argocd_chart_version = local.argocd_kustomization.helmCharts[0].version
   argocd_values        = file("${local.argocd_dir}/values.yaml")
-  root_app_manifest    = file("${local.repo_root}/bootstrap/root-app.yaml")
+  root_app_manifest    = file("${local.repo_root}/root/app-of-apps.yaml")
 }
 
 resource "helm_release" "argocd" {
@@ -42,7 +43,7 @@ resource "helm_release" "argocd" {
 }
 
 # ------------------------------------------------------------
-# Apply root-app.yaml — the GitOps pivot point
+# Apply app-of-apps.yaml — the GitOps pivot point
 # ------------------------------------------------------------
 # kubernetes_manifest validates against the live API at plan time, which fails
 # before the Argo CRDs exist. null_resource + kubectl_wrapper sidesteps that.

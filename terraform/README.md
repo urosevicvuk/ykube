@@ -1,4 +1,4 @@
-# infrastructure/
+# terraform/
 
 OpenTofu/Terraform pipeline that takes the cluster from "three fresh Proxmox
 boxes" to "ArgoCD reconciling the GitOps repo". Reference: h8s
@@ -52,7 +52,7 @@ stage 05.
 ## Bootstrap
 
 ```bash
-task -d infrastructure cluster:bootstrap
+task -d terraform cluster:bootstrap
 ```
 
 This runs stages 00 → 07 in order. Roughly 15-30 minutes start to finish; the
@@ -61,9 +61,9 @@ to disk and rebooting on each node.
 
 After it finishes:
 
-- Kubeconfig is at `infrastructure/03-talos-configure/secrets/kubeconfig.yaml`.
+- Kubeconfig is at `terraform/03-talos-configure/secrets/kubeconfig.yaml`.
   Either point `KUBECONFIG` at it or merge into `~/.kube/config`.
-- Vault unseal keys + root token are at `infrastructure/06-vault-init/secrets/vault-init.json`.
+- Vault unseal keys + root token are at `terraform/06-vault-init/secrets/vault-init.json`.
   **Back this up to Bitwarden right now.**
 - ArgoCD is reachable via `kubectl -n argocd port-forward svc/argocd-server 8080:80`
   until you wire up the Cilium Gateway.
@@ -79,7 +79,7 @@ After it finishes:
 | `02-proxmox-provision` | Creates the 3 VMs (UEFI + virtio + EFI disk + serial console). `lifecycle.ignore_changes = [cdrom, boot_order]` so re-running stage 01 with a new Talos version doesn't brick existing VMs (the upgrade footgun documented in h8s). |
 | `03-talos-configure` | Generates per-node machine configs and applies them. All 3 nodes are control-plane with `allowSchedulingOnControlPlanes=true` — that's how 3 boxes give you HA without doubling the VM count. KubePrism is enabled, kube-proxy is disabled, the longhorn `extraMount` is added, and the cluster VIP is floated across all controlplanes. |
 | `04-cilium` | `helm install cilium` into kube-system, reading the **same** `apps/system/networking/cilium/values.yaml` that ArgoCD will reconcile. `lifecycle.ignore_changes = all` on the helm release means TF installs once and never fights Argo on subsequent chart bumps. Also applies the LB IP pool and L2 announcement policy. |
-| `05-argocd` | `helm install argo-cd` into argocd, then `kubectl apply -f bootstrap/root-app.yaml`. Same drift-free trick as cilium. The root app is the GitOps pivot — Argo creates AppProjects + AppSets, AppSets generate Applications, and the cluster starts converging. |
+| `05-argocd` | `helm install argo-cd` into argocd, then `kubectl apply -f root/app-of-apps.yaml`. Same drift-free trick as cilium. The root app is the GitOps pivot — Argo creates AppProjects + AppSets, AppSets generate Applications, and the cluster starts converging. |
 | `06-vault-init` | Polls until Vault pods are Running (sealed), runs `vault operator init` (5 keys, threshold 3), saves `vault-init.json`, unseals all 3 raft replicas, mounts kv-v2 at `kv/`, enables k8s auth, creates the ESO policy + role. |
 | `07-vault-resources-provision` | Writes the bootstrap secrets that the cluster needs to converge. Right now: just the Cloudflare API token used by cert-manager DNS-01. Add more `null_resource` blocks here as new ExternalSecrets are added to the repo. |
 
@@ -95,8 +95,8 @@ There's no longer a reason to `tofu apply` any of these stages, with three excep
 - **`vault:status` / `vault:unseal`** when nodes reboot. Vault's raft replicas
   reseal on restart and need the unseal pass replayed:
   ```bash
-  task -d infrastructure vault:status
-  task -d infrastructure vault:unseal
+  task -d terraform vault:status
+  task -d terraform vault:unseal
   ```
 - **Stage 07** when you add a new ExternalSecret that needs a new kv path.
 - **Talos upgrades** — but **NOT** by changing `var.talos_version`. Use
@@ -108,10 +108,10 @@ There's no longer a reason to `tofu apply` any of these stages, with three excep
 Before you tear down the workstation that ran bootstrap, make sure these are
 in Bitwarden (or equivalent):
 
-- [ ] All `infrastructure/states/*.tfstate` (especially `03-talos-configure.tfstate` — contains cluster PKI)
-- [ ] `infrastructure/03-talos-configure/secrets/talosconfig.yaml`
-- [ ] `infrastructure/03-talos-configure/secrets/kubeconfig.yaml`
-- [ ] `infrastructure/06-vault-init/secrets/vault-init.json`
+- [ ] All `terraform/states/*.tfstate` (especially `03-talos-configure.tfstate` — contains cluster PKI)
+- [ ] `terraform/03-talos-configure/secrets/talosconfig.yaml`
+- [ ] `terraform/03-talos-configure/secrets/kubeconfig.yaml`
+- [ ] `terraform/06-vault-init/secrets/vault-init.json`
 
 Without these, recovery from a workstation loss requires rebuilding the
 cluster from scratch.

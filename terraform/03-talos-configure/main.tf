@@ -6,7 +6,7 @@
 # the operator.
 #
 # WARNING: state file contains the cluster PKI. Treat it like a private key —
-# back up alongside vault-init.json (see infrastructure/README.md).
+# back up alongside vault-init.json (see terraform/README.md).
 
 # ------------------------------------------------------------
 # Wait for nodes to be reachable on the Talos API port (50000)
