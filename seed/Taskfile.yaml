@@ -1,7 +1,7 @@
-# task -d terraform/ <task-name>
+# task -d seed/ <task-name>
 #
 # All commands assume INFRA_ROOT is set — the dev shell (flake.nix) does this.
-# (The env var name still says "INFRA" for historical reasons; it points at terraform/.)
+# (The env var name still says "INFRA" for historical reasons; it points at seed/.)
 # If running outside the shell:
 #   export INFRA_ROOT="$(pwd)"
 

@@ -31,7 +31,7 @@
           # Talos + Proxmox bootstrap
           talosctl
           opentofu # OpenTofu (Terraform fork) — used for the bootstrap pipeline
-          go-task # Taskfile runner — orchestrates terraform/ stages
+          go-task # Taskfile runner — orchestrates seed/ stages
 
           # Cilium
           cilium-cli
@@ -52,7 +52,7 @@
         ];
 
         shellHook = ''
-          export INFRA_ROOT="$PWD/terraform"
+          export INFRA_ROOT="$PWD/seed"
         '';
       };
     });

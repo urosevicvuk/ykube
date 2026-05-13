@@ -22,7 +22,7 @@ resource "proxmox_virtual_environment_vm" "nodes" {
   for_each = var.nodes
 
   name        = each.key
-  description = "Talos node — managed by terraform/02-proxmox-provision."
+  description = "Talos node — managed by seed/02-proxmox-provision."
   tags        = ["terraform", "talos", "kubernetes"]
 
   node_name = each.value.pve_node

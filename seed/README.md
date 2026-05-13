@@ -1,4 +1,4 @@
-# terraform/
+# seed/
 
 OpenTofu/Terraform pipeline that takes the cluster from "three fresh Proxmox
 boxes" to "ArgoCD reconciling the GitOps repo". Reference: h8s
@@ -52,7 +52,7 @@ stage 05.
 ## Bootstrap
 
 ```bash
-task -d terraform cluster:bootstrap
+task -d seed cluster:bootstrap
 ```
 
 This runs stages 00 → 07 in order. Roughly 15-30 minutes start to finish; the
@@ -61,9 +61,9 @@ to disk and rebooting on each node.
 
 After it finishes:
 
-- Kubeconfig is at `terraform/03-talos-configure/secrets/kubeconfig.yaml`.
+- Kubeconfig is at `seed/03-talos-configure/secrets/kubeconfig.yaml`.
   Either point `KUBECONFIG` at it or merge into `~/.kube/config`.
-- Vault unseal keys + root token are at `terraform/06-vault-init/secrets/vault-init.json`.
+- Vault unseal keys + root token are at `seed/06-vault-init/secrets/vault-init.json`.
   **Back this up to Bitwarden right now.**
 - ArgoCD is reachable via `kubectl -n argocd port-forward svc/argocd-server 8080:80`
   until you wire up the Cilium Gateway.
@@ -95,8 +95,8 @@ There's no longer a reason to `tofu apply` any of these stages, with three excep
 - **`vault:status` / `vault:unseal`** when nodes reboot. Vault's raft replicas
   reseal on restart and need the unseal pass replayed:
   ```bash
-  task -d terraform vault:status
-  task -d terraform vault:unseal
+  task -d seed vault:status
+  task -d seed vault:unseal
   ```
 - **Stage 07** when you add a new ExternalSecret that needs a new kv path.
 - **Talos upgrades** — but **NOT** by changing `var.talos_version`. Use
@@ -108,10 +108,10 @@ There's no longer a reason to `tofu apply` any of these stages, with three excep
 Before you tear down the workstation that ran bootstrap, make sure these are
 in Bitwarden (or equivalent):
 
-- [ ] All `terraform/states/*.tfstate` (especially `03-talos-configure.tfstate` — contains cluster PKI)
-- [ ] `terraform/03-talos-configure/secrets/talosconfig.yaml`
-- [ ] `terraform/03-talos-configure/secrets/kubeconfig.yaml`
-- [ ] `terraform/06-vault-init/secrets/vault-init.json`
+- [ ] All `seed/states/*.tfstate` (especially `03-talos-configure.tfstate` — contains cluster PKI)
+- [ ] `seed/03-talos-configure/secrets/talosconfig.yaml`
+- [ ] `seed/03-talos-configure/secrets/kubeconfig.yaml`
+- [ ] `seed/06-vault-init/secrets/vault-init.json`
 
 Without these, recovery from a workstation loss requires rebuilding the
 cluster from scratch.

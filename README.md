@@ -46,7 +46,7 @@ ykube/
 │   ├── eko-servis/           # eko-servis tenant (no domain yet)
 │   ├── ofnir/                # ofnir.dev tenant
 │   └── raf/                  # raf-project.com tenant (school)
-├── terraform/                # OpenTofu bootstrap pipeline (8 stages, ./terraform/README.md)
+├── seed/                     # OpenTofu seed-install pipeline (8 stages, ./seed/README.md)
 ├── guide.md                  # bootstrap guide (delete after first cluster is stable)
 ├── flake.nix                 # dev shell: kubectl, helm, kustomize, argocd, talosctl, opentofu
 └── renovate.json             # PR-only, no automerge
@@ -121,14 +121,14 @@ No new Application file, no AppSet to edit.
 
 ## Bootstrap
 
-End-to-end pipeline lives in [`terraform/`](terraform/README.md).
+End-to-end pipeline lives in [`seed/`](seed/README.md).
 TL;DR:
 
 ```bash
 nix develop
-cp terraform/shared/secrets.auto.tfvars.example terraform/shared/secrets.auto.tfvars
-$EDITOR terraform/shared/secrets.auto.tfvars   # fill in Proxmox + node IPs + MACs
-task -d terraform cluster:bootstrap
+cp seed/shared/secrets.auto.tfvars.example seed/shared/secrets.auto.tfvars
+$EDITOR seed/shared/secrets.auto.tfvars   # fill in Proxmox + node IPs + MACs
+task -d seed cluster:bootstrap
 ```
 
 This drives 8 OpenTofu stages in order:
