@@ -6,3 +6,4 @@ result-*
 
 # Kustomize's helm chart cache (created by `kustomize build --enable-helm`)
 apps/**/charts/
+root/charts/
