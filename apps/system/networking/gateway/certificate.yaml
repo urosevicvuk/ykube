@@ -1,3 +1,9 @@
+# Wildcard certs per domain. Each Certificate produces a TLS Secret in the
+# gateway namespace; the Gateway HTTPS listener references all four secrets,
+# and selects per request via SNI.
+#
+# All issued via letsencrypt-prod (cert-manager) using Cloudflare DNS-01.
+---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -12,3 +18,48 @@ spec:
   dnsNames:
     - urosevicvuk.dev
     - '*.urosevicvuk.dev'
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-morel-rs
+  namespace: gateway
+spec:
+  secretName: wildcard-morel-rs-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: '*.morel.rs'
+  dnsNames:
+    - morel.rs
+    - '*.morel.rs'
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-raf-project-com
+  namespace: gateway
+spec:
+  secretName: wildcard-raf-project-com-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: '*.raf-project.com'
+  dnsNames:
+    - raf-project.com
+    - '*.raf-project.com'
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-ofnir-dev
+  namespace: gateway
+spec:
+  secretName: wildcard-ofnir-dev-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: '*.ofnir.dev'
+  dnsNames:
+    - ofnir.dev
+    - '*.ofnir.dev'

@@ -1,7 +1,11 @@
-# TODO: port excalidraw from the legacy apps-external/excalidraw/ tree
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: excalidraw
 
 resources:
   - namespace.yaml
+  - resource-quota.yaml
+  - limit-range.yaml
+  - network-policy.yaml
+  - deployment.yaml
+  - httproute.yaml

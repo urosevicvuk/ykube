@@ -1,7 +1,13 @@
-# TODO: port morel from the legacy apps-external/morel/ tree (Go app + pvc + route)
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: morel
 
 resources:
   - namespace.yaml
+  - resource-quota.yaml
+  - limit-range.yaml
+  - network-policy.yaml
+  - pvc.yaml
+  - secrets.yaml
+  - deployment.yaml
+  - httproute.yaml

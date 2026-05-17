@@ -1,6 +1,6 @@
 # ArgoCD self-management values.
-# Minimal homelab config — single replica everywhere, no HA.
-# HA + ingress + SSO get layered in later via the same file.
+# Single-replica everywhere — k3s/firelink is a single-node cluster. When the
+# Talos+Proxmox target lands, flip replicas to 2-3 and enable redis-ha.
 
 crds:
   install: true
@@ -9,14 +9,14 @@ crds:
 global:
   domain: argocd.urosevicvuk.dev
 
-# Single-instance, no HA. Plenty for homelab.
 controller:
   replicas: 1
 
 server:
   replicas: 1
-  # Server runs in HTTP mode; TLS is terminated upstream by the Cilium Gateway
-  # once the gateway app is wired. Until then `kubectl port-forward` works.
+  # Gateway terminates TLS; Argo speaks HTTP behind it. --insecure here means
+  # "don't run TLS at the server level" — not "skip cert validation". Without
+  # this, the Gateway gets a TLS-over-TLS situation.
   extraArgs:
     - --insecure
 
@@ -26,11 +26,13 @@ repoServer:
 applicationSet:
   replicas: 1
 
+# Disabled until SSO is actually configured. Enabling them without configuration
+# leaves dormant pods + a Dex login button that 500s.
 notifications:
-  enabled: true
+  enabled: false
 
 dex:
-  enabled: true
+  enabled: false
 
 redis:
   enabled: true
@@ -45,11 +47,13 @@ configs:
     # LoadRestrictionsNone allows the root/ kustomization to reference ../projects/*
     # and ../appsets/* — by default kustomize forbids cross-directory resource refs.
     kustomize.buildOptions: "--enable-helm --load-restrictor=LoadRestrictionsNone"
-    # Allow this argocd to manage AppProjects in the default project (the root app lives there).
     application.resourceTrackingMethod: annotation
   params:
     server.insecure: "true"
-  # TODO: declare the ykube repo here once a credential is provisioned via ESO.
-  # For the initial bootstrap with a public repo, ArgoCD discovers it implicitly
-  # from the Application source URL, so this can stay empty.
+  # Admin password is materialized into the `argocd-initial-admin-secret`
+  # Secret by ESO (see apps/system/foundation/external-secrets/argocd-admin.yaml).
+  # The Helm chart's bcrypt path requires `configs.secret.argocdServerAdminPassword`
+  # but ESO writes the Secret directly, so we leave Helm's secret unset and let
+  # ESO populate it after first sync. Until then the default ArgoCD random
+  # password applies (recoverable via `argocd-initial-admin-secret`).
   repositories: {}

@@ -1,27 +1,32 @@
-# Cilium values, tuned for Talos Linux on Proxmox.
+# Cilium values, tuned for k3s on NixOS (firelink).
 #
-# Talos prerequisites (set in machine config, NOT here):
-#   cluster.network.cni.name: none      # we install Cilium ourselves
-#   cluster.proxy.disabled: true        # Cilium replaces kube-proxy
+# k3s prerequisites (set in ynix's modules/features/cluster/k3s.nix):
+#   --flannel-backend=none       # we install Cilium ourselves
+#   --disable-kube-proxy         # Cilium replaces kube-proxy
+#   --disable-network-policy     # Cilium enforces policy
+#   --disable=servicelb          # Cilium L2 announces LB IPs
+#   --disable=traefik            # Gateway API instead
+#
+# For the future Talos+Proxmox cluster (seed-talos/), k8sServiceHost flips back to
+# `localhost:7445` (KubePrism) and the cgroup block stays as-is.
 #
 # References:
-#   - https://www.talos.dev/latest/kubernetes-guides/network/deploying-cilium/
 #   - https://docs.cilium.io/en/stable/installation/k8s-install-helm/
+#   - https://docs.k3s.io/networking/distributed-multicloud#deploying-cilium
 
-# Use Kubernetes IPAM (consistent with Talos defaults).
+# Use Kubernetes IPAM.
 ipam:
   mode: kubernetes
 
-# Replace kube-proxy entirely. This is required by Talos when proxy is disabled.
+# Replace kube-proxy entirely.
 kubeProxyReplacement: true
 
-# KubePrism is Talos' in-cluster API endpoint, served at localhost:7445 on every node.
-# This is the recommended apiserver target on Talos because it avoids the chicken-and-egg
-# of needing the LB IP for the apiserver before Cilium has set up LB IPs.
-k8sServiceHost: localhost
-k8sServicePort: "7445"
+# k3s apiserver listens on 6443 on every node (single-node cluster, this is firelink itself).
+k8sServiceHost: 127.0.0.1
+k8sServicePort: "6443"
 
-# Talos mounts cgroup2 itself; Cilium's automount fights with that.
+# NixOS already mounts cgroup2 — leave Cilium's automount disabled to avoid the same fight
+# we had on Talos. NixOS cgroup root path is the same as Talos.
 cgroup:
   autoMount:
     enabled: false

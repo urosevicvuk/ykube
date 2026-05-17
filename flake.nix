@@ -52,7 +52,7 @@
         ];
 
         shellHook = ''
-          export INFRA_ROOT="$PWD/seed"
+          export INFRA_ROOT="$PWD/seed-talos"
         '';
       };
     });

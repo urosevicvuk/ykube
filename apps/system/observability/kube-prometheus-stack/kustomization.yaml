@@ -1,8 +1,19 @@
-# TODO: configure kube-prometheus-stack
-# This is a placeholder. Wire up the helm chart + values + per-app resources here.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: kube-prometheus-stack
 
 resources:
   - namespace.yaml
+  - secrets.yaml
+  - httproute-grafana.yaml
+  - httproute-prometheus.yaml
+  - httproute-alertmanager.yaml
+
+helmCharts:
+  - name: kube-prometheus-stack
+    repo: https://prometheus-community.github.io/helm-charts
+    version: 84.5.0  # renovate: depName=prometheus-community/kube-prometheus-stack
+    releaseName: kube-prometheus-stack
+    namespace: kube-prometheus-stack
+    valuesFile: values.yaml
+    includeCRDs: true

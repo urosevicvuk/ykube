@@ -1,13 +1,15 @@
 # Two ClusterIssuers: staging for testing (won't blow Let's Encrypt rate limits),
 # prod for real certs. Both use Cloudflare DNS-01 so wildcard certs work.
-# Wave 5 so they apply after the cert-manager controller and CRDs are ready.
+# Wave -10: land before the chart's pods so Certificates issued at wave 0 don't
+# stall waiting for the issuer. The cert-manager controller is in the same
+# Application — kustomize+Helm renders both, Argo handles ordering by wave.
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
   name: letsencrypt-staging
   annotations:
-    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/sync-wave: "-10"
 spec:
   acme:
     email: vuk23urosevic@gmail.com
@@ -26,7 +28,7 @@ kind: ClusterIssuer
 metadata:
   name: letsencrypt-prod
   annotations:
-    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/sync-wave: "-10"
 spec:
   acme:
     email: vuk23urosevic@gmail.com

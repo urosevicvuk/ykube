@@ -10,6 +10,8 @@ namespace: kube-system
 resources:
   - lb-ip-pool.yaml
   - l2-announcement-policy.yaml
+  - hubble-route.yaml
+  - cluster-policies.yaml
 
 helmCharts:
   - name: cilium

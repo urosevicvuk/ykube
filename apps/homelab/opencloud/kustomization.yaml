@@ -1,7 +1,12 @@
-# TODO: port opencloud from the legacy apps-external/opencloud/ tree
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: opencloud
 
 resources:
   - namespace.yaml
+  - resource-quota.yaml
+  - limit-range.yaml
+  - network-policy.yaml
+  - pvcs.yaml
+  - deployment.yaml
+  - httproute.yaml

@@ -1,7 +1,18 @@
-# TODO: configure forgejo
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: forgejo
 
 resources:
   - namespace.yaml
+  - cnpg-cluster.yaml
+  - secrets.yaml
+  - httproute.yaml
+
+helmCharts:
+  - name: forgejo
+    repo: oci://code.forgejo.org/forgejo-helm
+    version: 12.0.0  # renovate: depName=forgejo/forgejo
+    releaseName: forgejo
+    namespace: forgejo
+    valuesFile: values.yaml
+    includeCRDs: true

@@ -1,0 +1,33 @@
+image:
+  repository: docker.stirlingpdf.com/stirlingtools/stirling-pdf
+  tag: latest-fat
+
+replicaCount: 1
+
+env:
+  SECURITY_ENABLELOGIN: "false"
+
+persistence:
+  enabled: false
+
+# Probes get long initial delays because Stirling boots its full Java + libreoffice
+# toolchain on first hit and can take 30-60s on a homelab box.
+livenessProbe:
+  initialDelaySeconds: 60
+readinessProbe:
+  initialDelaySeconds: 60
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    cpu: "2"
+    memory: 4Gi
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false

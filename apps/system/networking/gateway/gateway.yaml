@@ -17,9 +17,16 @@ spec:
       port: 443
       tls:
         mode: Terminate
+        # SNI selects between these four certificates per request hostname.
         certificateRefs:
           - kind: Secret
             name: wildcard-urosevicvuk-dev-tls
+          - kind: Secret
+            name: wildcard-morel-rs-tls
+          - kind: Secret
+            name: wildcard-raf-project-com-tls
+          - kind: Secret
+            name: wildcard-ofnir-dev-tls
       allowedRoutes:
         namespaces:
           from: All
