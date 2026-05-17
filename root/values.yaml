@@ -1,0 +1,59 @@
+# ArgoCD self-management values.
+# Single-replica everywhere — k3s/firelink is a single-node cluster. When the
+# Talos+Proxmox target lands, flip replicas to 2-3 and enable redis-ha.
+
+crds:
+  install: true
+  keep: true
+
+global:
+  domain: argocd.urosevicvuk.dev
+
+controller:
+  replicas: 1
+
+server:
+  replicas: 1
+  # Gateway terminates TLS; Argo speaks HTTP behind it. --insecure here means
+  # "don't run TLS at the server level" — not "skip cert validation". Without
+  # this, the Gateway gets a TLS-over-TLS situation.
+  extraArgs:
+    - --insecure
+
+repoServer:
+  replicas: 1
+
+applicationSet:
+  replicas: 1
+
+# Disabled until SSO is actually configured. Enabling them without configuration
+# leaves dormant pods + a Dex login button that 500s.
+notifications:
+  enabled: false
+
+dex:
+  enabled: false
+
+redis:
+  enabled: true
+
+redis-ha:
+  enabled: false
+
+configs:
+  cm:
+    create: true
+    # Required so kustomizations using `helmCharts:` render correctly across the repo.
+    # LoadRestrictionsNone allows the root/ kustomization to reference ../projects/*
+    # and ../appsets/* — by default kustomize forbids cross-directory resource refs.
+    kustomize.buildOptions: "--enable-helm --load-restrictor=LoadRestrictionsNone"
+    application.resourceTrackingMethod: annotation
+  params:
+    server.insecure: "true"
+  # Admin password is materialized into the `argocd-initial-admin-secret`
+  # Secret by ESO (see apps/system/foundation/external-secrets/argocd-admin.yaml).
+  # The Helm chart's bcrypt path requires `configs.secret.argocdServerAdminPassword`
+  # but ESO writes the Secret directly, so we leave Helm's secret unset and let
+  # ESO populate it after first sync. Until then the default ArgoCD random
+  # password applies (recoverable via `argocd-initial-admin-secret`).
+  repositories: {}

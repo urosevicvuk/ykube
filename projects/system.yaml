@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: system
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: |
+    Cluster plumbing + shared services. Domain split via ApplicationSets:
+    networking (cilium, gateway, cert-manager, external-dns, cloudflared),
+    security (vault, ESO, kyverno),
+    storage (longhorn, cnpg, harbor),
+    observability (kube-prometheus-stack, loki, alloy),
+    ci-cd (argocd, argo-workflows, argo-events, forgejo).
+    Allowed cluster-scoped resources because most components ship CRDs.
+  sourceRepos:
+    - https://github.com/urosevicvuk/ykube
+  destinations:
+    - namespace: '*'
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

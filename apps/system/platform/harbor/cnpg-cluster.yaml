@@ -1,0 +1,32 @@
+# CloudNative-PG Cluster for Harbor. Harbor's chart can deploy its own Postgres
+# but we run it on CNPG instead — same DB operator across the platform stack.
+#
+# Harbor wants four databases on a single Postgres instance (registry, notary
+# server + signer, harbor core). Skip notary (deferred); registry + core only.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: harbor-pg
+  namespace: harbor
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.4
+  storage:
+    size: 10Gi
+    storageClass: longhorn
+  bootstrap:
+    initdb:
+      database: registry
+      owner: harbor
+      postInitApplicationSQL:
+        - CREATE DATABASE harbor OWNER harbor;
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+  monitoring:
+    enablePodMonitor: true

@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: morel
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: |
+    morel.rs tenant workloads. No cluster-scoped resources.
+    Namespace prefix `morel-*` reserved for future multi-namespace splits.
+  sourceRepos:
+    - https://github.com/urosevicvuk/ykube
+  destinations:
+    - namespace: morel
+      server: https://kubernetes.default.svc
+    - namespace: 'morel-*'
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

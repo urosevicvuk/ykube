@@ -1,0 +1,85 @@
+# Grafana Alloy as a DaemonSet — pod-log scrape + Kubernetes events → Loki.
+# Replaces legacy Promtail (deprecated in Loki 3.x).
+#
+# PSS on the namespace is `privileged` because Alloy needs hostPath access to
+# /var/log/pods. This is the standard pattern — Alloy is system infra, not a
+# tenant workload.
+
+controller:
+  type: daemonset
+
+alloy:
+  configMap:
+    create: true
+    content: |-
+      logging {
+        level  = "info"
+        format = "logfmt"
+      }
+
+      // === Pod log discovery ===
+      discovery.kubernetes "pods" {
+        role = "pod"
+      }
+
+      discovery.relabel "pods" {
+        targets = discovery.kubernetes.pods.targets
+
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          target_label  = "container"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+          target_label  = "app"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_node_name"]
+          target_label  = "node"
+        }
+      }
+
+      loki.source.kubernetes "pods" {
+        targets    = discovery.relabel.pods.output
+        forward_to = [loki.write.default.receiver]
+      }
+
+      // === Cluster events → Loki (so you can correlate pod crashes, scheduling, etc.) ===
+      loki.source.kubernetes_events "events" {
+        log_format = "logfmt"
+        forward_to = [loki.write.default.receiver]
+      }
+
+      // === Output ===
+      loki.write "default" {
+        endpoint {
+          url = "http://loki.loki:3100/loki/api/v1/push"
+        }
+        external_labels = {
+          cluster = "firelink",
+        }
+      }
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+# Run as root because /var/log/pods is owned by root on most distros (including
+# k3s on NixOS). The privileged PSS on the alloy namespace allows it.
+alloy.securityContext: |
+  runAsUser: 0
+  runAsGroup: 0
+
+serviceMonitor:
+  enabled: true

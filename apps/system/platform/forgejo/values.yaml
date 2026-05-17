@@ -1,0 +1,84 @@
+# Forgejo Helm values. Vanilla operational deploy: admin user from Vault,
+# Postgres from CNPG, repos on Longhorn. HTTPS push/pull via the Gateway.
+# SSH disabled (TCP needs the VPS+WG frontend — separate task).
+
+redis-cluster:
+  enabled: false
+
+# Use CNPG cluster instead of the in-chart Postgres.
+postgresql:
+  enabled: false
+
+postgresql-ha:
+  enabled: false
+
+# In-chart Redis stands in as a cache backend; persistence off (cache only).
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: false
+
+persistence:
+  enabled: true
+  storageClass: longhorn
+  size: 10Gi
+  accessModes: [ReadWriteOnce]
+
+gitea:
+  admin:
+    existingSecret: forgejo-admin
+
+  # DB password from CNPG-generated secret (forgejo-pg-app).
+  additionalConfigFromEnvs:
+    - name: GITEA__DATABASE__PASSWD
+      valueFrom:
+        secretKeyRef:
+          name: forgejo-pg-app
+          key: password
+
+  config:
+    server:
+      DOMAIN: git.urosevicvuk.dev
+      ROOT_URL: https://git.urosevicvuk.dev
+      DISABLE_SSH: true
+      OFFLINE_MODE: false
+    database:
+      DB_TYPE: postgres
+      HOST: forgejo-pg-rw.forgejo:5432
+      NAME: forgejo
+      USER: forgejo
+    cache:
+      ENABLED: true
+      ADAPTER: redis
+      HOST: redis://forgejo-redis-master:6379/0
+    session:
+      PROVIDER: redis
+      PROVIDER_CONFIG: redis://forgejo-redis-master:6379/0
+    queue:
+      TYPE: redis
+      CONN_STR: redis://forgejo-redis-master:6379/0
+    service:
+      DISABLE_REGISTRATION: true   # admin invites only — multi-tenant hygiene
+
+service:
+  http:
+    type: ClusterIP
+    port: 3000
+  ssh:
+    type: ClusterIP
+    port: 22
+
+# Don't deploy ingress; Gateway API HTTPRoute does the work.
+ingress:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+  limits:
+    memory: 1Gi

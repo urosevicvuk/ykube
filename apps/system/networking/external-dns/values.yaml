@@ -1,0 +1,45 @@
+# external-dns syncs HTTPRoute hostnames into Cloudflare DNS.
+#
+# With cloudflared as the public ingress (today): external-dns creates CNAME records
+# pointing each hostname at the tunnel UUID hostname (<tunnel-id>.cfargotunnel.com),
+# so that public DNS resolves to Cloudflare's edge, which then proxies through
+# cloudflared into the in-cluster Gateway. Cloudflared owns the host→service mapping;
+# external-dns owns the DNS records themselves.
+#
+# When the VPS+WG frontend lands later, switch txtOwnerId scheme accordingly and
+# target=<VPS-public-ip> via Service annotation or by pointing at the LB IP directly.
+
+provider:
+  name: cloudflare
+
+sources:
+  - gateway-httproute
+  - service
+
+# Each cluster owns its own txt records; firelink today, talos later.
+txtOwnerId: firelink
+txtPrefix: _externaldns.
+
+# A-records for HTTPRoute hostnames. external-dns figures out the right target
+# from the parent Gateway's Service address.
+policy: sync
+
+interval: 1m
+logLevel: info
+
+env:
+  - name: CF_API_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: external-dns-cloudflare
+        key: api-token
+
+serviceMonitor:
+  enabled: true
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    memory: 128Mi

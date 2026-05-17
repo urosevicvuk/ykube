@@ -1,0 +1,41 @@
+# cert-manager values. Standard install with Gateway API support enabled.
+
+# Install CRDs as part of the chart (chart-managed lifecycle).
+crds:
+  enabled: true
+  keep: true
+
+# Gateway API integration: lets cert-manager solve ACME challenges for
+# Gateway/HTTPRoute resources, not just ingress-nginx-style Ingress objects.
+config:
+  apiVersion: controller.config.cert-manager.io/v1alpha1
+  kind: ControllerConfiguration
+  enableGatewayAPI: true
+
+# Prometheus metrics (kube-prometheus-stack picks these up automatically).
+prometheus:
+  enabled: true
+  servicemonitor:
+    enabled: true
+
+# Modest resource requests for a homelab.
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 256Mi
+webhook:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      memory: 64Mi
+cainjector:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 128Mi

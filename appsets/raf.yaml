@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: raf
+  namespace: argocd
+spec:
+  generators:
+    - git:
+        repoURL: https://github.com/urosevicvuk/ykube
+        revision: main
+        directories:
+          - path: apps/raf/*
+  template:
+    metadata:
+      name: 'raf-{{path.basename}}'
+      annotations:
+        argocd.argoproj.io/sync-wave: "0"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: raf
+      source:
+        repoURL: https://github.com/urosevicvuk/ykube
+        targetRevision: main
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{path.basename}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          # Apps own their Namespace resource.
+          - ServerSideApply=true
+          - PruneLast=true

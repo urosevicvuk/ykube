@@ -1,0 +1,9 @@
+.direnv/
+.envrc.local
+result
+result-*
+*.swp
+
+# Kustomize's helm chart cache (created by `kustomize build --enable-helm`)
+apps/**/charts/
+root/charts/

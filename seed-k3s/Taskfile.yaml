@@ -1,0 +1,54 @@
+# task -d seed-k3s/ <task-name>
+#
+# k3s/firelink bootstrap. For the future Talos+Proxmox cluster, see seed-talos/.
+
+version: "3"
+run: once
+
+vars:
+  REPO_ROOT:
+    sh: git rev-parse --show-toplevel
+
+tasks:
+  default:
+    desc: List all tasks
+    cmds:
+      - task --list
+
+  cilium:install:
+    desc: 00 — install Cilium onto k3s (CNI + kube-proxy replacement + Gateway API + L2)
+    cmds:
+      - bash {{.TASKFILE_DIR}}/scripts/00-cilium-install.sh
+
+  argocd:install:
+    desc: 01 — install ArgoCD and apply root/app-of-apps.yaml
+    cmds:
+      - bash {{.TASKFILE_DIR}}/scripts/01-argocd-install.sh
+
+  vault:init:
+    desc: 02 — wait for vault pods, init + unseal, configure k8s auth + ESO role
+    cmds:
+      - bash {{.TASKFILE_DIR}}/scripts/02-vault-init.sh
+
+  vault:secrets:
+    desc: 03 — write bootstrap secrets to kv/* (interactive — prompts for each)
+    cmds:
+      - bash {{.TASKFILE_DIR}}/scripts/03-vault-secrets-provision.sh
+
+  vault:unseal:
+    desc: Replay the unseal pass (after node reboot)
+    cmds:
+      - bash {{.TASKFILE_DIR}}/scripts/vault-unseal.sh
+
+  vault:status:
+    desc: Show Vault status
+    cmds:
+      - bash {{.TASKFILE_DIR}}/scripts/vault-status.sh
+
+  cluster:bootstrap:
+    desc: Run stages 00 → 03 in order. Fresh-cluster path.
+    cmds:
+      - task: cilium:install
+      - task: argocd:install
+      - task: vault:init
+      - task: vault:secrets

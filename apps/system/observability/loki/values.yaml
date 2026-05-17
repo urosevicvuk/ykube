@@ -1,0 +1,78 @@
+# Loki SingleBinary on Longhorn. Single replica (single node).
+# Alloy pushes to http://loki.loki:3100, Grafana datasource the same.
+
+deploymentMode: SingleBinary
+
+loki:
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: filesystem
+  schemaConfig:
+    configs:
+      - from: "2024-01-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: loki_index_
+          period: 24h
+  limits_config:
+    retention_period: 168h  # 7d hot retention; matches what legacy ran. Bump when backups land.
+    reject_old_samples: true
+    reject_old_samples_max_age: 168h
+  compactor:
+    retention_enabled: true
+    delete_request_store: filesystem
+
+singleBinary:
+  replicas: 1
+  persistence:
+    enabled: true
+    storageClass: longhorn
+    size: 30Gi
+    accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+# Disable everything Loki ships for the distributed mode.
+backend: {replicas: 0}
+read: {replicas: 0}
+write: {replicas: 0}
+ingester: {replicas: 0}
+querier: {replicas: 0}
+queryFrontend: {replicas: 0}
+queryScheduler: {replicas: 0}
+distributor: {replicas: 0}
+compactor: {replicas: 0}
+indexGateway: {replicas: 0}
+bloomCompactor: {replicas: 0}
+bloomGateway: {replicas: 0}
+
+# Subcharts off.
+minio:
+  enabled: false
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+
+# Gateway disabled — Alloy and Grafana speak to loki:3100 directly.
+gateway:
+  enabled: false
+
+# ServiceMonitor scraped by kube-prometheus-stack.
+monitoring:
+  selfMonitoring:
+    enabled: false
+    grafanaAgent:
+      installOperator: false
+  lokiCanary:
+    enabled: false
+  serviceMonitor:
+    enabled: true

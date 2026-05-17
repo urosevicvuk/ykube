@@ -1,0 +1,82 @@
+# Vault, standalone single replica on k3s/firelink.
+# TLS terminates at the cluster Gateway; Vault speaks HTTP in-cluster.
+# ESO consumes via Kubernetes auth (SA: external-secrets/external-secrets).
+#
+# For the future Talos cluster (seed-talos/) flip this back to ha+raft with 3 replicas
+# and the anti-affinity rule. On a single-node cluster raft HA is just 3x the
+# footprint with the same failure domain.
+
+global:
+  tlsDisable: true
+
+injector:
+  enabled: false
+
+server:
+  image:
+    repository: hashicorp/vault
+    tag: "1.18.3"
+
+  dataStorage:
+    enabled: true
+    size: 10Gi
+    storageClass: longhorn
+
+  # Audit goes to stdout (collected by Alloy → Loki).
+  auditStorage:
+    enabled: false
+
+  serviceAccount:
+    create: true
+    name: vault
+    serviceAccountToken:
+      enabled: true
+
+  # Standalone (file storage on Longhorn). Single Vault pod. Single node.
+  # Auto-unseal is not configured — `task -d seed-k3s vault:unseal` after node reboots.
+  standalone:
+    enabled: true
+    config: |
+      ui = true
+
+      listener "tcp" {
+        tls_disable = 1
+        address     = "[::]:8200"
+        cluster_address = "[::]:8201"
+        telemetry {
+          unauthenticated_metrics_access = "true"
+        }
+      }
+
+      storage "file" {
+        path = "/vault/data"
+      }
+
+      service_registration "kubernetes" {}
+
+      telemetry {
+        prometheus_retention_time = "30s"
+        disable_hostname = true
+      }
+
+      log_level = "info"
+
+  ha:
+    enabled: false
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+ui:
+  enabled: true
+  serviceType: ClusterIP
+
+serverTelemetry:
+  serviceMonitor:
+    enabled: true
+  prometheusRules:
+    enabled: false

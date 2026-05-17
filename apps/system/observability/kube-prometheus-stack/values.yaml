@@ -1,0 +1,138 @@
+# kube-prometheus-stack — Prometheus + Grafana + Alertmanager + node-exporter
+# + kube-state-metrics + the operator. Single replica everywhere (single node).
+#
+# Grafana datasource for Loki is pre-provisioned; logs live in the loki namespace.
+
+crds:
+  enabled: true
+
+defaultRules:
+  create: true
+
+# === Prometheus ===
+prometheus:
+  prometheusSpec:
+    replicas: 1
+    retention: 30d
+    retentionSize: 18GiB
+    # Auto-discover ServiceMonitors / PodMonitors / PrometheusRules cluster-wide.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    scrapeConfigSelectorNilUsesHelmValues: false
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: longhorn
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 20Gi
+    resources:
+      requests:
+        cpu: 200m
+        memory: 1Gi
+      limits:
+        memory: 2Gi
+  service:
+    type: ClusterIP
+
+# === Alertmanager ===
+alertmanager:
+  alertmanagerSpec:
+    replicas: 1
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: longhorn
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 2Gi
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
+  service:
+    type: ClusterIP
+
+# === Grafana ===
+grafana:
+  replicas: 1
+  defaultDashboardsEnabled: true
+  defaultDashboardsTimezone: Europe/Belgrade
+
+  # admin user/password from ESO (kv/grafana/admin)
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+
+  persistence:
+    enabled: true
+    type: pvc
+    storageClassName: longhorn
+    accessModes: [ReadWriteOnce]
+    size: 5Gi
+
+  grafana.ini:
+    server:
+      root_url: https://dashboard.urosevicvuk.dev
+      serve_from_sub_path: false
+    auth.anonymous:
+      enabled: false
+    security:
+      cookie_secure: true
+
+  service:
+    type: ClusterIP
+
+  # Pre-provision Loki as a Grafana datasource. Loki ships in the `loki` namespace.
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      access: proxy
+      url: http://loki.loki:3100
+      jsonData:
+        maxLines: 1000
+
+  serviceMonitor:
+    enabled: true
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+# === Operator ===
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+# === Exporters ===
+nodeExporter:
+  enabled: true
+
+kube-state-metrics:
+  enabled: true
+
+# k3s embeds controller-manager + scheduler + etcd in the apiserver process;
+# the separate ServiceMonitors that target them as standalone services fail
+# on k3s. Disable those scrapes; metrics still surface via the apiserver scrape.
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeProxy:
+  enabled: false  # Cilium replaces kube-proxy

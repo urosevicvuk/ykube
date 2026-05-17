@@ -1,0 +1,14 @@
+# CloudNative-PG operator. No Cluster CRs here — those live with the apps that
+# need a database (forgejo, harbor). The operator watches the whole cluster.
+
+monitoring:
+  podMonitorEnabled: true
+  grafanaDashboard:
+    create: true
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
