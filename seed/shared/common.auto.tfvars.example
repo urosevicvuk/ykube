@@ -1,3 +1,0 @@
-# Copy to shared/common.auto.tfvars (gitignored). Reserved for future shared
-# non-secret values. Currently empty — all stage paths are derived from
-# path.module relative to the stage dir, so no operator input is required.
