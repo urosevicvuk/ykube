@@ -35,8 +35,15 @@ socketLB:
 # reconcile cycle — leaving CILIUM_POST_nat empty. Pods then can't egress to
 # the internet (no SNAT), CoreDNS can't forward to upstream DNS, Argo can't
 # pull from GitHub. BPF masquerade bypasses iptables for this path entirely.
+#
+# hostLegacyRouting=true falls back to the kernel routing stack for traffic
+# entering/leaving the host endpoint. Required (with endpointRoutes below)
+# for Cilium 1.19 Gateway API L7 LB to reach same-node backends — the BPF
+# fast path mistags the return identity (ingress vs host) and Envoy 503s
+# on every request. Costs a touch of latency vs the BPF host-routing path.
 bpf:
   masquerade: true
+  hostLegacyRouting: true
 
 # Per-endpoint routes via the pod's veth instead of funneling all pod traffic
 # through cilium_host. Required for Cilium 1.19 Gateway API L7 LB to work on
