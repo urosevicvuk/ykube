@@ -24,6 +24,7 @@
           kubectl
           kubernetes-helm
           kustomize
+          k9s
 
           # ArgoCD
           argocd
