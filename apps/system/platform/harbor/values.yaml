@@ -1,0 +1,113 @@
+# Harbor — container registry. Vanilla operational: admin user from Vault,
+# CNPG-backed Postgres, in-chart Redis, Longhorn for registry blobs.
+# Trivy/Notary disabled (deferred — vanilla scope).
+
+expose:
+  type: clusterIP
+  tls:
+    enabled: false   # Gateway terminates TLS
+
+externalURL: https://registry.urosevicvuk.dev
+
+# Admin password comes from ESO. The chart wants HARBOR_ADMIN_PASSWORD as the
+# value, but the secret existingSecretAdminPassword lets us inject it.
+harborAdminPassword: ""   # Overridden by existingSecretAdminPassword
+existingSecretAdminPassword: harbor-admin
+existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD
+
+# External secrets for internal Harbor service secrets (token signing, jobservice, core).
+core:
+  existingSecret: harbor-registry-secret
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+jobservice:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+registry:
+  resources:
+    registry:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 512Mi
+    controller:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+
+portal:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+# Persistence on Longhorn.
+persistence:
+  enabled: true
+  resourcePolicy: "keep"
+  persistentVolumeClaim:
+    registry:
+      storageClass: longhorn
+      accessMode: ReadWriteOnce
+      size: 50Gi
+    jobservice:
+      jobLog:
+        storageClass: longhorn
+        accessMode: ReadWriteOnce
+        size: 2Gi
+    redis:
+      storageClass: longhorn
+      accessMode: ReadWriteOnce
+      size: 2Gi
+
+# In-chart Postgres off — using CNPG cluster instead.
+database:
+  type: external
+  external:
+    host: harbor-pg-rw.harbor
+    port: "5432"
+    username: harbor
+    coreDatabase: harbor
+    # CNPG generates harbor-pg-app secret with the password.
+    existingSecret: harbor-pg-app
+  internal:
+    serviceAccountName: harbor
+
+# In-chart Redis is fine for vanilla operational deploy.
+redis:
+  type: internal
+  internal:
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
+
+# Disable Trivy and Notary (vanilla scope).
+trivy:
+  enabled: false
+
+notary:
+  enabled: false
+
+# Metrics for kube-prometheus-stack.
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true

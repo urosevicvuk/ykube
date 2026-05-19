@@ -1,0 +1,98 @@
+# Cilium values, tuned for k3s on NixOS (firelink).
+#
+# k3s prerequisites (set in ynix's modules/features/cluster/k3s.nix):
+#   --flannel-backend=none       # we install Cilium ourselves
+#   --disable-kube-proxy         # Cilium replaces kube-proxy
+#   --disable-network-policy     # Cilium enforces policy
+#   --disable=servicelb          # Cilium L2 announces LB IPs
+#   --disable=traefik            # Gateway API instead
+#
+# For the future Talos+Proxmox cluster (seed-talos/), k8sServiceHost flips back to
+# `localhost:7445` (KubePrism) and the cgroup block stays as-is.
+#
+# References:
+#   - https://docs.cilium.io/en/stable/installation/k8s-install-helm/
+#   - https://docs.k3s.io/networking/distributed-multicloud#deploying-cilium
+
+# Use Kubernetes IPAM.
+ipam:
+  mode: kubernetes
+
+# Replace kube-proxy entirely.
+kubeProxyReplacement: true
+
+# k3s apiserver listens on 6443 on every node (single-node cluster, this is firelink itself).
+k8sServiceHost: 127.0.0.1
+k8sServicePort: "6443"
+
+# NixOS already mounts cgroup2 — leave Cilium's automount disabled to avoid the same fight
+# we had on Talos. NixOS cgroup root path is the same as Talos.
+cgroup:
+  autoMount:
+    enabled: false
+  hostRoot: /sys/fs/cgroup
+
+# Talos requires explicit capability sets — Cilium's defaults assume host-managed cgroups.
+securityContext:
+  capabilities:
+    ciliumAgent:
+      - CHOWN
+      - KILL
+      - NET_ADMIN
+      - NET_RAW
+      - IPC_LOCK
+      - SYS_ADMIN
+      - SYS_RESOURCE
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    cleanCiliumState:
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_RESOURCE
+
+# Gateway API: enabled here only flips Cilium into Gateway-API mode and creates
+# the `cilium` GatewayClass. The Gateway API CRDs themselves are installed by
+# `apps/system/networking/gateway/` (upstream kubernetes-sigs/gateway-api).
+gatewayAPI:
+  enabled: true
+
+# L2 announcements replace MetalLB. Combined with kubeProxyReplacement, lets Cilium
+# advertise LB IPs on the LAN via ARP/NDP. Pool + policy live in separate manifests
+# so they can be tweaked independently of the chart values.
+l2announcements:
+  enabled: true
+externalIPs:
+  enabled: true
+
+# Hubble for observability. Relay aggregates flows; UI is web frontend.
+# Expose UI via the Cilium Gateway later; until then, port-forward.
+hubble:
+  enabled: true
+  relay:
+    enabled: true
+  ui:
+    enabled: true
+  metrics:
+    enableOpenMetrics: true
+    enabled:
+      - dns
+      - drop
+      - tcp
+      - flow
+      - port-distribution
+      - icmp
+      - http
+
+# Single-stack IPv4 for the homelab. Flip if you go dual-stack.
+ipv4:
+  enabled: true
+ipv6:
+  enabled: false
+
+# Operator: 1 replica is enough for homelab. The chart defaults to 2.
+operator:
+  replicas: 1
+
+# CRDs are baked into the chart and tracked via ServerSideApply (see ApplicationSet syncOptions).

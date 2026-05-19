@@ -1,0 +1,84 @@
+# cloudflared tunnel ingress config.
+#
+# Each public hostname maps to the in-cluster Gateway. cloudflared connects to
+# Cloudflare's edge, edge forwards inbound traffic for these hostnames into the
+# tunnel, cloudflared sends it to https://gateway-external.gateway:443 which
+# does SNI selection from the multi-cert listener.
+#
+# noTLSVerify=true is intentional — the Gateway certificate names are the
+# public hostnames (morel.rs, *.urosevicvuk.dev), not "gateway-external.gateway"
+# the internal service name.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared-config
+  namespace: cloudflared
+data:
+  config.yaml: |
+    tunnel: ykube
+    credentials-file: /etc/cloudflared/creds/credentials.json
+    metrics: 0.0.0.0:2000
+    no-autoupdate: true
+
+    ingress:
+      - hostname: argocd.urosevicvuk.dev
+        service: https://gateway-external.gateway:443
+        originRequest:
+          noTLSVerify: true
+          httpHostHeader: argocd.urosevicvuk.dev
+      - hostname: vault.urosevicvuk.dev
+        service: https://gateway-external.gateway:443
+        originRequest:
+          noTLSVerify: true
+          httpHostHeader: vault.urosevicvuk.dev
+      - hostname: dashboard.urosevicvuk.dev
+        service: https://gateway-external.gateway:443
+        originRequest:
+          noTLSVerify: true
+          httpHostHeader: dashboard.urosevicvuk.dev
+      - hostname: prometheus.urosevicvuk.dev
+        service: https://gateway-external.gateway:443
+        originRequest:
+          noTLSVerify: true
+          httpHostHeader: prometheus.urosevicvuk.dev
+      - hostname: alertmanager.urosevicvuk.dev
+        service: https://gateway-external.gateway:443
+        originRequest:
+          noTLSVerify: true
+          httpHostHeader: alertmanager.urosevicvuk.dev
+      - hostname: hubble.urosevicvuk.dev
+        service: https://gateway-external.gateway:443
+        originRequest:
+          noTLSVerify: true
+          httpHostHeader: hubble.urosevicvuk.dev
+      - hostname: git.urosevicvuk.dev
+        service: https://gateway-external.gateway:443
+        originRequest:
+          noTLSVerify: true
+          httpHostHeader: git.urosevicvuk.dev
+      - hostname: registry.urosevicvuk.dev
+        service: https://gateway-external.gateway:443
+        originRequest:
+          noTLSVerify: true
+          httpHostHeader: registry.urosevicvuk.dev
+      - hostname: cloud.urosevicvuk.dev
+        service: https://gateway-external.gateway:443
+        originRequest:
+          noTLSVerify: true
+          httpHostHeader: cloud.urosevicvuk.dev
+      - hostname: draw.urosevicvuk.dev
+        service: https://gateway-external.gateway:443
+        originRequest:
+          noTLSVerify: true
+          httpHostHeader: draw.urosevicvuk.dev
+      - hostname: pdf.urosevicvuk.dev
+        service: https://gateway-external.gateway:443
+        originRequest:
+          noTLSVerify: true
+          httpHostHeader: pdf.urosevicvuk.dev
+      - hostname: morel.rs
+        service: https://gateway-external.gateway:443
+        originRequest:
+          noTLSVerify: true
+          httpHostHeader: morel.rs
+      - service: http_status:404

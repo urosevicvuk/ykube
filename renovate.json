@@ -1,26 +1,34 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
+  "automerge": false,
   "kubernetes": {
     "managerFilePatterns": [
-      "/apps-external/.+\\.yaml$/",
-      "/apps-internal/.+\\.yaml$/",
-      "/system/gitlab/.+\\.yaml$/",
-      "/system/cloudflared/.+\\.yaml$/"
+      "/apps/.+\\.yaml$/"
     ]
   },
-  "argocd": {
-    "managerFilePatterns": ["/root/.+\\.yaml$/"]
-  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Bump pinned upstream YAML release URLs (e.g. Gateway API CRDs)",
+      "managerFilePatterns": [
+        "/apps/.+/kustomization\\.yaml$/"
+      ],
+      "matchStrings": [
+        "# renovate: depName=(?<depName>[^\\s]+)\\s+- https://github.com/[^/]+/[^/]+/releases/download/(?<currentValue>v[0-9.]+)/"
+      ],
+      "datasourceTemplate": "github-releases"
+    }
+  ],
   "packageRules": [
     {
-      "description": "Group container image updates",
+      "description": "Group container image bumps",
       "matchManagers": ["kubernetes"],
       "groupName": "container images"
     },
     {
-      "description": "Group Helm chart updates",
-      "matchManagers": ["argocd"],
+      "description": "Group Helm chart bumps from kustomization.yaml helmCharts blocks",
+      "matchManagers": ["kustomize"],
       "groupName": "helm charts"
     }
   ]

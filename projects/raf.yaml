@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: raf
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: |
+    raf-project.com tenant workloads (school project / TA-facing services).
+    No cluster-scoped resources. Namespace prefix `raf-*` reserved.
+  sourceRepos:
+    - https://github.com/urosevicvuk/ykube
+  destinations:
+    - namespace: raf
+      server: https://kubernetes.default.svc
+    - namespace: 'raf-*'
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

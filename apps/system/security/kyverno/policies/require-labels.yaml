@@ -1,0 +1,24 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-labels
+  annotations:
+    policies.kyverno.io/title: Require Standard Labels
+    policies.kyverno.io/category: Best Practices
+    policies.kyverno.io/severity: medium
+    argocd.argoproj.io/sync-wave: "20"
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: check-app-name
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      validate:
+        message: "Every pod must carry `app.kubernetes.io/name` so it shows up correctly in Grafana / Hubble / Argo."
+        pattern:
+          metadata:
+            labels:
+              app.kubernetes.io/name: "?*"

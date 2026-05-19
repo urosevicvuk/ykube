@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: homelab
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: |
+    Personal self-hosted services on urosevicvuk.dev (excalidraw, opencloud,
+    stirling-pdf). No cluster-scoped resources permitted; these are pure workloads.
+  sourceRepos:
+    - https://github.com/urosevicvuk/ykube
+  destinations:
+    - namespace: excalidraw
+      server: https://kubernetes.default.svc
+    - namespace: opencloud
+      server: https://kubernetes.default.svc
+    - namespace: stirling-pdf
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

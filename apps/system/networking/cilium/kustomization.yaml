@@ -1,0 +1,23 @@
+# Cilium installs into kube-system per Talos+Cilium convention.
+# The AppSet's destination.namespace is "cilium" (from {{path.basename}}) but
+# kustomize rewrites every namespaced resource here to kube-system, and the
+# AppSet no longer carries CreateNamespace=true — so no stray empty namespace
+# is created. kube-system itself is created by Talos at cluster init.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kube-system
+
+resources:
+  - lb-ip-pool.yaml
+  - l2-announcement-policy.yaml
+  - hubble-route.yaml
+  - cluster-policies.yaml
+
+helmCharts:
+  - name: cilium
+    repo: https://helm.cilium.io
+    version: 1.19.3  # renovate: depName=cilium/cilium
+    releaseName: cilium
+    namespace: kube-system
+    valuesFile: values.yaml
+    includeCRDs: true

@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: eko-servis
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: |
+    Eko Servis tenant workloads. No domain wired up yet, no apps deployed.
+    Namespace prefix `eko-servis-*` reserved.
+  sourceRepos:
+    - https://github.com/urosevicvuk/ykube
+  destinations:
+    - namespace: eko-servis
+      server: https://kubernetes.default.svc
+    - namespace: 'eko-servis-*'
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

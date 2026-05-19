@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: ofnir
+  namespace: argocd
+spec:
+  generators:
+    - git:
+        repoURL: https://github.com/urosevicvuk/ykube
+        revision: main
+        directories:
+          - path: apps/ofnir/*
+  template:
+    metadata:
+      name: 'ofnir-{{path.basename}}'
+      annotations:
+        argocd.argoproj.io/sync-wave: "0"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: ofnir
+      source:
+        repoURL: https://github.com/urosevicvuk/ykube
+        targetRevision: main
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{path.basename}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          # Apps own their Namespace resource.
+          - ServerSideApply=true
+          - PruneLast=true

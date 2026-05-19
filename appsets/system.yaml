@@ -1,0 +1,38 @@
+# Single AppSet for all system plumbing. The foundation/networking/platform/
+# observability subdirectories are kept for human navigation, but they don't
+# drive AppSet sharding — Argo just retries failed first-sync attempts until
+# the cluster converges (selfHeal + ServerSideApply). argocd itself is
+# self-managed by the root Application in root/, not by this AppSet.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: system
+  namespace: argocd
+spec:
+  generators:
+    - git:
+        repoURL: https://github.com/urosevicvuk/ykube
+        revision: main
+        directories:
+          - path: apps/system/*/*
+  template:
+    metadata:
+      name: '{{path[2]}}-{{path.basename}}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: system
+      source:
+        repoURL: https://github.com/urosevicvuk/ykube
+        targetRevision: main
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{path.basename}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - ServerSideApply=true
+          - PruneLast=true
