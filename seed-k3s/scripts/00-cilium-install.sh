@@ -47,6 +47,15 @@ GATEWAY_API_URL=$(grep -oE 'https://github.com/kubernetes-sigs/gateway-api/relea
 log "Pre-installing Gateway API CRDs (${GATEWAY_API_URL})"
 kubectl apply -f "${GATEWAY_API_URL}"
 
+# Prometheus Operator CRDs (ServiceMonitor, PrometheusRule, PodMonitor, etc.).
+# Many system apps reference ServiceMonitor via their helm chart sub-templates —
+# vault, longhorn, kyverno, cnpg — and would SyncFail until kube-prometheus-stack
+# itself reconciles. Pre-installing the CRDs decouples the order: every other
+# app can sync first, kube-prometheus-stack adopts CRDs via server-side apply.
+PROM_OPERATOR_VERSION="v0.90.1"  # renovate: depName=prometheus-operator/prometheus-operator
+log "Pre-installing Prometheus Operator CRDs (${PROM_OPERATOR_VERSION})"
+kubectl apply --server-side -f "https://github.com/prometheus-operator/prometheus-operator/releases/download/${PROM_OPERATOR_VERSION}/stripped-down-crds.yaml"
+
 log "Applying Cilium LB IP pool + L2 announcement policy"
 kubectl apply -f "${REPO_ROOT}/apps/system/networking/cilium/lb-ip-pool.yaml"
 kubectl apply -f "${REPO_ROOT}/apps/system/networking/cilium/l2-announcement-policy.yaml"

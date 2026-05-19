@@ -1,0 +1,44 @@
+# Longhorn on k3s/firelink (single-node).
+#
+# Host prereqs are provided by ynix's clusterStorage module:
+#   - services.openiscsi.enable = true (iscsid + iscsi_tcp kernel module)
+#   - boot.supportedFilesystems = ["nfs"] (for backup target later)
+#   - nfs-utils + openiscsi in systemPackages
+#
+# Single-node means:
+#   - defaultReplicaCount: 1 (no other node to replicate to)
+#   - replicaAutoBalance: disabled (nothing to balance to)
+# When a second node lands, bump defaultReplicaCount to 2 and re-evaluate.
+#
+# Keep local-path as the cluster default StorageClass; Longhorn is for
+# workloads that opt in via `storageClassName: longhorn` (Vault, CNPG, etc.).
+
+defaultSettings:
+  defaultDataPath: /var/lib/longhorn/
+  defaultReplicaCount: 1
+  replicaAutoBalance: disabled
+  storageOverProvisioningPercentage: 100
+  storageMinimalAvailablePercentage: 10
+  upgradeChecker: false
+  createDefaultDiskLabeledNodes: false
+
+persistence:
+  defaultClass: false
+  defaultClassReplicaCount: 1
+  reclaimPolicy: Delete
+
+# UI goes through Cilium Gateway; chart's built-in ingress is off.
+ingress:
+  enabled: false
+
+# Required for Argo to scrape Longhorn metrics. CRD is pre-installed by the
+# seed (Prometheus Operator) so this resource applies cleanly on first sync.
+metrics:
+  serviceMonitor:
+    enabled: true
+
+# Upstream chart guidance:
+#   "Disable this setting when installing Longhorn using Argo CD or other
+#    GitOps solutions" — the pre-upgrade job blocks Argo's sync.
+preUpgradeChecker:
+  jobEnabled: false

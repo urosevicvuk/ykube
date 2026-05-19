@@ -29,6 +29,15 @@ kubeProxyReplacement: true
 socketLB:
   enabled: true
 
+# eBPF masquerade instead of iptables. The iptables masquerade reconciler in
+# Cilium 1.19 has a startup bug where it tries to delete a phantom rule from
+# OLD_CILIUM_POST_nat, fails with "iptables: Bad rule", and aborts the entire
+# reconcile cycle — leaving CILIUM_POST_nat empty. Pods then can't egress to
+# the internet (no SNAT), CoreDNS can't forward to upstream DNS, Argo can't
+# pull from GitHub. BPF masquerade bypasses iptables for this path entirely.
+bpf:
+  masquerade: true
+
 # k3s apiserver listens on 6443 on every node (single-node cluster, this is firelink itself).
 k8sServiceHost: 127.0.0.1
 k8sServicePort: "6443"
