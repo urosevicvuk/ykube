@@ -18,7 +18,11 @@ spec:
       server: https://kubernetes.default.svc
     - namespace: stirling-pdf
       server: https://kubernetes.default.svc
-  clusterResourceWhitelist: []
+  # Tenant projects only get cluster-scoped Namespace creation. Anything else
+  # (CRDs, ClusterRole/Binding) belongs in the `system` project.
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
   namespaceResourceWhitelist:
     - group: '*'
       kind: '*'

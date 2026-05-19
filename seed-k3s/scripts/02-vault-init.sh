@@ -69,7 +69,12 @@ if ! vault auth list -format=json | jq -e '."kubernetes/"' >/dev/null; then
 fi
 
 log "Configuring Kubernetes auth against the in-cluster API server"
-TOKEN_REVIEWER_JWT=$(kubectl -n vault create token vault)
+# 1-year token. Default `kubectl create token` is 1h — Vault uses this as its
+# token-reviewer credential to call TokenReview when other workloads log in,
+# so when it expires every k8s-auth login starts returning 403 permission denied.
+# Symptom: ESO's ClusterSecretStore fails with "unable to log in" any time
+# >1h after a fresh bootstrap.
+TOKEN_REVIEWER_JWT=$(kubectl -n vault create token vault --duration=8760h)
 K8S_HOST="https://kubernetes.default.svc"
 K8S_CA_CERT=$(kubectl -n vault get cm kube-root-ca.crt -o jsonpath='{.data.ca\.crt}')
 vault write auth/kubernetes/config \
