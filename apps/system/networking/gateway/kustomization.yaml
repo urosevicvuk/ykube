@@ -5,7 +5,10 @@ namespace: gateway
 resources:
   - namespace.yaml
   # renovate: depName=kubernetes-sigs/gateway-api
-  - https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/standard-install.yaml
+  # experimental-install (not standard-install) so we get TLSRoute, which
+  # Cilium 1.19's gateway controller requires at startup — operator crashes
+  # with "no matches for kind TLSRoute" otherwise.
+  - https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/experimental-install.yaml
   - gateway.yaml
   - certificate.yaml
   - http-redirect-route.yaml

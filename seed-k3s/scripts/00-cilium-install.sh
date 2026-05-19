@@ -42,7 +42,7 @@ kubectl -n kube-system rollout status ds/cilium --timeout=5m
 # be applied. The Argo `gateway` Application (apps/system/networking/gateway/)
 # is pinned to the same URL — installing once here unblocks the root sync, then
 # Argo adopts it via server-side apply.
-GATEWAY_API_URL=$(grep -oE 'https://github.com/kubernetes-sigs/gateway-api/releases/download/v[0-9.]+/standard-install.yaml' \
+GATEWAY_API_URL=$(grep -oE 'https://github.com/kubernetes-sigs/gateway-api/releases/download/v[0-9.]+/(standard|experimental)-install.yaml' \
   "${REPO_ROOT}/apps/system/networking/gateway/kustomization.yaml")
 log "Pre-installing Gateway API CRDs (${GATEWAY_API_URL})"
 kubectl apply -f "${GATEWAY_API_URL}"

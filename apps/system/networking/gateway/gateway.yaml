@@ -12,19 +12,53 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
-    - name: https
+    # One listener per zone — Cilium's gateway controller needs per-listener
+    # `hostname:` to generate distinct SNI matchers for envoy. A single listener
+    # with multiple certificateRefs produces duplicate filter chains with the
+    # same matcher and the envoy listener never adds (NACK on xDS).
+    - name: https-urosevicvuk
       protocol: HTTPS
       port: 443
+      hostname: "*.urosevicvuk.dev"
       tls:
         mode: Terminate
-        # SNI selects between these four certificates per request hostname.
         certificateRefs:
           - kind: Secret
             name: wildcard-urosevicvuk-dev-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https-morel
+      protocol: HTTPS
+      port: 443
+      hostname: "*.morel.rs"
+      tls:
+        mode: Terminate
+        certificateRefs:
           - kind: Secret
             name: wildcard-morel-rs-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https-raf
+      protocol: HTTPS
+      port: 443
+      hostname: "*.raf-project.com"
+      tls:
+        mode: Terminate
+        certificateRefs:
           - kind: Secret
             name: wildcard-raf-project-com-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https-ofnir
+      protocol: HTTPS
+      port: 443
+      hostname: "*.ofnir.dev"
+      tls:
+        mode: Terminate
+        certificateRefs:
           - kind: Secret
             name: wildcard-ofnir-dev-tls
       allowedRoutes:

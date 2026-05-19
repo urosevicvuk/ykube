@@ -28,6 +28,7 @@
 
           # ArgoCD
           argocd
+          cloudflared
 
           # Talos + Proxmox bootstrap
           talosctl
