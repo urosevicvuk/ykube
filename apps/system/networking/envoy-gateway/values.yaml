@@ -1,0 +1,9 @@
+# Envoy Gateway runs the data-plane Envoy as ordinary pods (not host network,
+# not via Cilium's L7LB BPF redirect), bypassing the same-node return-path
+# identity bug that broke Cilium Gateway API on this single-node cluster.
+# See Cilium issues #35559, #36004, #42325.
+#
+# Most defaults are fine for a single-node homelab. The controller still
+# leases via the apiserver, but with replicas=1 there's no real coordination.
+deployment:
+  replicas: 1

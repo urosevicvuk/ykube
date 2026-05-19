@@ -18,5 +18,6 @@ resources:
   #   kubectl delete vap safe-upgrades.gateway.networking.k8s.io
   - https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/experimental-install.yaml
   - gateway.yaml
+  - reference-grant.yaml
   - certificate.yaml
   - http-redirect-route.yaml
