@@ -101,6 +101,16 @@ gatewayAPI:
   hostNetwork:
     enabled: true
 
+# Embed Envoy inside cilium-agent instead of the standalone cilium-envoy
+# DaemonSet. The external proxy mode (chart default) wraps every Gateway
+# listener in the BPF L7LB redirect path (envoy bound to 127.0.0.1:<random>,
+# clients hit ClusterIP, BPF redirects), which is exactly the path that's
+# broken on single-node clusters (see hostNetwork comment above). Embedded
+# envoy honors the hostNetwork.enabled flag and binds listeners on
+# 0.0.0.0:80 / :443 of the host as advertised.
+envoy:
+  enabled: false
+
 # L2 announcements replace MetalLB. Combined with kubeProxyReplacement, lets Cilium
 # advertise LB IPs on the LAN via ARP/NDP. Pool + policy live in separate manifests
 # so they can be tweaked independently of the chart values.
