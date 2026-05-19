@@ -12,7 +12,7 @@ source "$(dirname "$0")/common.sh"
 require_cmd kubectl
 require_cmd helm
 
-CILIUM_VERSION="1.19.3"
+CILIUM_VERSION="1.19.4"
 CILIUM_VALUES="${REPO_ROOT}/apps/system/networking/cilium/values.yaml"
 
 if ! kubectl get ns kube-system >/dev/null 2>&1; then
@@ -45,7 +45,9 @@ kubectl -n kube-system rollout status ds/cilium --timeout=5m
 GATEWAY_API_URL=$(grep -oE 'https://github.com/kubernetes-sigs/gateway-api/releases/download/v[0-9.]+/(standard|experimental)-install.yaml' \
   "${REPO_ROOT}/apps/system/networking/gateway/kustomization.yaml")
 log "Pre-installing Gateway API CRDs (${GATEWAY_API_URL})"
-kubectl apply -f "${GATEWAY_API_URL}"
+# --server-side because HTTPRoute's OpenAPI schema is too big for client-side
+# apply's last-applied-configuration annotation (256KB limit).
+kubectl apply --server-side -f "${GATEWAY_API_URL}"
 
 # Prometheus Operator CRDs (ServiceMonitor, PrometheusRule, PodMonitor, etc.).
 # Many system apps reference ServiceMonitor via their helm chart sub-templates —
