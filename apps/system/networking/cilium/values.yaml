@@ -38,6 +38,15 @@ socketLB:
 bpf:
   masquerade: true
 
+# Per-endpoint routes via the pod's veth instead of funneling all pod traffic
+# through cilium_host. Required for Cilium 1.19 Gateway API L7 LB to work on
+# single-node clusters: without this, Envoy's outbound to a same-node backend
+# leaves with identity `ingress` but the return SYN-ACK arrives tagged
+# `host`, BPF conntrack doesn't match the asymmetric flow, and Envoy returns
+# 503 "upstream connect timeout" on every request through the gateway.
+endpointRoutes:
+  enabled: true
+
 # k3s apiserver listens on 6443 on every node (single-node cluster, this is firelink itself).
 k8sServiceHost: 127.0.0.1
 k8sServicePort: "6443"
