@@ -52,7 +52,11 @@ server:
         path = "/vault/data"
       }
 
-      service_registration "kubernetes" {}
+      # service_registration "kubernetes" requires HA storage (raft/consul); it
+      # would crash standalone Vault with: "service_registration is configured,
+      # but storage does not support HA". When this single-node cluster grows to
+      # 3 nodes with raft storage, re-enable it so Vault auto-labels its pod
+      # active/standby via the k8s API.
 
       telemetry {
         prometheus_retention_time = "30s"
