@@ -21,6 +21,14 @@ ipam:
 # Replace kube-proxy entirely.
 kubeProxyReplacement: true
 
+# Socket-level load balancer: intercept ClusterIP traffic at the cgroup/socket layer
+# (connect/sendmsg) so pod-to-service goes straight to the backend pod IP. Without
+# this, traffic falls through to the packet-level path and UDP (notably DNS) flakes
+# out — symptom: pods can't resolve cluster.local, Argo apps stuck OutOfSync with
+# repo-server DNS timeouts.
+socketLB:
+  enabled: true
+
 # k3s apiserver listens on 6443 on every node (single-node cluster, this is firelink itself).
 k8sServiceHost: 127.0.0.1
 k8sServicePort: "6443"

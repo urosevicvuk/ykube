@@ -15,7 +15,8 @@ spec:
       "k8s:io.kubernetes.pod.namespace": kube-system
       "k8s:k8s-app": kube-dns
   ingress:
-    - {}
+    - fromEntities:
+        - all
 ---
 apiVersion: cilium.io/v2
 kind: CiliumClusterwideNetworkPolicy
@@ -26,6 +27,8 @@ spec:
     matchLabels:
       "reserved:host": ""
   ingress:
-    - {}
+    - fromEntities:
+        - all
   egress:
-    - {}
+    - toEntities:
+        - all
