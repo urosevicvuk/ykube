@@ -5,10 +5,18 @@ namespace: gateway
 resources:
   - namespace.yaml
   # renovate: depName=kubernetes-sigs/gateway-api
-  # experimental-install (not standard-install) so we get TLSRoute, which
-  # Cilium 1.19's gateway controller requires at startup — operator crashes
-  # with "no matches for kind TLSRoute" otherwise.
-  - https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/experimental-install.yaml
+  # Pinned to v1.4.1 (NOT v1.5.x). Cilium 1.19.x hardcodes a lookup for
+  # gateway.networking.k8s.io/v1alpha2/TLSRoute at operator startup. Gateway
+  # API 1.5 graduated TLSRoute to v1 and marks v1alpha2 served=false, which
+  # makes the operator crash-loop with "no matches for kind TLSRoute" —
+  # CEC reconciliation dies and every endpoint behind the gateway 502s.
+  # Bump back to a 1.5.x experimental channel once Cilium 1.20 lands.
+  #
+  # NOTE: 1.5.x ships a ValidatingAdmissionPolicy named
+  # `safe-upgrades.gateway.networking.k8s.io` that blocks downgrades. If you
+  # are coming from 1.5.x, delete it once before the first sync:
+  #   kubectl delete vap safe-upgrades.gateway.networking.k8s.io
+  - https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/experimental-install.yaml
   - gateway.yaml
   - certificate.yaml
   - http-redirect-route.yaml
