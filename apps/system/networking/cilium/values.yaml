@@ -88,8 +88,18 @@ securityContext:
 # Gateway API: enabled here only flips Cilium into Gateway-API mode and creates
 # the `cilium` GatewayClass. The Gateway API CRDs themselves are installed by
 # `apps/system/networking/gateway/` (upstream kubernetes-sigs/gateway-api).
+#
+# hostNetwork.enabled bypasses the LoadBalancer Service + BPF L7LB redirect
+# path. Envoy listens directly on host ports 80/443 instead. Working around
+# Cilium issues #35559 / #36004 / #42325: on single-node clusters the BPF
+# L7LB redirect mistags return-path identity (ingress vs host), Envoy's
+# upstream connect times out, and every request through the gateway 503s.
+# The LoadBalancer Service goes away with this; L2 announcement of
+# 192.168.1.240 is no longer relevant.
 gatewayAPI:
   enabled: true
+  hostNetwork:
+    enabled: true
 
 # L2 announcements replace MetalLB. Combined with kubeProxyReplacement, lets Cilium
 # advertise LB IPs on the LAN via ARP/NDP. Pool + policy live in separate manifests
