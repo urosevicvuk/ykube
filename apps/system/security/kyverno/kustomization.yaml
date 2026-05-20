@@ -4,10 +4,13 @@ namespace: kyverno
 
 resources:
   - namespace.yaml
-  - policies/disallow-latest-tag.yaml
-  - policies/require-labels.yaml
-  - policies/require-resource-limits.yaml
-  - policies/restrict-registries.yaml
+  # Policies disabled while we get the base cluster stable. Re-enable one by
+  # one after everything else works. Files left in policies/ so re-enabling
+  # is a one-line add per policy here.
+  # - policies/disallow-latest-tag.yaml
+  # - policies/require-labels.yaml
+  # - policies/require-resource-limits.yaml
+  # - policies/restrict-registries.yaml
 
 helmCharts:
   - name: kyverno

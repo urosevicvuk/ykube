@@ -4,9 +4,10 @@ namespace: stirling-pdf
 
 resources:
   - namespace.yaml
-  - resource-quota.yaml
-  - limit-range.yaml
-  - network-policy.yaml
+  # Tenant guardrails disabled while we stabilize.
+  # - resource-quota.yaml
+  # - limit-range.yaml
+  # - network-policy.yaml
   - httproute.yaml
 
 helmCharts:

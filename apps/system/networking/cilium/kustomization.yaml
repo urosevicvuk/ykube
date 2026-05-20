@@ -11,7 +11,10 @@ resources:
   - lb-ip-pool.yaml
   - l2-announcement-policy.yaml
   - hubble-route.yaml
-  - cluster-policies.yaml
+  # CCNPs disabled — a CCNP that selects reserved:host implicitly turns on
+  # host-firewall enforcement, which adds another moving piece while we're
+  # stabilizing the base cluster. Re-enable once everything else works.
+  # - cluster-policies.yaml
 
 helmCharts:
   - name: cilium
