@@ -13,7 +13,7 @@
 # which is what we restore here.
 image:
   repository: stirlingtools/stirling-pdf
-  tag: 2.5.1-fat
+  tag: 2.11.0-fat
 
 replicaCount: 1
 
