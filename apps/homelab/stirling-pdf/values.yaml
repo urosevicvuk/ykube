@@ -9,15 +9,19 @@ image:
 
 replicaCount: 1
 
-# NOTE: chart key is `envs:` (plural). Using `env:` silently does nothing.
+# NOTE: chart key is `envs:` (plural) AND it must be a LIST of {name, value}
+# entries — the template renders `toYaml .Values.envs | indent 8` straight
+# into the `env:` array, not as a map. A map silently does nothing.
 #
-# JAVA_OPTS: Stirling's internal ResourceMonitor watches cgroup memory
-# and treats normal JVM startup allocation as "CRITICAL", killing the
-# Spring context. Explicit -Xms/-Xmx keeps the JVM heap predictable so
-# it doesn't grow against the cgroup ceiling at boot.
+# JAVA_OPTS: Stirling's internal ResourceMonitor watches cgroup memory and
+# treats normal JVM startup allocation as "CRITICAL", killing the Spring
+# context. Explicit -Xms/-Xmx keeps the JVM heap predictable so it doesn't
+# grow against the cgroup ceiling at boot.
 envs:
-  SECURITY_ENABLELOGIN: "false"
-  JAVA_OPTS: "-Xms256m -Xmx2g"
+  - name: SECURITY_ENABLELOGIN
+    value: "false"
+  - name: JAVA_OPTS
+    value: "-Xms256m -Xmx2g"
 
 persistence:
   enabled: false
