@@ -12,6 +12,16 @@
 provider:
   name: cloudflare
 
+# Default every created record to Proxied (orange-cloud) — required for
+# Cloudflare Tunnel routing. Without this external-dns writes DNS-only
+# (grey-cloud) records that point at `<tunnel>.cfargotunnel.com` but
+# don't actually route through the tunnel because Cloudflare's edge
+# never sees the request. The per-resource annotation
+# `external-dns.alpha.kubernetes.io/cloudflare-proxied` should also work
+# but version support varies; this CLI flag is the safe global default.
+extraArgs:
+  - --cloudflare-proxied
+
 sources:
   - gateway-httproute
   - service
