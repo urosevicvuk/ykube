@@ -9,14 +9,14 @@ image:
 
 replicaCount: 1
 
-env:
+# NOTE: chart key is `envs:` (plural). Using `env:` silently does nothing.
+#
+# JAVA_OPTS: Stirling's internal ResourceMonitor watches cgroup memory
+# and treats normal JVM startup allocation as "CRITICAL", killing the
+# Spring context. Explicit -Xms/-Xmx keeps the JVM heap predictable so
+# it doesn't grow against the cgroup ceiling at boot.
+envs:
   SECURITY_ENABLELOGIN: "false"
-  # Stirling-pdf's internal ResourceMonitor watches cgroup memory and treats
-  # JVM startup allocation as "CRITICAL", killing the Spring context before
-  # it finishes initializing. The fix is twofold: give the JVM enough heap
-  # headroom (Xmx) so Java doesn't have to grow against the cgroup ceiling,
-  # AND ensure the cgroup limit is high enough that even with Xmx headroom
-  # there's room for native-mem (LibreOffice/Python tools etc.).
   JAVA_OPTS: "-Xms256m -Xmx2g"
 
 persistence:
