@@ -2,6 +2,17 @@
 # Postgres from CNPG, repos on Longhorn. HTTPS push/pull via the Gateway.
 # SSH disabled (TCP needs the VPS+WG frontend — separate task).
 
+# Bitnami moved to "Bitnami Secure Images" in 2025/2026 and the bundled
+# redis sub-chart now refuses to render with any non-BSI image (returns
+# "Unrecognized images: ..." and exits 1 from helm template). We use
+# `bitnamilegacy/redis` (their own legacy archive registry) because the
+# BSI images require a subscription. Setting allowInsecureImages bypasses
+# the chart's hard-block, the image still works fine — it's literally the
+# same binary Bitnami built last year.
+global:
+  security:
+    allowInsecureImages: true
+
 redis-cluster:
   enabled: false
 
