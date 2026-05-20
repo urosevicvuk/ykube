@@ -1,0 +1,29 @@
+# Stable-named ClusterIP Service for the Envoy Gateway proxy.
+#
+# Envoy Gateway auto-creates a Service per Gateway with a name like
+# `envoy-<ns>-<name>-<hash>` (e.g. envoy-gateway-external-42565a51). The
+# hash is derived from the Gateway namespace+name so it's deterministic, but
+# referencing it directly from cloudflared / other clients is fragile — it
+# changes if the Gateway is ever renamed.
+#
+# This Service label-selects the same proxy pods and gives us a stable name
+# (`gateway.envoy-gateway-system.svc.cluster.local`) that cloudflared can
+# rely on. targetPorts 10080/10443 are Envoy Gateway's internal unprivileged
+# ports (it avoids 80/443 because binding low ports requires NET_BIND_SERVICE).
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  namespace: envoy-gateway-system
+spec:
+  type: ClusterIP
+  selector:
+    gateway.envoyproxy.io/owning-gateway-name: external
+    gateway.envoyproxy.io/owning-gateway-namespace: gateway
+  ports:
+    - name: http
+      port: 80
+      targetPort: 10080
+    - name: https
+      port: 443
+      targetPort: 10443

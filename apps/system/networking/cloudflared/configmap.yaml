@@ -2,12 +2,17 @@
 #
 # Each public hostname maps to the in-cluster Gateway. cloudflared connects to
 # Cloudflare's edge, edge forwards inbound traffic for these hostnames into the
-# tunnel, cloudflared sends it to https://cilium-gateway-external.gateway:443 which
-# does SNI selection from the multi-cert listener.
+# tunnel, cloudflared sends it to the Envoy Gateway proxy service which does
+# SNI selection from the multi-cert listener.
+#
+# `gateway.envoy-gateway-system` is a stable-named ClusterIP Service we
+# defined in apps/system/networking/envoy-gateway/gateway-service.yaml that
+# label-selects the proxy pods. Avoids the auto-generated hash-suffixed
+# service name (envoy-gateway-external-<hash>) which would force a config
+# update if the Gateway resource is ever renamed.
 #
 # noTLSVerify=true is intentional — the Gateway certificate names are the
-# public hostnames (morel.rs, *.urosevicvuk.dev), not "gateway-external.gateway"
-# the internal service name.
+# public hostnames (morel.rs, *.urosevicvuk.dev), not the internal service name.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -22,62 +27,62 @@ data:
 
     ingress:
       - hostname: argocd.urosevicvuk.dev
-        service: https://cilium-gateway-external.gateway:443
+        service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: argocd.urosevicvuk.dev
       - hostname: vault.urosevicvuk.dev
-        service: https://cilium-gateway-external.gateway:443
+        service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: vault.urosevicvuk.dev
       - hostname: dashboard.urosevicvuk.dev
-        service: https://cilium-gateway-external.gateway:443
+        service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: dashboard.urosevicvuk.dev
       - hostname: prometheus.urosevicvuk.dev
-        service: https://cilium-gateway-external.gateway:443
+        service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: prometheus.urosevicvuk.dev
       - hostname: alertmanager.urosevicvuk.dev
-        service: https://cilium-gateway-external.gateway:443
+        service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: alertmanager.urosevicvuk.dev
       - hostname: hubble.urosevicvuk.dev
-        service: https://cilium-gateway-external.gateway:443
+        service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: hubble.urosevicvuk.dev
       - hostname: git.urosevicvuk.dev
-        service: https://cilium-gateway-external.gateway:443
+        service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: git.urosevicvuk.dev
       - hostname: registry.urosevicvuk.dev
-        service: https://cilium-gateway-external.gateway:443
+        service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: registry.urosevicvuk.dev
       - hostname: cloud.urosevicvuk.dev
-        service: https://cilium-gateway-external.gateway:443
+        service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: cloud.urosevicvuk.dev
       - hostname: draw.urosevicvuk.dev
-        service: https://cilium-gateway-external.gateway:443
+        service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: draw.urosevicvuk.dev
       - hostname: pdf.urosevicvuk.dev
-        service: https://cilium-gateway-external.gateway:443
+        service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: pdf.urosevicvuk.dev
       - hostname: morel.rs
-        service: https://cilium-gateway-external.gateway:443
+        service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: morel.rs
