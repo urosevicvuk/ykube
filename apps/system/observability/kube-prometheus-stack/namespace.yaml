@@ -2,6 +2,10 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: kube-prometheus-stack
-  labels:
-    pod-security.kubernetes.io/enforce: baseline
-    pod-security.kubernetes.io/warn: restricted
+  # PodSecurity admission removed. node-exporter is a DaemonSet that needs
+  # hostNetwork + hostPID + hostPath + hostPort to read node metrics, all
+  # of which `baseline` blocks. The chart can't run any other way, and
+  # forcing `privileged` for the whole namespace just to fit one DaemonSet
+  # made the labels load-bearing. Drop them entirely (consistent with the
+  # rest of the namespaces during stabilization). Restrict per-pod later
+  # via custom CCNPs if needed.

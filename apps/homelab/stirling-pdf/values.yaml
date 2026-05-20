@@ -1,5 +1,10 @@
+# The chart concatenates `${registry}/${repository}:${tag}` and `registry`
+# defaults to `docker.stirlingpdf.com`. Don't repeat it in `repository:` or
+# the rendered image becomes
+#   docker.stirlingpdf.com/docker.stirlingpdf.com/stirlingtools/stirling-pdf
+# which 404s with `failed to resolve reference`.
 image:
-  repository: docker.stirlingpdf.com/stirlingtools/stirling-pdf
+  repository: stirlingtools/stirling-pdf
   tag: latest-fat
 
 replicaCount: 1
