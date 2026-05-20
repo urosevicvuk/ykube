@@ -11,8 +11,15 @@
 # service name (envoy-gateway-external-<hash>) which would force a config
 # update if the Gateway resource is ever renamed.
 #
-# noTLSVerify=true is intentional — the Gateway certificate names are the
-# public hostnames (morel.rs, *.urosevicvuk.dev), not the internal service name.
+# `originServerName` per route: cloudflared sends this as the TLS SNI when
+# connecting to Envoy. Without it, SNI would be `gateway.envoy-gateway-system`,
+# Envoy's TLS listeners (configured for *.urosevicvuk.dev / *.morel.rs / etc)
+# wouldn't match, and Envoy would RST the connection mid-handshake → 502.
+# With it, Envoy picks the correct listener + cert.
+#
+# `noTLSVerify=true` is intentional — the Gateway certificate names are the
+# public hostnames, the URL host (`gateway.envoy-gateway-system`) doesn't
+# match the cert SAN. SNI is for listener selection, not cert verification.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -35,59 +42,71 @@ data:
         originRequest:
           noTLSVerify: true
           httpHostHeader: argocd.urosevicvuk.dev
+          originServerName: argocd.urosevicvuk.dev
       - hostname: vault.urosevicvuk.dev
         service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: vault.urosevicvuk.dev
+          originServerName: vault.urosevicvuk.dev
       - hostname: dashboard.urosevicvuk.dev
         service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: dashboard.urosevicvuk.dev
+          originServerName: dashboard.urosevicvuk.dev
       - hostname: prometheus.urosevicvuk.dev
         service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: prometheus.urosevicvuk.dev
+          originServerName: prometheus.urosevicvuk.dev
       - hostname: alertmanager.urosevicvuk.dev
         service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: alertmanager.urosevicvuk.dev
+          originServerName: alertmanager.urosevicvuk.dev
       - hostname: hubble.urosevicvuk.dev
         service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: hubble.urosevicvuk.dev
+          originServerName: hubble.urosevicvuk.dev
       - hostname: git.urosevicvuk.dev
         service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: git.urosevicvuk.dev
+          originServerName: git.urosevicvuk.dev
       - hostname: registry.urosevicvuk.dev
         service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: registry.urosevicvuk.dev
+          originServerName: registry.urosevicvuk.dev
       - hostname: cloud.urosevicvuk.dev
         service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: cloud.urosevicvuk.dev
+          originServerName: cloud.urosevicvuk.dev
       - hostname: draw.urosevicvuk.dev
         service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: draw.urosevicvuk.dev
+          originServerName: draw.urosevicvuk.dev
       - hostname: pdf.urosevicvuk.dev
         service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: pdf.urosevicvuk.dev
+          originServerName: pdf.urosevicvuk.dev
       - hostname: morel.rs
         service: https://gateway.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: morel.rs
+          originServerName: morel.rs
       - service: http_status:404
