@@ -3,9 +3,17 @@
 # the rendered image becomes
 #   docker.stirlingpdf.com/docker.stirlingpdf.com/stirlingtools/stirling-pdf
 # which 404s with `failed to resolve reference`.
+#
+# Pinned to 2.5.1-fat (matches the chart's appVersion default). `latest-fat`
+# is a rolling tag and currently points at 2.11.0, which ships a
+# ResourceMonitor that flags CPU > 100% as CRITICAL during JVM startup —
+# multi-core hosts trivially hit 200%+ at boot, the bean constructor sees
+# CRITICAL state and throws, Spring context shuts down before serving.
+# Pre-restructure ykube didn't pin a tag and inherited the chart default,
+# which is what we restore here.
 image:
   repository: stirlingtools/stirling-pdf
-  tag: latest-fat
+  tag: 2.5.1-fat
 
 replicaCount: 1
 
