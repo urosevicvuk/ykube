@@ -3,6 +3,17 @@ kind: Gateway
 metadata:
   name: external
   namespace: gateway
+  annotations:
+    # Force external-dns to write CNAMEs pointing at the cloudflared tunnel,
+    # NOT A records pointing at the Gateway's status address. Without this,
+    # external-dns reads `status.addresses: [192.168.1.240, 100.65.172.104]`
+    # and leaks the cluster LB IP + Tailscale IP into public DNS, which
+    # also doesn't route from the internet anyway.
+    #
+    # `cloudflare-proxied=true` makes the CNAME orange-cloud proxied so
+    # Cloudflare's edge handles TLS and forwards into the tunnel.
+    external-dns.alpha.kubernetes.io/target: 67f9c7d3-6182-4f5b-946c-c5c676edd958.cfargotunnel.com
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
 spec:
   gatewayClassName: eg
   listeners:
