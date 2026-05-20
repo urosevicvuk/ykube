@@ -22,13 +22,14 @@ livenessProbe:
 readinessProbe:
   initialDelaySeconds: 60
 
-resources:
-  requests:
-    cpu: 200m
-    memory: 512Mi
-  limits:
-    cpu: "2"
-    memory: 4Gi
+# Cgroup-bounded resources crash Stirling on startup: its internal
+# ResourceMonitor reads cgroup memory at JVM init, sees the bounded ceiling,
+# treats normal startup-time allocation as "CRITICAL", and shuts down before
+# the Spring context finishes loading
+# (TempFileShutdownHook BeanCreationException). Unset limits = container can
+# use whatever the node has free, monitor reads node-level memory and stays
+# OK. We'll re-add limits per-app once the node has a sustained baseline.
+resources: {}
 
 service:
   type: ClusterIP
