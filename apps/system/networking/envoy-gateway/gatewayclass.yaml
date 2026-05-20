@@ -1,0 +1,11 @@
+# Envoy Gateway's helm chart deploys the controller but does not create a
+# default GatewayClass — you bind your own at any name to the chart's
+# controller. We use `eg` as the conventional short name; the Gateway
+# resource in `apps/system/networking/gateway/gateway.yaml` references it
+# via `gatewayClassName: eg`.
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: eg
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
