@@ -17,3 +17,31 @@ helmCharts:
     namespace: envoy-gateway-system
     valuesFile: values.yaml
     includeCRDs: true
+
+# Strip the safe-upgrades VAP/VAPB that the chart ships unconditionally.
+# It's a vendored copy of the Gateway API 1.5.x downgrade-blocker which
+# bricks our deliberately-pinned 1.4.1 Gateway API CRDs. There's no helm
+# value to disable it, so we drop it at the kustomize layer.
+patches:
+  - target:
+      group: admissionregistration.k8s.io
+      version: v1
+      kind: ValidatingAdmissionPolicy
+      name: safe-upgrades.gateway.networking.k8s.io
+    patch: |
+      $patch: delete
+      apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingAdmissionPolicy
+      metadata:
+        name: safe-upgrades.gateway.networking.k8s.io
+  - target:
+      group: admissionregistration.k8s.io
+      version: v1
+      kind: ValidatingAdmissionPolicyBinding
+      name: safe-upgrades.gateway.networking.k8s.io
+    patch: |
+      $patch: delete
+      apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingAdmissionPolicyBinding
+      metadata:
+        name: safe-upgrades.gateway.networking.k8s.io
