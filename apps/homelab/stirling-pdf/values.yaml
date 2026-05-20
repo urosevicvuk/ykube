@@ -11,6 +11,13 @@ replicaCount: 1
 
 env:
   SECURITY_ENABLELOGIN: "false"
+  # Stirling-pdf's internal ResourceMonitor watches cgroup memory and treats
+  # JVM startup allocation as "CRITICAL", killing the Spring context before
+  # it finishes initializing. The fix is twofold: give the JVM enough heap
+  # headroom (Xmx) so Java doesn't have to grow against the cgroup ceiling,
+  # AND ensure the cgroup limit is high enough that even with Xmx headroom
+  # there's room for native-mem (LibreOffice/Python tools etc.).
+  JAVA_OPTS: "-Xms256m -Xmx2g"
 
 persistence:
   enabled: false
@@ -22,14 +29,16 @@ livenessProbe:
 readinessProbe:
   initialDelaySeconds: 60
 
-# Cgroup-bounded resources crash Stirling on startup: its internal
-# ResourceMonitor reads cgroup memory at JVM init, sees the bounded ceiling,
-# treats normal startup-time allocation as "CRITICAL", and shuts down before
-# the Spring context finishes loading
-# (TempFileShutdownHook BeanCreationException). Unset limits = container can
-# use whatever the node has free, monitor reads node-level memory and stays
-# OK. We'll re-add limits per-app once the node has a sustained baseline.
-resources: {}
+# Give Java explicit heap (above) and the cgroup enough overhead so the
+# ResourceMonitor doesn't trip. 1Gi requested, 4Gi ceiling. Empty resources:
+# {} did not work — SSA preserved the previously-applied limits.
+resources:
+  requests:
+    cpu: 200m
+    memory: 1Gi
+  limits:
+    cpu: "2"
+    memory: 4Gi
 
 service:
   type: ClusterIP
