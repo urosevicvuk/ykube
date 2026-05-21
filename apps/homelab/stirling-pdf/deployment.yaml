@@ -52,6 +52,14 @@ spec:
               mountPath: /tmp
             - name: logs
               mountPath: /logs
+            # The image's init.sh chowns these as root; we run non-root, so
+            # mount emptyDirs and let fsGroup=1000 make them writable.
+            - name: pipeline
+              mountPath: /pipeline
+            - name: custom-files
+              mountPath: /customFiles
+            - name: home
+              mountPath: /home/stirlingpdfuser
           resources:
             requests:
               cpu: 200m
@@ -82,6 +90,12 @@ spec:
         - name: tmp
           emptyDir: {}
         - name: logs
+          emptyDir: {}
+        - name: pipeline
+          emptyDir: {}
+        - name: custom-files
+          emptyDir: {}
+        - name: home
           emptyDir: {}
 ---
 apiVersion: v1
