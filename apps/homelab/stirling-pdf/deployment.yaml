@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stirling-pdf
+  namespace: stirling-pdf
+  labels:
+    app.kubernetes.io/name: stirling-pdf
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: stirling-pdf
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: stirling-pdf
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      automountServiceAccountToken: false
+      containers:
+        - name: stirling-pdf
+          image: docker.io/stirlingtools/stirling-pdf:1.5.0
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: DISABLE_ADDITIONAL_FEATURES
+              value: "true"
+            - name: SECURITY_ENABLELOGIN
+              value: "false"
+            - name: SYSTEM_GOOGLEVISIBILITY
+              value: "false"
+            - name: SYSTEM_DEFAULTLOCALE
+              value: en-US
+          volumeMounts:
+            - name: configs
+              mountPath: /configs
+            - name: tmp
+              mountPath: /tmp
+            - name: logs
+              mountPath: /logs
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+      volumes:
+        - name: configs
+          persistentVolumeClaim:
+            claimName: stirling-pdf-configs
+        - name: tmp
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stirling-pdf
+  namespace: stirling-pdf
+  labels:
+    app.kubernetes.io/name: stirling-pdf
+spec:
+  selector:
+    app.kubernetes.io/name: stirling-pdf
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
