@@ -17,10 +17,11 @@ spec:
       labels:
         app.kubernetes.io/name: stirling-pdf
     spec:
+      # Stirling-PDF's init.sh must start as root to chown writable dirs and
+      # symlink /usr/local/bin/diagnostics; it then drops to stirlingpdfuser
+      # (UID 1000) via su-exec before launching Spring. Forcing runAsNonRoot
+      # breaks the init flow (issues #332, #508, #1516).
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
         fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
@@ -28,10 +29,9 @@ spec:
       containers:
         - name: stirling-pdf
           image: docker.io/stirlingtools/stirling-pdf:2.10.1
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: [ALL]
+          # No container securityContext: init.sh needs CAP_CHOWN/CAP_FOWNER
+          # to fix dir ownership and CAP_SETUID/CAP_SETGID for su-exec to drop
+          # to stirlingpdfuser. Matches the upstream chart's default.
           ports:
             - name: http
               containerPort: 8080
