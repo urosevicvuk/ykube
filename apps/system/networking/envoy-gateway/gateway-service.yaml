@@ -18,7 +18,7 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    gateway.envoyproxy.io/owning-gateway-name: external
+    gateway.envoyproxy.io/owning-gateway-name: gateway-external
     gateway.envoyproxy.io/owning-gateway-namespace: gateway
   ports:
     - name: http

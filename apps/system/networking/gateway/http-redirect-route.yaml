@@ -5,7 +5,7 @@ metadata:
   namespace: gateway
 spec:
   parentRefs:
-    - name: external
+    - name: gateway-external
       sectionName: http
   rules:
     - filters:

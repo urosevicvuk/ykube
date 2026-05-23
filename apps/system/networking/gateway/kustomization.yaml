@@ -16,6 +16,8 @@ resources:
   # To update CRDs: change the version in 00-cilium-install.sh and re-run
   # `task -d seed-k3s cilium:install`. Idempotent.
   - gateway.yaml
+  - gatewayclass-internal.yaml
+  - envoyproxy-internal.yaml
   - reference-grant.yaml
   - certificate.yaml
   - http-redirect-route.yaml

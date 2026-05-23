@@ -5,7 +5,7 @@ metadata:
   namespace: morel
 spec:
   parentRefs:
-    - name: external
+    - name: gateway-external
       namespace: gateway
   hostnames:
     - morel.rs

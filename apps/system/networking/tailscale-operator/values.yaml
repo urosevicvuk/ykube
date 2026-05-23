@@ -1,0 +1,14 @@
+# Tailscale Kubernetes operator.
+#
+# OAuth credentials come from the pre-existing Secret `operator-oauth`
+# (created by the ExternalSecret in secrets.yaml). The chart looks for that
+# Secret name by default when `oauth.clientId`/`oauth.clientSecret` are unset
+# — there is no `oauth.existingSecret` field, leaving the oauth block out is
+# the canonical way to use a pre-created Secret.
+#
+# Chart defaults already match what we want:
+#   operatorConfig.defaultTags: ["tag:k8s-operator"]
+#   operatorConfig.hostname:    "tailscale-operator"
+#   proxyConfig.defaultTags:    ["tag:k8s"]
+# Those tag names must exist as tagOwners in Tailscale ACLs, and your
+# devices must be allowed to reach `tag:k8s:*` for the tailnet lane to work.

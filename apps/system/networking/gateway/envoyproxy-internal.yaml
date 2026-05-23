@@ -1,0 +1,25 @@
+# Parameters for the `eg-internal` GatewayClass: tells Envoy Gateway to
+# provision the data-plane LoadBalancer Service via the Tailscale operator
+# instead of Cilium's LB IPAM. The operator watches for Services with
+# `loadBalancerClass: tailscale` and spins up a tailscale proxy pod that
+# joins the tailnet as a device named per the hostname annotation, then
+# forwards inbound tailnet traffic into the Service's ClusterIP.
+#
+# Net effect: the `gateway-internal` Envoy is reachable at
+# `gateway-internal.<tailnet>.ts.net` (and its 100.x tailnet IP). external-dns
+# publishes per-route CNAMEs to that hostname; off-tailnet the DNS resolves
+# but the IP isn't routable.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: gateway-internal
+  namespace: gateway
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        type: LoadBalancer
+        loadBalancerClass: tailscale
+        annotations:
+          tailscale.com/hostname: gateway-internal

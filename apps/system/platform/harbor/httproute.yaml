@@ -5,7 +5,7 @@ metadata:
   namespace: harbor
 spec:
   parentRefs:
-    - name: external
+    - name: gateway-external
       namespace: gateway
   hostnames:
     - registry.urosevicvuk.dev

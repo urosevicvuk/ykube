@@ -5,7 +5,7 @@ metadata:
   namespace: opencloud
 spec:
   parentRefs:
-    - name: external
+    - name: gateway-external
       namespace: gateway
   hostnames:
     - cloud.urosevicvuk.dev
