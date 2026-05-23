@@ -26,8 +26,19 @@ kubeProxyReplacement: true
 # this, traffic falls through to the packet-level path and UDP (notably DNS) flakes
 # out — symptom: pods can't resolve cluster.local, Argo apps stuck OutOfSync with
 # repo-server DNS timeouts.
+#
+# hostNamespaceOnly: restrict socket-LB to the host network namespace; pod-side
+# Service traffic falls back to tc-level handling. Required for tailscale-operator
+# LoadBalancer-class proxies (gateway-internal): they DNAT incoming tailnet traffic
+# to a ClusterIP and MASQUERADE the source via in-pod nftables. Without
+# hostNamespaceOnly, Cilium's socket-LB bypasses those netfilter hooks at the
+# pod's egress socket and the return packets from the Service backend don't match
+# the proxy pod's conntrack, so SYN goes out but SYN-ACK never gets back to the
+# tailnet client. (See cilium/cilium#17738 for the apiserver-reachability caveat
+# in some setups — not affecting this single-node k3s cluster.)
 socketLB:
   enabled: true
+  hostNamespaceOnly: true
 
 # eBPF masquerade instead of iptables. The iptables masquerade reconciler in
 # Cilium 1.19 has a startup bug where it tries to delete a phantom rule from
