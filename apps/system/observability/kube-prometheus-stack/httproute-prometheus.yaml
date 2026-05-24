@@ -10,7 +10,7 @@ metadata:
 spec:
   parentRefs:
     - name: gateway-internal
-      namespace: gateway
+      namespace: envoy-gateway-system
   hostnames:
     - prometheus.urosevicvuk.dev
   rules:

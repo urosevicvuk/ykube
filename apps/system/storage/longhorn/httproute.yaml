@@ -12,7 +12,7 @@ metadata:
 spec:
   parentRefs:
     - name: gateway-internal
-      namespace: gateway
+      namespace: envoy-gateway-system
   hostnames:
     - longhorn.urosevicvuk.dev
   rules:

@@ -9,7 +9,7 @@ metadata:
 spec:
   parentRefs:
     - name: gateway-internal
-      namespace: gateway
+      namespace: envoy-gateway-system
   hostnames:
     - alertmanager.urosevicvuk.dev
   rules:

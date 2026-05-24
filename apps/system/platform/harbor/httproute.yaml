@@ -6,7 +6,7 @@ metadata:
 spec:
   parentRefs:
     - name: gateway-external
-      namespace: gateway
+      namespace: envoy-gateway-system
   hostnames:
     - registry.urosevicvuk.dev
   rules:
