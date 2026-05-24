@@ -1,0 +1,30 @@
+# HA pool of tailscale-operator proxy replicas that front Envoy Gateway
+# `gateway-internal`. All replicas advertise a single Tailscale Service
+# (logical hostname `gateway-internal.<tailnet>.ts.net`), tagged
+# `tag:k8s-ingress`. Tailnet clients connect via either replica and
+# tailscale-services round-robins. Lose a replica or a node — the other
+# takes over with no DNS change.
+#
+# No static endpoints / no ProxyClass: relies on tailscale's normal
+# NAT-punching to establish direct WireGuard, falls back to DERP relay
+# when punching fails. Suitable for environments without a stable public
+# IP (dynamic ISP, CGNAT, etc.). Trade-off: occasional DERP slowness if
+# punching fails — but no NixOS firewall, no node external-ip flag, no
+# port forward upkeep.
+#
+# Workloads opt into this pool with two Service annotations:
+#   tailscale.com/proxy-group: gateway-ingress
+#   tailscale.com/hostname: <name>
+# Today only `gateway-internal` Envoy uses it (see apps/system/networking/
+# gateway/envoyproxy-internal.yaml). Future tailnet exposures (Forgejo SSH,
+# game servers, etc.) can share the same pool or get their own ProxyGroup
+# if they need ACL isolation.
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyGroup
+metadata:
+  name: gateway-ingress
+spec:
+  type: ingress
+  replicas: 2
+  tags:
+    - "tag:k8s-ingress"

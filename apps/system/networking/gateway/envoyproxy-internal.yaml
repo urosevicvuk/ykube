@@ -1,14 +1,18 @@
-# Parameters for the `eg-internal` GatewayClass: tells Envoy Gateway to
-# provision the data-plane LoadBalancer Service via the Tailscale operator
-# instead of Cilium's LB IPAM. The operator watches for Services with
-# `loadBalancerClass: tailscale` and spins up a tailscale proxy pod that
-# joins the tailnet as a device named per the hostname annotation, then
-# forwards inbound tailnet traffic into the Service's ClusterIP.
+# Parameters for the `eg-internal` GatewayClass: directs the data-plane LB
+# Service to the tailscale-operator (not Cilium's LB IPAM), and binds it to
+# the shared `gateway-ingress` ProxyGroup for HA.
 #
-# Net effect: the `gateway-internal` Envoy is reachable at
-# `gateway-internal.<tailnet>.ts.net` (and its 100.x tailnet IP). external-dns
-# publishes per-route CNAMEs to that hostname; off-tailnet the DNS resolves
-# but the IP isn't routable.
+# The `proxy-group` annotation makes the operator skip the per-Service-proxy
+# pattern and instead use the pre-existing pool of replicas defined in
+# apps/system/networking/tailscale-operator/proxygroup-gateway-ingress.yaml.
+# Result on the tailnet: a single Tailscale Service named `gateway-internal`
+# (one device-list entry, multiple backing replicas) that proxies to this
+# Envoy's ClusterIP. external-dns publishes per-route CNAMEs to that
+# hostname.
+#
+# Direct (non-DERP) WireGuard reachability is provided via the
+# `tailscale-edge` ProxyClass referenced by the ProxyGroup — that opens the
+# operator-managed NodePort UDP range on edge-labeled nodes.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
 metadata:
@@ -22,4 +26,5 @@ spec:
         type: LoadBalancer
         loadBalancerClass: tailscale
         annotations:
+          tailscale.com/proxy-group: gateway-ingress
           tailscale.com/hostname: gateway-internal

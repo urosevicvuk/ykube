@@ -5,6 +5,7 @@ namespace: tailscale
 resources:
   - namespace.yaml
   - secrets.yaml
+  - proxygroup-gateway-ingress.yaml
 
 helmCharts:
   - name: tailscale-operator

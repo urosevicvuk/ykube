@@ -1,10 +1,14 @@
 # Stable-named ClusterIP Service for the Envoy Gateway proxy.
 #
+# Lives here in `gateway/` (not `envoy-gateway/`) because its selector
+# references a Gateway resource we declare in this app — the controller
+# in envoy-gateway/ should know nothing about specific Gateway names.
+#
 # Envoy Gateway auto-creates a Service per Gateway with a name like
-# `envoy-<ns>-<name>-<hash>` (e.g. envoy-gateway-external-42565a51). The
-# hash is derived from the Gateway namespace+name so it's deterministic, but
-# referencing it directly from cloudflared / other clients is fragile — it
-# changes if the Gateway is ever renamed.
+# `envoy-<ns>-<name>-<hash>` (e.g. envoy-gateway-gateway-external-9ec3fa43).
+# The hash is derived from the Gateway namespace+name so it's deterministic,
+# but referencing it directly from cloudflared / other clients is fragile —
+# it changes if the Gateway is ever renamed.
 #
 # This Service label-selects the same proxy pods and gives us a stable name
 # (`gateway.envoy-gateway-system.svc.cluster.local`) that cloudflared can
