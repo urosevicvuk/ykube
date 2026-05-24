@@ -29,3 +29,8 @@ spec:
         annotations:
           tailscale.com/proxy-group: gateway-ingress
           tailscale.com/hostname: gateway-internal
+          # Tailscale Services default to `tag:k8s` which our tailnet ACL
+          # doesn't permit the operator OAuth client to assign. The ProxyGroup
+          # replicas (gateway-ingress-0/1) already use `tag:k8s-ingress` and
+          # the ACLs are set up for it — tag the Service the same way.
+          tailscale.com/tags: "tag:k8s-ingress"
