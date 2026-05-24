@@ -82,8 +82,9 @@ securityContext:
 
 # Gateway API stays OFF. Cilium's same-node L7 LB return-path bug
 # (issues #35559 / #36004 / #42325) is unresolved; we use Envoy Gateway
-# instead (apps/system/networking/envoy-gateway/). Cilium provides only
-# CNI + LB IPAM + L2 announce + Hubble + NetworkPolicies here.
+# instead (apps/system/networking/envoy/ for the controller, plus
+# gateway-external/ and gateway-internal/ for the two ingress lanes).
+# Cilium provides only CNI + LB IPAM + L2 announce + Hubble + NetworkPolicies.
 gatewayAPI:
   enabled: false
 

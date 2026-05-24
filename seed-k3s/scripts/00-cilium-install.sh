@@ -39,11 +39,11 @@ log "Waiting for Cilium DaemonSet to be ready"
 kubectl -n kube-system rollout status ds/cilium --timeout=5m
 
 # Gateway API CRDs must exist before root/argocd-route.yaml (an HTTPRoute) can
-# be applied. The Argo `gateway` Application (apps/system/networking/gateway/)
-# is pinned to the same URL — installing once here unblocks the root sync, then
+# be applied. The Argo `envoy` Application (apps/system/networking/envoy/) is
+# pinned to the same URL — installing once here unblocks the root sync, then
 # Argo adopts it via server-side apply.
 GATEWAY_API_URL=$(grep -oE 'https://github.com/kubernetes-sigs/gateway-api/releases/download/v[0-9.]+/(standard|experimental)-install.yaml' \
-  "${REPO_ROOT}/apps/system/networking/gateway/kustomization.yaml")
+  "${REPO_ROOT}/apps/system/networking/envoy/kustomization.yaml")
 log "Pre-installing Gateway API CRDs (${GATEWAY_API_URL})"
 # --server-side because HTTPRoute's OpenAPI schema is too big for client-side
 # apply's last-applied-configuration annotation (256KB limit).

@@ -1,0 +1,17 @@
+# Parameters for the `eg-external` GatewayClass.
+#
+# Pins the data-plane Service to ClusterIP — cloudflared is the actual entry
+# point, so there's no need for the controller to provision a LoadBalancer
+# (and burn a Cilium LB IP). cloudflared targets the stable shim Service
+# `envoy-external` (gateway-service.yaml) which label-selects these pods.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: external
+  namespace: envoy-gateway-system
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        type: ClusterIP

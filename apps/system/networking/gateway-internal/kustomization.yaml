@@ -1,0 +1,17 @@
+# gateway-internal — tailnet-only ingress lane.
+#
+# Self-contained: GatewayClass, EnvoyProxy params (tailscale LB class), and
+# the Gateway resource. Shares envoy-gateway-system namespace with the
+# controller (apps/system/networking/envoy/) and reuses the urosevicvuk
+# wildcard cert Secret from that app.
+# No top-level `namespace:` — GatewayClass is cluster-scoped and kustomize
+# would forcibly stamp a namespace field on it (kustomize only recognises
+# built-in cluster-scoped kinds, not CRDs). Every resource declares its
+# own namespace explicitly instead.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - gatewayclass.yaml
+  - envoyproxy.yaml
+  - gateway.yaml

@@ -1,12 +1,31 @@
-# Envoy Gateway — replaces Cilium's broken Gateway API impl on single-node
-# clusters. Ships its own `eg` GatewayClass automatically.
+# Envoy Gateway — controller + shared infrastructure.
+#
+# Owns:
+#   - The Envoy Gateway controller (Helm chart) in envoy-gateway-system.
+#   - The four wildcard TLS Certificates issued by cert-manager. Both lane
+#     Gateways live in this namespace and reference these Secrets by name;
+#     keeping certs here means no cross-namespace refs and no ReferenceGrant.
+#
+# Lane apps (gateway-external, gateway-internal) hold everything specific to
+# their lane: GatewayClass, EnvoyProxy params, and the Gateway resource. They
+# share this namespace but are owned by separate Argo Applications.
+#
+# Gateway API CRDs are NOT managed here. They're installed by the bootstrap
+# script (seed-k3s/scripts/00-cilium-install.sh) directly via
+# `kubectl apply --server-side` from the v1.4.1 experimental-install.yaml.
+# Reason: HTTPRoute's OpenAPI schema is too large for client-side apply's
+# last-applied-configuration annotation (256KB limit). Argo can apply it
+# once via SSA, but subsequent diffs fall back to client-side and bust the
+# limit, causing perpetual sync failures. Having the bootstrap own them
+# avoids the loop. To update CRDs: change the version in 00-cilium-install.sh
+# and re-run `task -d seed-k3s cilium:install` — idempotent.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: envoy-gateway-system
 
 resources:
   - namespace.yaml
-  - gatewayclass.yaml
+  - certificate.yaml
 
 helmCharts:
   - name: gateway-helm

@@ -1,0 +1,33 @@
+# Tailnet-only Gateway. Provisioned by the `eg-internal` GatewayClass
+# (gatewayclass.yaml) which routes LoadBalancer creation through the
+# tailscale-operator (see envoyproxy.yaml) instead of Cilium's LB IPAM.
+# Reachable only at `gateway-internal.<tailnet>.ts.net`; off-tailnet the
+# published 100.x A record exists in DNS but doesn't route.
+#
+# No external-dns target annotation here — we *want* external-dns to read
+# the LoadBalancer status (the tailnet IP populated by the operator) and
+# publish per-route grey-cloud A/CNAME records pointing at it.
+#
+# Reuses the wildcard cert Secret from apps/system/networking/envoy/
+# certificate.yaml — TLS terminates inside Envoy in the cluster regardless
+# of which interface delivered the bytes.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gateway-internal
+  namespace: envoy-gateway-system
+spec:
+  gatewayClassName: eg-internal
+  listeners:
+    - name: https-urosevicvuk
+      protocol: HTTPS
+      port: 443
+      hostname: "*.urosevicvuk.dev"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: wildcard-urosevicvuk-dev-tls
+      allowedRoutes:
+        namespaces:
+          from: All

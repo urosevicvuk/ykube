@@ -1,8 +1,16 @@
+# Public-facing Gateway. Fronted by cloudflared (apps/system/networking/
+# cloudflared/) which terminates the Cloudflare Tunnel and forwards to the
+# stable `envoy-external` ClusterIP (gateway-service.yaml). Per-host SNI
+# selects the right TLS listener.
+#
+# Lives in envoy-gateway-system alongside the controller, the data-plane
+# Envoy pods, and the wildcard cert Secrets — same namespace throughout
+# means no cross-namespace references.
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: gateway-external
-  namespace: gateway
+  namespace: envoy-gateway-system
   annotations:
     # Force external-dns to write CNAMEs pointing at the cloudflared tunnel,
     # NOT A records pointing at the Gateway's status address. Without this,
@@ -15,7 +23,7 @@ metadata:
     external-dns.alpha.kubernetes.io/target: 67f9c7d3-6182-4f5b-946c-c5c676edd958.cfargotunnel.com
     external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
 spec:
-  gatewayClassName: eg
+  gatewayClassName: eg-external
   listeners:
     - name: http
       protocol: HTTP
@@ -23,10 +31,10 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
-    # One listener per zone — Cilium's gateway controller needs per-listener
-    # `hostname:` to generate distinct SNI matchers for envoy. A single listener
-    # with multiple certificateRefs produces duplicate filter chains with the
-    # same matcher and the envoy listener never adds (NACK on xDS).
+    # One listener per zone — Envoy needs per-listener `hostname:` to
+    # generate distinct SNI matchers. A single listener with multiple
+    # certificateRefs produces duplicate filter chains with the same matcher
+    # and the envoy listener never adds (NACK on xDS).
     - name: https-urosevicvuk
       protocol: HTTPS
       port: 443
@@ -72,39 +80,6 @@ spec:
         certificateRefs:
           - kind: Secret
             name: wildcard-ofnir-dev-tls
-      allowedRoutes:
-        namespaces:
-          from: All
----
-# Tailnet-only lane. Provisioned by `eg-internal` GatewayClass which routes
-# LoadBalancer creation through the tailscale-operator instead of Cilium's
-# LB IPAM. Reachable only at the tailnet device hostname
-# `gateway-internal.<tailnet>.ts.net`; off-tailnet the published 100.x A
-# record exists in DNS but doesn't route.
-#
-# No external-dns target annotation here — we *want* external-dns to read
-# the LoadBalancer status (the tailnet IP populated by the operator) and
-# publish per-route grey-cloud A/CNAME records pointing at it.
-#
-# Reuses the existing wildcard cert Secret — TLS terminates inside Envoy in
-# the cluster regardless of which interface delivered the bytes.
-apiVersion: gateway.networking.k8s.io/v1
-kind: Gateway
-metadata:
-  name: gateway-internal
-  namespace: gateway
-spec:
-  gatewayClassName: eg-internal
-  listeners:
-    - name: https-urosevicvuk
-      protocol: HTTPS
-      port: 443
-      hostname: "*.urosevicvuk.dev"
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - kind: Secret
-            name: wildcard-urosevicvuk-dev-tls
       allowedRoutes:
         namespaces:
           from: All

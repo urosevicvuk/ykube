@@ -1,6 +1,7 @@
-# Parameters for the `eg-internal` GatewayClass: directs the data-plane LB
-# Service to the tailscale-operator (not Cilium's LB IPAM), and binds it to
-# the shared `gateway-ingress` ProxyGroup for HA.
+# Parameters for the `eg-internal` GatewayClass.
+#
+# Directs the data-plane LB Service to the tailscale-operator (not Cilium's
+# LB IPAM), and binds it to the shared `gateway-ingress` ProxyGroup for HA.
 #
 # The `proxy-group` annotation makes the operator skip the per-Service-proxy
 # pattern and instead use the pre-existing pool of replicas defined in
@@ -16,8 +17,8 @@
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
 metadata:
-  name: gateway-internal
-  namespace: gateway
+  name: internal
+  namespace: envoy-gateway-system
 spec:
   provider:
     type: Kubernetes

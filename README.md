@@ -44,7 +44,7 @@ ykube/
 │   ├── system/               # cluster plumbing + shared services (one AppProject, one AppSet)
 │   │   ├── security/         # vault, external-secrets, kyverno (+ policies)
 │   │   ├── storage/          # longhorn, cloudnative-pg
-│   │   ├── networking/       # cilium (+ cluster-policies), cert-manager, external-dns, cloudflared, gateway
+│   │   ├── networking/       # cilium (+ cluster-policies), cert-manager, external-dns, cloudflared, envoy (+ gateway-external, gateway-internal), tailscale-operator
 │   │   ├── platform/         # harbor, forgejo (argo-workflows, argo-events deferred)
 │   │   └── observability/    # kube-prometheus-stack, loki, alloy
 │   ├── homelab/              # personal apps on urosevicvuk.dev (excalidraw, opencloud, stirling-pdf)

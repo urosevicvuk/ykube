@@ -1,0 +1,17 @@
+# GatewayClass for the tailnet-only ingress lane.
+#
+# Same Envoy Gateway controller as eg-external, but parametersRef points at
+# the tailscale-flavored EnvoyProxy. Gateways with `gatewayClassName:
+# eg-internal` get a tailscale-operator-provisioned LB instead of a
+# Cilium-announced one.
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: eg-internal
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  parametersRef:
+    group: gateway.envoyproxy.io
+    kind: EnvoyProxy
+    name: internal
+    namespace: envoy-gateway-system

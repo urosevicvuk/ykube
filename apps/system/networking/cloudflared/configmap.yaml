@@ -5,11 +5,11 @@
 # tunnel, cloudflared sends it to the Envoy Gateway proxy service which does
 # SNI selection from the multi-cert listener.
 #
-# `gateway.envoy-gateway-system` is a stable-named ClusterIP Service we
-# defined in apps/system/networking/envoy-gateway/gateway-service.yaml that
-# label-selects the proxy pods. Avoids the auto-generated hash-suffixed
-# service name (envoy-gateway-external-<hash>) which would force a config
-# update if the Gateway resource is ever renamed.
+# `envoy-external.envoy-gateway-system` is a stable-named ClusterIP Service
+# we defined in apps/system/networking/gateway-external/gateway-service.yaml
+# that label-selects the proxy pods. Avoids the auto-generated hash-suffixed
+# service name (envoy-envoy-gateway-system-gateway-external-<hash>) which
+# would force a config update if the Gateway resource is ever renamed.
 #
 # `originServerName` per route: cloudflared sends this as the TLS SNI when
 # connecting to Envoy. Without it, SNI would be `gateway.envoy-gateway-system`,
@@ -38,73 +38,73 @@ data:
 
     ingress:
       - hostname: argocd.urosevicvuk.dev
-        service: https://gateway.envoy-gateway-system:443
+        service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: argocd.urosevicvuk.dev
           originServerName: argocd.urosevicvuk.dev
       - hostname: vault.urosevicvuk.dev
-        service: https://gateway.envoy-gateway-system:443
+        service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: vault.urosevicvuk.dev
           originServerName: vault.urosevicvuk.dev
       - hostname: dashboard.urosevicvuk.dev
-        service: https://gateway.envoy-gateway-system:443
+        service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: dashboard.urosevicvuk.dev
           originServerName: dashboard.urosevicvuk.dev
       - hostname: prometheus.urosevicvuk.dev
-        service: https://gateway.envoy-gateway-system:443
+        service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: prometheus.urosevicvuk.dev
           originServerName: prometheus.urosevicvuk.dev
       - hostname: alertmanager.urosevicvuk.dev
-        service: https://gateway.envoy-gateway-system:443
+        service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: alertmanager.urosevicvuk.dev
           originServerName: alertmanager.urosevicvuk.dev
       - hostname: hubble.urosevicvuk.dev
-        service: https://gateway.envoy-gateway-system:443
+        service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: hubble.urosevicvuk.dev
           originServerName: hubble.urosevicvuk.dev
       - hostname: git.urosevicvuk.dev
-        service: https://gateway.envoy-gateway-system:443
+        service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: git.urosevicvuk.dev
           originServerName: git.urosevicvuk.dev
       - hostname: registry.urosevicvuk.dev
-        service: https://gateway.envoy-gateway-system:443
+        service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: registry.urosevicvuk.dev
           originServerName: registry.urosevicvuk.dev
       - hostname: cloud.urosevicvuk.dev
-        service: https://gateway.envoy-gateway-system:443
+        service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: cloud.urosevicvuk.dev
           originServerName: cloud.urosevicvuk.dev
       - hostname: draw.urosevicvuk.dev
-        service: https://gateway.envoy-gateway-system:443
+        service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: draw.urosevicvuk.dev
           originServerName: draw.urosevicvuk.dev
       - hostname: pdf.urosevicvuk.dev
-        service: https://gateway.envoy-gateway-system:443
+        service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: pdf.urosevicvuk.dev
           originServerName: pdf.urosevicvuk.dev
       - hostname: morel.rs
-        service: https://gateway.envoy-gateway-system:443
+        service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
           httpHostHeader: morel.rs

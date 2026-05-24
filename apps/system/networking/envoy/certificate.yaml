@@ -1,6 +1,6 @@
-# Wildcard certs per domain. Each Certificate produces a TLS Secret in the
-# gateway namespace; the Gateway HTTPS listener references all four secrets,
-# and selects per request via SNI.
+# Wildcard certs per zone — shared between the external (cloudflared) and
+# internal (tailnet) lanes. Both Gateways live in envoy-gateway-system and
+# reference these Secrets by name; same-namespace = no ReferenceGrant needed.
 #
 # All issued via letsencrypt-prod (cert-manager) using Cloudflare DNS-01.
 ---
@@ -8,7 +8,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: wildcard-urosevicvuk-dev
-  namespace: gateway
+  namespace: envoy-gateway-system
 spec:
   secretName: wildcard-urosevicvuk-dev-tls
   issuerRef:
@@ -23,7 +23,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: wildcard-morel-rs
-  namespace: gateway
+  namespace: envoy-gateway-system
 spec:
   secretName: wildcard-morel-rs-tls
   issuerRef:
@@ -38,7 +38,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: wildcard-raf-project-com
-  namespace: gateway
+  namespace: envoy-gateway-system
 spec:
   secretName: wildcard-raf-project-com-tls
   issuerRef:
@@ -53,7 +53,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: wildcard-ofnir-dev
-  namespace: gateway
+  namespace: envoy-gateway-system
 spec:
   secretName: wildcard-ofnir-dev-tls
   issuerRef:
