@@ -54,47 +54,55 @@ data:
     # creating its HTTPRoute on `gateway-external` — no edits here required,
     # as long as the hostname is under one of these zones. Wildcards don't
     # cover the bare apex (DNS rule), so each zone needs both entries.
+    #
+    # `matchSNItoHost: true` makes cloudflared use the incoming request's
+    # hostname as the TLS SNI to Envoy automatically. Envoy then picks the
+    # right listener by SNI: apex hostname → apex listener, subdomain →
+    # wildcard listener. Without this, every request through a wildcard
+    # rule would carry the same literal SNI and only one listener would
+    # ever match. Confirmed against the Cloudflare Tunnel origin docs and
+    # the cloudflared OriginRequestConfig source.
     ingress:
       - hostname: "urosevicvuk.dev"
         service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
-          originServerName: urosevicvuk.dev
+          matchSNItoHost: true
       - hostname: "*.urosevicvuk.dev"
         service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
-          originServerName: urosevicvuk.dev
+          matchSNItoHost: true
       - hostname: "morel.rs"
         service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
-          originServerName: morel.rs
+          matchSNItoHost: true
       - hostname: "*.morel.rs"
         service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
-          originServerName: morel.rs
+          matchSNItoHost: true
       - hostname: "raf-project.com"
         service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
-          originServerName: raf-project.com
+          matchSNItoHost: true
       - hostname: "*.raf-project.com"
         service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
-          originServerName: raf-project.com
+          matchSNItoHost: true
       - hostname: "ofnir.dev"
         service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
-          originServerName: ofnir.dev
+          matchSNItoHost: true
       - hostname: "*.ofnir.dev"
         service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
-          originServerName: ofnir.dev
+          matchSNItoHost: true
       # Catch-all 404 for anything that doesn't match a zone above (or
       # that somehow reaches cloudflared without a corresponding HTTPRoute
       # — which shouldn't happen, since external-dns only publishes CNAMEs
