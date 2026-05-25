@@ -1,25 +1,39 @@
 # cloudflared tunnel ingress config.
 #
-# Each public hostname maps to the in-cluster Gateway. cloudflared connects to
-# Cloudflare's edge, edge forwards inbound traffic for these hostnames into the
-# tunnel, cloudflared sends it to the Envoy Gateway proxy service which does
-# SNI selection from the multi-cert listener.
+# One wildcard entry per zone — adding a new public hostname no longer
+# requires editing this file, just add an HTTPRoute on `gateway-external`
+# with the new hostname and external-dns publishes the CNAME automatically.
 #
-# `envoy-external.envoy-gateway-system` is a stable-named ClusterIP Service
-# we defined in apps/system/networking/gateway-external/gateway-service.yaml
-# that label-selects the proxy pods. Avoids the auto-generated hash-suffixed
-# service name (envoy-envoy-gateway-system-gateway-external-<hash>) which
-# would force a config update if the Gateway resource is ever renamed.
+# How a request flows in:
+#   1. Client → Cloudflare edge for `foo.urosevicvuk.dev`
+#   2. Edge sees the CNAME → tunnel UUID → forwards into this cloudflared
+#   3. cloudflared matches the wildcard `*.urosevicvuk.dev` ingress rule
+#   4. cloudflared opens TLS to envoy-external.envoy-gateway-system:443
+#      with SNI = `urosevicvuk.dev` (originServerName below)
+#   5. Envoy listener `*.urosevicvuk.dev` accepts the SNI, terminates TLS
+#      with the wildcard cert
+#   6. Envoy reads the original Host header (`foo.urosevicvuk.dev`,
+#      preserved by cloudflared because we don't set httpHostHeader) and
+#      matches the corresponding HTTPRoute → backend Service
 #
-# `originServerName` per route: cloudflared sends this as the TLS SNI when
-# connecting to Envoy. Without it, SNI would be `gateway.envoy-gateway-system`,
-# Envoy's TLS listeners (configured for *.urosevicvuk.dev / *.morel.rs / etc)
-# wouldn't match, and Envoy would RST the connection mid-handshake → 502.
-# With it, Envoy picks the correct listener + cert.
+# `originServerName` per zone: cloudflared sends this as the TLS SNI to
+# Envoy. SNI is used by Envoy for listener+cert selection only — any
+# concrete name in the zone works because the cert is wildcard. HTTPRoute
+# routing keys off the Host header, not SNI, so per-host routing still
+# works correctly.
 #
-# `noTLSVerify=true` is intentional — the Gateway certificate names are the
-# public hostnames, the URL host (`gateway.envoy-gateway-system`) doesn't
-# match the cert SAN. SNI is for listener selection, not cert verification.
+# `noTLSVerify=true` is intentional — see the noTLSVerify section below
+# for the in-cluster cert validity rationale.
+#
+# `httpHostHeader` deliberately omitted — when unset, cloudflared
+# preserves the original request's Host header, which is exactly what
+# HTTPRoute matching needs.
+#
+# `envoy-external.envoy-gateway-system` is the stable-named ClusterIP
+# Service defined in apps/system/networking/gateway-external/
+# gateway-service.yaml. Avoids the auto-generated hash-suffixed name
+# (envoy-envoy-gateway-system-gateway-external-<hash>) which would
+# change if the Gateway resource is ever renamed.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -36,77 +50,53 @@ data:
     metrics: 0.0.0.0:2000
     no-autoupdate: true
 
+    # One apex + one wildcard per public zone. Add a new public app by
+    # creating its HTTPRoute on `gateway-external` — no edits here required,
+    # as long as the hostname is under one of these zones. Wildcards don't
+    # cover the bare apex (DNS rule), so each zone needs both entries.
     ingress:
-      - hostname: argocd.urosevicvuk.dev
+      - hostname: "urosevicvuk.dev"
         service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
-          httpHostHeader: argocd.urosevicvuk.dev
-          originServerName: argocd.urosevicvuk.dev
-      - hostname: vault.urosevicvuk.dev
+          originServerName: urosevicvuk.dev
+      - hostname: "*.urosevicvuk.dev"
         service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
-          httpHostHeader: vault.urosevicvuk.dev
-          originServerName: vault.urosevicvuk.dev
-      - hostname: dashboard.urosevicvuk.dev
+          originServerName: urosevicvuk.dev
+      - hostname: "morel.rs"
         service: https://envoy-external.envoy-gateway-system:443
         originRequest:
           noTLSVerify: true
-          httpHostHeader: dashboard.urosevicvuk.dev
-          originServerName: dashboard.urosevicvuk.dev
-      - hostname: prometheus.urosevicvuk.dev
-        service: https://envoy-external.envoy-gateway-system:443
-        originRequest:
-          noTLSVerify: true
-          httpHostHeader: prometheus.urosevicvuk.dev
-          originServerName: prometheus.urosevicvuk.dev
-      - hostname: alertmanager.urosevicvuk.dev
-        service: https://envoy-external.envoy-gateway-system:443
-        originRequest:
-          noTLSVerify: true
-          httpHostHeader: alertmanager.urosevicvuk.dev
-          originServerName: alertmanager.urosevicvuk.dev
-      - hostname: hubble.urosevicvuk.dev
-        service: https://envoy-external.envoy-gateway-system:443
-        originRequest:
-          noTLSVerify: true
-          httpHostHeader: hubble.urosevicvuk.dev
-          originServerName: hubble.urosevicvuk.dev
-      - hostname: git.urosevicvuk.dev
-        service: https://envoy-external.envoy-gateway-system:443
-        originRequest:
-          noTLSVerify: true
-          httpHostHeader: git.urosevicvuk.dev
-          originServerName: git.urosevicvuk.dev
-      - hostname: registry.urosevicvuk.dev
-        service: https://envoy-external.envoy-gateway-system:443
-        originRequest:
-          noTLSVerify: true
-          httpHostHeader: registry.urosevicvuk.dev
-          originServerName: registry.urosevicvuk.dev
-      - hostname: cloud.urosevicvuk.dev
-        service: https://envoy-external.envoy-gateway-system:443
-        originRequest:
-          noTLSVerify: true
-          httpHostHeader: cloud.urosevicvuk.dev
-          originServerName: cloud.urosevicvuk.dev
-      - hostname: draw.urosevicvuk.dev
-        service: https://envoy-external.envoy-gateway-system:443
-        originRequest:
-          noTLSVerify: true
-          httpHostHeader: draw.urosevicvuk.dev
-          originServerName: draw.urosevicvuk.dev
-      - hostname: pdf.urosevicvuk.dev
-        service: https://envoy-external.envoy-gateway-system:443
-        originRequest:
-          noTLSVerify: true
-          httpHostHeader: pdf.urosevicvuk.dev
-          originServerName: pdf.urosevicvuk.dev
-      - hostname: morel.rs
-        service: https://envoy-external.envoy-gateway-system:443
-        originRequest:
-          noTLSVerify: true
-          httpHostHeader: morel.rs
           originServerName: morel.rs
+      - hostname: "*.morel.rs"
+        service: https://envoy-external.envoy-gateway-system:443
+        originRequest:
+          noTLSVerify: true
+          originServerName: morel.rs
+      - hostname: "raf-project.com"
+        service: https://envoy-external.envoy-gateway-system:443
+        originRequest:
+          noTLSVerify: true
+          originServerName: raf-project.com
+      - hostname: "*.raf-project.com"
+        service: https://envoy-external.envoy-gateway-system:443
+        originRequest:
+          noTLSVerify: true
+          originServerName: raf-project.com
+      - hostname: "ofnir.dev"
+        service: https://envoy-external.envoy-gateway-system:443
+        originRequest:
+          noTLSVerify: true
+          originServerName: ofnir.dev
+      - hostname: "*.ofnir.dev"
+        service: https://envoy-external.envoy-gateway-system:443
+        originRequest:
+          noTLSVerify: true
+          originServerName: ofnir.dev
+      # Catch-all 404 for anything that doesn't match a zone above (or
+      # that somehow reaches cloudflared without a corresponding HTTPRoute
+      # — which shouldn't happen, since external-dns only publishes CNAMEs
+      # for hostnames an HTTPRoute requested).
       - service: http_status:404

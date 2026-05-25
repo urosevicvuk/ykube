@@ -31,14 +31,31 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
-    # One listener per zone — Envoy needs per-listener `hostname:` to
-    # generate distinct SNI matchers. A single listener with multiple
+    # One listener per zone+pattern. Envoy needs per-listener `hostname:`
+    # to generate distinct SNI matchers — a single listener with multiple
     # certificateRefs produces duplicate filter chains with the same matcher
     # and the envoy listener never adds (NACK on xDS).
+    #
+    # Apex + wildcard per zone: Gateway API wildcard patterns (`*.zone`)
+    # match a single label only — they do NOT cover the bare apex. Need
+    # both listeners so apex hostnames (e.g. `morel.rs`) and subdomains
+    # (e.g. `www.morel.rs`) both attach correctly.
     - name: https-urosevicvuk
       protocol: HTTPS
       port: 443
       hostname: "*.urosevicvuk.dev"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: wildcard-urosevicvuk-dev-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https-urosevicvuk-apex
+      protocol: HTTPS
+      port: 443
+      hostname: "urosevicvuk.dev"
       tls:
         mode: Terminate
         certificateRefs:
@@ -59,6 +76,18 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    - name: https-morel-apex
+      protocol: HTTPS
+      port: 443
+      hostname: "morel.rs"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: wildcard-morel-rs-tls
+      allowedRoutes:
+        namespaces:
+          from: All
     - name: https-raf
       protocol: HTTPS
       port: 443
@@ -71,10 +100,34 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    - name: https-raf-apex
+      protocol: HTTPS
+      port: 443
+      hostname: "raf-project.com"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: wildcard-raf-project-com-tls
+      allowedRoutes:
+        namespaces:
+          from: All
     - name: https-ofnir
       protocol: HTTPS
       port: 443
       hostname: "*.ofnir.dev"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: wildcard-ofnir-dev-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https-ofnir-apex
+      protocol: HTTPS
+      port: 443
+      hostname: "ofnir.dev"
       tls:
         mode: Terminate
         certificateRefs:
