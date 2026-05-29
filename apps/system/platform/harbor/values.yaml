@@ -74,6 +74,10 @@ persistence:
       storageClass: longhorn
       accessMode: ReadWriteOnce
       size: 2Gi
+    trivy:
+      storageClass: longhorn
+      accessMode: ReadWriteOnce
+      size: 5Gi
 
 # In-chart Postgres off — using CNPG cluster instead.
 database:
@@ -99,9 +103,18 @@ redis:
       limits:
         memory: 128Mi
 
-# Disable Trivy and Notary (vanilla scope).
+# Trivy: vulnerability scanner. Scans images on push (project-level toggle)
+# and gates pulls when a project enables "Prevent vulnerable images from
+# running" with a severity threshold. Vuln DB lives on a 5Gi PVC; updated
+# from upstream feeds periodically.
 trivy:
-  enabled: false
+  enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
 
 notary:
   enabled: false
