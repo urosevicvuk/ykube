@@ -1,0 +1,59 @@
+# Enforces cosign signatures on every image pulled into the raf-banka
+# namespace from `registry.urosevicvuk.dev/raf-banka3/*`. Signatures are
+# produced by Banka-3-Backend / Banka-3-Frontend CI (and by the
+# `task sign:all` manual-bootstrap path in Banka-3-Infrastructure) using a
+# private keypair stored at `kv/raf-banka/cosign` in Vault.
+#
+# Signing uses `--tlog-upload=false` because this is a private homelab
+# keypair, not a public-identity (Fulcio/Rekor) flow — verification here
+# must mirror that with `rekor.ignoreTlog: true`.
+#
+# Images outside the raf-banka3 project (CNPG postgres, redis:alpine,
+# nginx-unprivileged, etc.) don't match the imageReferences glob, so this
+# policy doesn't act on them — they pass through unchanged.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-banka-images
+  annotations:
+    policies.kyverno.io/title: Verify Banka-3 cosign signatures
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: |
+      Pods in the raf-banka namespace running images from
+      registry.urosevicvuk.dev/raf-banka3/* must carry a cosign
+      signature from the Banka-3 keypair.
+spec:
+  validationFailureAction: Enforce
+  webhookTimeoutSeconds: 30
+  failurePolicy: Fail
+  rules:
+    - name: check-cosign-signature
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - raf-banka
+      verifyImages:
+        - imageReferences:
+            - "registry.urosevicvuk.dev/raf-banka3/*"
+          required: true
+          # Don't rewrite the Pod spec's image reference. Verification still
+          # uses the resolved digest under the hood; this just leaves the
+          # tag-based image string intact for human readability.
+          mutateDigest: false
+          attestors:
+            - count: 1
+              entries:
+                - keys:
+                    publicKeys: |-
+                      -----BEGIN PUBLIC KEY-----
+                      MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE64JtSEahFiEcqg8O9KT8xrVgmTry
+                      Xi1oOWYNKQrvq1XidKay/ek2Fk0rPmpXDACFTmW2rlFRb+MiYtq3LM228A==
+                      -----END PUBLIC KEY-----
+                    rekor:
+                      ignoreTlog: true
+                    ctlog:
+                      ignoreSCT: true

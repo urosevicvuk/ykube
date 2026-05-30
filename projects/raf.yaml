@@ -11,6 +11,7 @@ spec:
     No cluster-scoped resources. Namespace prefix `raf-*` reserved.
   sourceRepos:
     - https://github.com/urosevicvuk/ykube
+    - https://github.com/RAF-SI-2025/Banka-3-Infrastructure
   destinations:
     - namespace: raf
       server: https://kubernetes.default.svc

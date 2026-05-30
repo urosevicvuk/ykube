@@ -25,7 +25,9 @@ spec:
         path: '{{path}}'
       destination:
         server: https://kubernetes.default.svc
-        namespace: '{{path.basename}}'
+        # raf AppProject allows `raf` and `raf-*` namespaces. Convention:
+        # dir apps/raf/<name>/ → Application raf-<name> in namespace raf-<name>.
+        namespace: 'raf-{{path.basename}}'
       syncPolicy:
         automated:
           prune: true

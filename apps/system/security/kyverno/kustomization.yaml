@@ -4,13 +4,12 @@ namespace: kyverno
 
 resources:
   - namespace.yaml
-  # Policies disabled while we get the base cluster stable. Re-enable one by
-  # one after everything else works. Files left in policies/ so re-enabling
-  # is a one-line add per policy here.
+  # Tenant guardrails disabled while we stabilize.
   # - policies/disallow-latest-tag.yaml
   # - policies/require-labels.yaml
   # - policies/require-resource-limits.yaml
   # - policies/restrict-registries.yaml
+  # - policies/verify-banka-images.yaml
 
 helmCharts:
   - name: kyverno
