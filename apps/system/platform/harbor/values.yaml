@@ -26,6 +26,12 @@ core:
       memory: 512Mi
 
 jobservice:
+  # Both core and jobservice must read JOBSERVICE_SECRET from the same place,
+  # or jobservice signs internalconfig calls with a different secret than core
+  # expects and gets a 401 → CrashLoop. ESO populates this key in
+  # harbor-registry-secret.
+  existingSecret: harbor-registry-secret
+  existingSecretKey: JOBSERVICE_SECRET
   resources:
     requests:
       cpu: 50m
