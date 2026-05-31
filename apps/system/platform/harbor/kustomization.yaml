@@ -11,7 +11,7 @@ resources:
 helmCharts:
   - name: harbor
     repo: https://helm.goharbor.io
-    version: 1.16.0  # renovate: depName=goharbor/harbor
+    version: 1.19.1  # renovate: depName=goharbor/harbor
     releaseName: harbor
     namespace: harbor
     valuesFile: values.yaml
