@@ -8,6 +8,7 @@ namespace: argocd
 resources:
   - namespace.yaml
   - argocd-route.yaml
+  - argocd-webhook-secret.yaml
   - ../projects/system.yaml
   - ../projects/homelab.yaml
   - ../projects/morel.yaml
@@ -20,6 +21,7 @@ resources:
   - ../appsets/eko-servis.yaml
   - ../appsets/ofnir.yaml
   - ../appsets/raf.yaml
+  - ../appsets/raf-external.yaml
 
 helmCharts:
   - name: argo-cd
