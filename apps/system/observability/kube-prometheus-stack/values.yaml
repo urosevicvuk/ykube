@@ -42,6 +42,16 @@ prometheus:
 alertmanager:
   alertmanagerSpec:
     replicas: 1
+    # Discover AlertmanagerConfig CRs from every namespace (empty
+    # selectors = match-all). Tenant namespaces author their own
+    # routing this way — e.g. raf-banka ships a Discord receiver in
+    # Banka-3-Infrastructure/monitoring/alertmanagerconfig.yaml.
+    # Chart default is alertmanagerConfigSelectorNilUsesHelmValues=true,
+    # where nil means match-nothing — that's why we set these explicitly.
+    # Matcher strategy is OnNamespace (operator default), which auto-
+    # scopes each AC's routes to alerts from that AC's own namespace.
+    alertmanagerConfigSelector: {}
+    alertmanagerConfigNamespaceSelector: {}
     storage:
       volumeClaimTemplate:
         spec:
