@@ -1,15 +1,29 @@
+# Sloth — the SLO operator that turns PrometheusServiceLevel CRs (in
+# any namespace) into recording rules + multi-window multi-burn-rate
+# PrometheusRule CRs picked up by kube-prometheus-stack.
+#
+# Why locally-committed manifests instead of a Helm chart: Sloth does
+# not publish to a hosted Helm repository (only `kubectl apply` flow
+# is supported upstream), and the bundled `sloth.yaml` doesn't
+# include the CRD — it lives at a separate path. Pinning both files
+# here keeps Renovate able to bump them (depName below) and avoids
+# Argo trying to render a chart that doesn't exist.
+#
+# Pinned to v0.16.0 — bump both files via:
+#   ver=v0.16.0
+#   curl -o crd.yaml   https://raw.githubusercontent.com/slok/sloth/$ver/pkg/kubernetes/gen/crd/sloth.slok.dev_prometheusservicelevels.yaml
+#   curl -o sloth.yaml https://raw.githubusercontent.com/slok/sloth/$ver/deploy/kubernetes/raw/sloth.yaml
+#
+# The upstream sloth.yaml bakes in `namespace: monitoring`; the
+# `namespace:` field below remaps every namespaced resource to
+# `sloth` (CRD + ClusterRole + ClusterRoleBinding are cluster-scoped
+# and untouched by kustomize's namespace rewrite, which is what we
+# want).
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: sloth
 
 resources:
   - namespace.yaml
-
-helmCharts:
-  - name: sloth
-    repo: https://slok.github.io/sloth
-    version: 0.11.0  # renovate: depName=slok/sloth
-    releaseName: sloth
-    namespace: sloth
-    valuesFile: values.yaml
-    includeCRDs: true
+  - crd.yaml    # renovate: depName=slok/sloth file=pkg/kubernetes/gen/crd/sloth.slok.dev_prometheusservicelevels.yaml
+  - sloth.yaml  # renovate: depName=slok/sloth file=deploy/kubernetes/raw/sloth.yaml
