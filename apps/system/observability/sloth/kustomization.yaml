@@ -27,3 +27,26 @@ resources:
   - namespace.yaml
   - crd.yaml    # renovate: depName=slok/sloth file=pkg/kubernetes/gen/crd/sloth.slok.dev_prometheusservicelevels.yaml
   - sloth.yaml  # renovate: depName=slok/sloth file=deploy/kubernetes/raw/sloth.yaml
+
+# Upstream sloth.yaml omits the securityContext fields required by the
+# `restricted` PodSecurity Standard the sloth namespace enforces. Sloth
+# is a plain Go binary with no privilege needs — adding the four fields
+# below keeps the namespace at restricted instead of regressing it to
+# baseline like Alloy/Loki/Tempo. nobody (65532) is the upstream image's
+# default user.
+patches:
+  - target: { kind: Deployment, name: sloth }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/securityContext
+        value:
+          runAsNonRoot: true
+          runAsUser: 65532
+          runAsGroup: 65532
+          seccompProfile: { type: RuntimeDefault }
+      - op: add
+        path: /spec/template/spec/containers/0/securityContext
+        value:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: { drop: [ALL] }
