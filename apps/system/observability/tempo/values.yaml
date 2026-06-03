@@ -1,0 +1,63 @@
+# Tempo single-binary on Longhorn. Single replica (single node).
+# Alloy pushes OTLP to tempo:4317, Grafana datasource queries tempo:3100.
+#
+# Single-binary chart is grafana/tempo (not tempo-distributed); the
+# distributed chart adds 5+ replicas of separate components which is
+# overkill here. Bump to distributed when traffic warrants it.
+
+tempo:
+  # Retention 7d to match Loki hot retention. Tempo stores spans as
+  # parquet blobs; 20Gi PVC at single-replica = plenty of headroom for
+  # a personal banking project.
+  retention: 168h
+
+  # Resource attributes from incoming OTLP spans get promoted to
+  # searchable index columns so the Grafana service-graph and the
+  # "find traces" panel can filter on them without scanning blocks.
+  # service.name is required (filters every dashboard); the rest are
+  # the standard semconv set used by otelhttp / otelgrpc.
+  search:
+    enabled: true
+
+  metricsGenerator:
+    enabled: true
+    # Generates RED metrics + service-graph metrics out of incoming
+    # spans and remote-writes them to Prometheus. This is what powers
+    # Grafana's "Service Graph" tab on the Tempo datasource.
+    remoteWriteUrl: http://kube-prometheus-stack-prometheus.kube-prometheus-stack:9090/api/v1/write
+
+  receivers:
+    # Alloy speaks OTLP gRPC to tempo:4317. The OTLP HTTP receiver is
+    # left enabled too in case anything else (Faro from the browser,
+    # tests) pushes directly.
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+  storage:
+    trace:
+      backend: local
+      local:
+        path: /var/tempo/traces
+      wal:
+        path: /var/tempo/wal
+
+persistence:
+  enabled: true
+  storageClass: longhorn
+  size: 20Gi
+  accessModes: [ReadWriteOnce]
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 1Gi
+
+# ServiceMonitor scraped by kube-prometheus-stack.
+serviceMonitor:
+  enabled: true

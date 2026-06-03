@@ -1,4 +1,6 @@
-# Grafana Alloy as a DaemonSet — pod-log scrape + Kubernetes events → Loki.
+# Grafana Alloy as a DaemonSet — pod-log scrape + Kubernetes events → Loki,
+# plus OTLP receiver → Tempo for traces emitted by app pkg/otelinit
+# (and by Faro from the browser).
 # Replaces legacy Promtail (deprecated in Loki 3.x).
 #
 # PSS on the namespace is `privileged` because Alloy needs hostPath access to
@@ -18,6 +20,12 @@ alloy:
       }
 
       // === Pod log discovery ===
+      // TODO(phase6): migrate to loki.source.podlogs driven by
+      // monitoring.grafana.com/v1alpha2 PodLogs CRs so tenants opt
+      // into log shipping per-namespace (analogous to PodMonitor).
+      // Requires the alloy-operator subchart to install the CRD.
+      // Current discovery.kubernetes pulls every pod's logs, which is
+      // fine for the small cluster but doesn't scale to multi-tenant.
       discovery.kubernetes "pods" {
         role = "pod"
       }
@@ -58,6 +66,62 @@ alloy:
         forward_to = [loki.write.default.receiver]
       }
 
+      // === OTLP receivers for app traces (and Faro from the browser) ===
+      // App services point OTEL_EXPORTER_OTLP_ENDPOINT at
+      // http://alloy.alloy.svc:4317 (kube-side) and Faro pushes to the
+      // externally-exposed HTTP endpoint (port 4318 via HTTPRoute).
+      otelcol.receiver.otlp "default" {
+        grpc {
+          endpoint = "0.0.0.0:4317"
+        }
+        http {
+          endpoint = "0.0.0.0:4318"
+          // CORS for Faro — the frontend origin must be permitted to
+          // POST OTLP from the browser. Wildcard works because the
+          // Faro auth model is "trust whatever the user sends" anyway
+          // (it's RUM, not credentialed).
+          cors {
+            allowed_origins = ["*"]
+            allowed_headers = ["*"]
+          }
+        }
+        output {
+          traces  = [otelcol.processor.batch.default.input]
+          metrics = [otelcol.processor.batch.default.input]
+          logs    = [otelcol.processor.batch.default.input]
+        }
+      }
+
+      otelcol.processor.batch "default" {
+        send_batch_size = 1024
+        timeout         = "1s"
+        output {
+          traces  = [otelcol.exporter.otlp.tempo.input]
+          // Metrics arriving via OTLP push (currently nothing — the Go
+          // services expose Prometheus pull at /metrics, Faro doesn't
+          // push metrics by default) get dropped on the floor since
+          // there's no metrics exporter wired. Add otelcol.exporter.prometheus
+          // here if we ever need push-mode metrics.
+          metrics = []
+          logs    = [otelcol.exporter.loki.default.input]
+        }
+      }
+
+      otelcol.exporter.otlp "tempo" {
+        client {
+          endpoint = "tempo.tempo.svc:4317"
+          tls {
+            insecure = true
+          }
+        }
+      }
+
+      // Faro web events come in as OTLP logs; route them to Loki so
+      // they surface alongside backend logs in Grafana Explore.
+      otelcol.exporter.loki "default" {
+        forward_to = [loki.write.default.receiver]
+      }
+
       // === Output ===
       loki.write "default" {
         endpoint {
@@ -70,10 +134,23 @@ alloy:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
+      cpu: 100m
       memory: 256Mi
+    limits:
+      memory: 512Mi
+
+  # Expose the OTLP receiver ports on the Alloy Service so app pods
+  # can dial alloy.alloy.svc:4317. By default the chart only exposes
+  # 12345 (HTTP UI).
+  extraPorts:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+      protocol: TCP
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
+      protocol: TCP
 
 # Run as root because /var/log/pods is owned by root on most distros (including
 # k3s on NixOS). The privileged PSS on the alloy namespace allows it.

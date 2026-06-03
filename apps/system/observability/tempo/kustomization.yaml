@@ -1,16 +1,15 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: alloy
+namespace: tempo
 
 resources:
   - namespace.yaml
-  - httproute-otlp.yaml
 
 helmCharts:
-  - name: alloy
+  - name: tempo
     repo: https://grafana.github.io/helm-charts
-    version: 1.8.1  # renovate: depName=grafana/alloy
-    releaseName: alloy
-    namespace: alloy
+    version: 1.23.3  # renovate: depName=grafana/tempo
+    releaseName: tempo
+    namespace: tempo
     valuesFile: values.yaml
     includeCRDs: true

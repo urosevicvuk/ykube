@@ -1,0 +1,25 @@
+# External OTLP HTTP receiver for Grafana Faro from the browser.
+# The Banka-3 frontend pushes traces + Web events to
+# https://otel.urosevicvuk.dev/v1/traces (and /v1/logs).
+#
+# CORS is handled inside Alloy's otelcol.receiver.otlp config — the
+# gateway forwards the Origin header through unchanged.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: alloy-otlp
+  namespace: alloy
+spec:
+  parentRefs:
+    - name: gateway-external
+      namespace: envoy-gateway-system
+  hostnames:
+    - otel.urosevicvuk.dev
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: alloy
+          port: 4318

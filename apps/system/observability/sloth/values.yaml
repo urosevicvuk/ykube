@@ -1,0 +1,16 @@
+# Sloth generates PrometheusRule CRs from PrometheusServiceLevel CRs
+# in any namespace. Tenants (raf-banka) author SLOs as YAML;
+# Sloth materializes the recording rules + multi-window multi-
+# burn-rate alerts so we never hand-write burn-rate math.
+#
+# The operator watches all namespaces by default.
+
+commonPlugins:
+  enabled: true
+
+# ServiceMonitor on Sloth itself — its own SLO compliance is
+# trackable from the same Prometheus.
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
