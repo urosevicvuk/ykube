@@ -1,16 +1,35 @@
-# Enforces cosign signatures on every image pulled into the raf-banka
-# namespace from `registry.urosevicvuk.dev/raf-banka3/*`. Signatures are
-# produced by Banka-3-Backend / Banka-3-Frontend CI (and by the
-# `task sign:all` manual-bootstrap path in Banka-3-Infrastructure) using a
-# private keypair stored at `kv/raf-banka/cosign` in Vault.
+# Verifies cosign keyless signatures on Banka-3 images pulled into the
+# raf-banka namespace from registry.urosevicvuk.dev/raf-banka3/*.
+# Signatures are produced by Banka-3-Backend and Banka-3-Frontend CI
+# in keyless mode: GitHub Actions OIDC -> Fulcio short-lived cert.
+# Verification matches on the OIDC Subject (the workflow URL) + the
+# issuer; no public key to manage or rotate.
 #
-# Signing uses `--tlog-upload=false` because this is a private homelab
-# keypair, not a public-identity (Fulcio/Rekor) flow — verification here
-# must mirror that with `rekor.ignoreTlog: true`.
+# # Mode
 #
-# Images outside the raf-banka3 project (CNPG postgres, redis:alpine,
-# nginx-unprivileged, etc.) don't match the imageReferences glob, so this
-# policy doesn't act on them — they pass through unchanged.
+# validationFailureAction: Audit. Violations show up as PolicyReports
+# (kubectl get policyreport -A) and Kyverno metrics, but admission is
+# never blocked. Flip to Enforce once we've verified a full deploy
+# cycle (CI signs → image pulls in cluster → policy sees a valid
+# signature → no audit-fail entries in PolicyReport).
+#
+# # Subject pattern
+#
+# The Fulcio cert Subject for a GitHub Actions keyless signature is:
+#   https://github.com/<owner>/<repo>/.github/workflows/<file>@<ref>
+# where <ref> is e.g. refs/heads/main, refs/heads/deploy, or
+# refs/tags/v1.2.3. We allow:
+#   * Backend and Frontend repos
+#   * main / deploy branch builds
+#   * any v* tag build
+# subjectRegExp pins the path so a future workflow file at a
+# different path wouldn't accidentally satisfy the policy.
+#
+# # Images outside raf-banka3
+#
+# imageReferences scopes to "registry.urosevicvuk.dev/raf-banka3/*"
+# only. Third-party images (CNPG postgres, redis:alpine, nginx-
+# unprivileged) don't match, so the policy is a no-op on them.
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
@@ -21,14 +40,14 @@ metadata:
     policies.kyverno.io/severity: high
     policies.kyverno.io/description: |
       Pods in the raf-banka namespace running images from
-      registry.urosevicvuk.dev/raf-banka3/* must carry a cosign
-      signature from the Banka-3 keypair.
+      registry.urosevicvuk.dev/raf-banka3/* must carry a valid cosign
+      keyless signature whose Fulcio cert Subject matches one of the
+      Banka-3 build workflows on main, deploy, or a v* tag.
 spec:
-  validationFailureAction: Enforce
+  validationFailureAction: Audit
   webhookTimeoutSeconds: 30
-  failurePolicy: Fail
   rules:
-    - name: check-cosign-signature
+    - name: check-cosign-keyless-signature
       match:
         any:
           - resources:
@@ -40,20 +59,12 @@ spec:
         - imageReferences:
             - "registry.urosevicvuk.dev/raf-banka3/*"
           required: true
-          # Don't rewrite the Pod spec's image reference. Verification still
-          # uses the resolved digest under the hood; this just leaves the
-          # tag-based image string intact for human readability.
           mutateDigest: false
           attestors:
             - count: 1
               entries:
-                - keys:
-                    publicKeys: |-
-                      -----BEGIN PUBLIC KEY-----
-                      MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE64JtSEahFiEcqg8O9KT8xrVgmTry
-                      Xi1oOWYNKQrvq1XidKay/ek2Fk0rPmpXDACFTmW2rlFRb+MiYtq3LM228A==
-                      -----END PUBLIC KEY-----
+                - keyless:
+                    subjectRegExp: '^https://github\.com/RAF-SI-2025/Banka-3-(Backend|Frontend)/\.github/workflows/build\.yml@refs/(heads/(main|deploy)|tags/v.+)$'
+                    issuer: https://token.actions.githubusercontent.com
                     rekor:
-                      ignoreTlog: true
-                    ctlog:
-                      ignoreSCT: true
+                      url: https://rekor.sigstore.dev

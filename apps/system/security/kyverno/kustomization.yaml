@@ -4,12 +4,16 @@ namespace: kyverno
 
 resources:
   - namespace.yaml
-  # Tenant guardrails disabled while we stabilize.
+  # Tenant guardrails still disabled while we stabilize the platform.
   # - policies/disallow-latest-tag.yaml
   # - policies/require-labels.yaml
   # - policies/require-resource-limits.yaml
   # - policies/restrict-registries.yaml
-  # - policies/verify-banka-images.yaml
+  # Supply-chain policy is live in Audit mode — never blocks admission,
+  # surfaces signature failures as PolicyReports for triage. Flip to
+  # Enforce once we've seen a clean cycle (CI signs → image pulls in
+  # cluster → policy validates → no audit-fail PolicyReport entries).
+  - policies/verify-banka-images.yaml
 
 helmCharts:
   - name: kyverno
