@@ -100,6 +100,18 @@ grafana:
   service:
     type: ClusterIP
 
+  # Delete the orphaned Loki datasource that an earlier Grafana boot
+  # created with an auto-generated UID (P8E…), before provisioning re-
+  # adds it from additionalDataSources below. Without this, the
+  # mismatched UID makes provisioning error out with
+  #   "Failed to provision data sources: data source not found"
+  # and Tempo (declared after Loki) never gets provisioned either.
+  # Safe to leave in place — once Loki exists with the correct UID,
+  # this deletion + recreation is a no-op on every startup.
+  deleteDatasources:
+    - name: Loki
+      orgId: 1
+
   # Pre-provision Loki + Tempo as Grafana datasources. Loki ships in
   # the `loki` namespace, Tempo in `tempo`. The tracesToLogsV2 +
   # tracesToMetrics + nodeGraph wiring is what makes Grafana's Trace
