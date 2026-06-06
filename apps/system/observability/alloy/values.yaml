@@ -57,7 +57,22 @@ alloy:
 
       loki.source.kubernetes "pods" {
         targets    = discovery.relabel.pods.output
+        forward_to = [loki.process.dropnoise.receiver]
+      }
+
+      // Drop noisy kubelet probe access logs (nginx logs every GET /
+      // from kube-probe — 3 replicas × every 5s = ~36 lines/min/svc
+      // that are pure noise). Filter by the kube-probe User-Agent
+      // signature in the raw line. Other services' access logs that
+      // happen to mention the string survive — the User-Agent is
+      // quoted in the standard combined format so false matches are
+      // unlikely.
+      loki.process "dropnoise" {
         forward_to = [loki.write.default.receiver]
+        stage.drop {
+          expression          = ".*\"kube-probe/[^\"]+\".*"
+          drop_counter_reason = "kube_probe_health_check"
+        }
       }
 
       // === Cluster events → Loki (so you can correlate pod crashes, scheduling, etc.) ===
