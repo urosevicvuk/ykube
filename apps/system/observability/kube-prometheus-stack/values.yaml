@@ -134,7 +134,12 @@ grafana:
       type: tempo
       access: proxy
       uid: tempo
-      url: http://tempo.tempo:3100
+      # The single-binary tempo chart serves both the Prometheus metrics
+      # endpoint AND the HTTP query API (/api/search, /api/traces) on the
+      # same `tempo-prom-metrics` port — 3200. Port 3100 is what Loki
+      # uses; it doesn't exist on the Tempo Service, so Grafana queries
+      # land on a closed socket and time out ("dial tcp ... i/o timeout").
+      url: http://tempo.tempo:3200
       jsonData:
         # Click a span → search Loki for matching service.name within the span's time window.
         tracesToLogsV2:
