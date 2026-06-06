@@ -22,7 +22,7 @@ spec:
           - name: banka
             repoURL: https://github.com/RAF-SI-2025/Banka-3-Infrastructure
             targetRevision: v0.4.3
-            path: .
+            path: overlays/prod
   template:
     metadata:
       name: 'raf-{{name}}'
