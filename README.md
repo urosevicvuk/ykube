@@ -1,7 +1,7 @@
 # ykube
 
-GitOps source of truth for a small professional Kubernetes platform — built
-to host workloads and services for multiple companies under one cluster,
+GitOps source of truth for a small professional Kubernetes platform - built
+to host workloads and services for multiple companies and domains under one cluster,
 with tenant isolation, observability, and a clean public surface.
 
 Currently runs on **k3s** on the NixOS host `firelink` (see
@@ -47,12 +47,12 @@ ykube/
 │   │   ├── networking/       # cilium (+ cluster-policies), cert-manager, external-dns, cloudflared, envoy (+ gateway-external, gateway-internal), tailscale-operator
 │   │   ├── platform/         # harbor, forgejo (argo-workflows, argo-events deferred)
 │   │   └── observability/    # kube-prometheus-stack, loki, alloy
-│   ├── homelab/              # personal apps on urosevicvuk.dev (excalidraw, opencloud, stirling-pdf)
+│   ├── homelab/              # personal apps on urosevicvuk.dev (excalidraw, opencloud, stirling-pdf, ...)
 │   ├── morel/                # morel.rs tenant
 │   ├── eko-servis/           # eko-servis tenant (no domain yet)
 │   ├── ofnir/                # ofnir.dev tenant (placeholder)
-│   └── raf/                  # raf-project.com tenant (school)
-├── seed-k3s/                 # k3s/firelink bootstrap (current cluster)
+│   └── raf/                  # raf-project.com tenant (school projects)
+├── seed-k3s/                 # k3s/firelink(nixos) bootstrap (current cluster)
 ├── seed-talos/               # Talos+Proxmox bootstrap (deferred future target)
 ├── flake.nix                 # dev shell: kubectl, helm, kustomize, argocd, talosctl, opentofu, cilium, hubble, vault
 └── renovate.json             # PR-only, no automerge
