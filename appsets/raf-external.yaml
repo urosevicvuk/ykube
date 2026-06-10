@@ -21,7 +21,7 @@ spec:
         elements:
           - name: banka
             repoURL: https://github.com/RAF-SI-2025/Banka-3-Infrastructure
-            targetRevision: v0.6.2
+            targetRevision: v0.6.2-f
             path: .
   template:
     metadata:
