@@ -29,7 +29,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: morel
-          image: registry.urosevicvuk.dev/morel/website:v1.2.0-r
+          image: registry.urosevicvuk.dev/morel/website:1.2.0-f
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
