@@ -1,0 +1,28 @@
+# CloudNative-PG Cluster for Vaultwarden's database.
+# CNPG generates `vaultwarden-pg-app` with the `uri` key (full DATABASE_URL),
+# consumed by the chart via env from secret (see values.yaml).
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: vaultwarden-pg
+  namespace: vaultwarden
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.4
+  storage:
+    size: 5Gi
+    storageClass: longhorn
+  bootstrap:
+    initdb:
+      database: vaultwarden
+      owner: vaultwarden
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  monitoring:
+    enablePodMonitor: true

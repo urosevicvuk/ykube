@@ -1,0 +1,50 @@
+# Vaultwarden Helm values. Postgres from CNPG (vaultwarden-pg), attachments
+# on Longhorn, admin token from Vault via ExternalSecret. Tailnet-only ingress
+# via gateway-internal (see httproute.yaml).
+
+image:
+  registry: docker.io
+  repository: vaultwarden/server
+  tag: "1.36.0"
+
+domain: https://pass.urosevicvuk.dev
+
+# Disable signups after first user; manual invites only.
+signupsAllowed: false
+invitationsAllowed: true
+
+# Admin panel — token sourced from the vaultwarden-admin secret materialised
+# by the ExternalSecret in secrets.yaml.
+adminToken:
+  existingSecret: vaultwarden-admin
+  existingSecretKey: ADMIN_TOKEN
+
+# CNPG-managed Postgres. The operator generates `vaultwarden-pg-app` with a
+# fully-formed `uri` key (postgresql://user:pass@host:5432/db).
+database:
+  type: postgresql
+  existingSecret: vaultwarden-pg-app
+  existingSecretKey: uri
+
+# Persistence for /data (attachments, icons cache, sends).
+storage:
+  data:
+    name: vaultwarden-data
+    size: 10Gi
+    class: longhorn
+    accessMode: ReadWriteOnce
+
+# Don't deploy chart ingress; Gateway API HTTPRoute does the work.
+ingress:
+  enabled: false
+
+# ClusterIP only — chart hardcodes port 80 mapping to the container's 8080.
+service:
+  type: ClusterIP
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    memory: 512Mi

@@ -1,0 +1,46 @@
+# Tiny Redis for Paperless's celery broker + cache. No persistence (broker
+# state can be lost — celery just re-enqueues).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paperless-redis
+  namespace: paperless-ngx
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: paperless-redis
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: paperless-redis
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: redis
+          image: docker.io/library/redis:7-alpine
+          args: ["--save", "", "--appendonly", "no"]
+          ports:
+            - name: redis
+              containerPort: 6379
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: paperless-redis
+  namespace: paperless-ngx
+spec:
+  selector:
+    app.kubernetes.io/name: paperless-redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis

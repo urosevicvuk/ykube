@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: paperless-ngx
+
+resources:
+  - namespace.yaml
+  # Tenant guardrails (quota/limit/netpol) disabled while we stabilize.
+  # - resource-quota.yaml
+  # - limit-range.yaml
+  # - network-policy.yaml
+  - cnpg-cluster.yaml
+  - secrets.yaml
+  - redis.yaml
+  - pvcs.yaml
+  - deployment.yaml
+  - httproute.yaml

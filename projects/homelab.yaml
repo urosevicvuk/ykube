@@ -8,7 +8,9 @@ metadata:
 spec:
   description: |
     Personal self-hosted services on urosevicvuk.dev (excalidraw, opencloud,
-    stirling-pdf). No cluster-scoped resources permitted; these are pure workloads.
+    stirling-pdf, vaultwarden, immich, paperless-ngx, actualbudget, ghostfolio,
+    twenty-crm, attic, atuin). No cluster-scoped resources permitted; these
+    are pure workloads.
   sourceRepos:
     - https://github.com/urosevicvuk/ykube
   destinations:
@@ -17,6 +19,22 @@ spec:
     - namespace: opencloud
       server: https://kubernetes.default.svc
     - namespace: stirling-pdf
+      server: https://kubernetes.default.svc
+    - namespace: vaultwarden
+      server: https://kubernetes.default.svc
+    - namespace: immich
+      server: https://kubernetes.default.svc
+    - namespace: paperless-ngx
+      server: https://kubernetes.default.svc
+    - namespace: actualbudget
+      server: https://kubernetes.default.svc
+    - namespace: ghostfolio
+      server: https://kubernetes.default.svc
+    - namespace: twenty-crm
+      server: https://kubernetes.default.svc
+    - namespace: attic
+      server: https://kubernetes.default.svc
+    - namespace: atuin
       server: https://kubernetes.default.svc
   # Tenant projects only get cluster-scoped Namespace creation. Anything else
   # (CRDs, ClusterRole/Binding) belongs in the `system` project.

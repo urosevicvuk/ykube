@@ -1,0 +1,48 @@
+# Twenty background worker. Same image as the server, different command.
+# Processes queued jobs (email sync, AI agent runs, webhooks). Canonical
+# worker manifest has no PVCs — worker is stateless beyond Postgres/Redis.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-worker
+  namespace: twenty-crm
+  labels:
+    app.kubernetes.io/name: twenty-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: twenty-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: twenty-worker
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: twenty-worker
+          image: docker.io/twentycrm/twenty:v2.8.3
+          command: ["yarn", "worker:prod"]
+          env:
+            - name: SERVER_URL
+              value: https://crm.urosevicvuk.dev
+            - name: PG_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: twenty-pg-app
+                  key: uri
+            - name: REDIS_URL
+              value: redis://twenty-redis:6379
+            - name: STORAGE_TYPE
+              value: local
+            - name: DISABLE_DB_MIGRATIONS
+              value: "true"
+          envFrom:
+            - secretRef:
+                name: twenty-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi

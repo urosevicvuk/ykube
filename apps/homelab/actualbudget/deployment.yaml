@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: actualbudget
+  namespace: actualbudget
+  labels:
+    app.kubernetes.io/name: actualbudget
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate   # ReadWriteOnce PVC
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: actualbudget
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: actualbudget
+    spec:
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      automountServiceAccountToken: false
+      containers:
+        - name: actualbudget
+          image: docker.io/actualbudget/actual-server:26.6.0
+          ports:
+            - name: http
+              containerPort: 5006
+          env:
+            - name: ACTUAL_PORT
+              value: "5006"
+            - name: ACTUAL_TRUSTED_PROXIES
+              value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,100.64.0.0/10"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            readOnlyRootFilesystem: false
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: actualbudget-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: actualbudget
+  namespace: actualbudget
+  labels:
+    app.kubernetes.io/name: actualbudget
+spec:
+  selector:
+    app.kubernetes.io/name: actualbudget
+  ports:
+    - name: http
+      port: 5006
+      targetPort: http

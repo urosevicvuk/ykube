@@ -1,0 +1,28 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: twenty-pg
+  namespace: twenty-crm
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.4
+  storage:
+    size: 10Gi
+    storageClass: longhorn
+  bootstrap:
+    initdb:
+      database: twenty
+      owner: twenty
+      # Twenty runs migrations that create extensions; give the app role rights.
+      postInitSQL:
+        - "ALTER USER twenty WITH SUPERUSER;"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+  monitoring:
+    enablePodMonitor: true

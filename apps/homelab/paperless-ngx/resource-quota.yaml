@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: tenant-quota
+  namespace: paperless-ngx
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 4Gi
+    limits.cpu: "4"
+    limits.memory: 8Gi
+    requests.storage: 60Gi
+    persistentvolumeclaims: "10"
+    pods: "20"

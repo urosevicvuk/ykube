@@ -1,0 +1,27 @@
+# Matches Twenty's canonical k8s split: two PVCs on the server pod, none on
+# the worker. server-data holds attachments/avatars; docker-data is the
+# inter-component coordination dir Twenty expects to exist.
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: twenty-server-data
+  namespace: twenty-crm
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: twenty-docker-data
+  namespace: twenty-crm
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi

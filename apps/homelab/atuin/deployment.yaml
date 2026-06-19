@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atuin
+  namespace: atuin
+  labels:
+    app.kubernetes.io/name: atuin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: atuin
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: atuin
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: atuin
+          image: ghcr.io/atuinsh/atuin:17.1.0
+          args: ["server", "start"]
+          ports:
+            - name: http
+              containerPort: 8888
+          env:
+            - name: ATUIN_HOST
+              value: "0.0.0.0"
+            - name: ATUIN_PORT
+              value: "8888"
+            # Close registration after your first machine connects. To add a
+            # new machine: flip this to "true", run `atuin register`, flip back.
+            - name: ATUIN_OPEN_REGISTRATION
+              value: "false"
+            - name: ATUIN_DB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: atuin-pg-app
+                  key: uri
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atuin
+  namespace: atuin
+  labels:
+    app.kubernetes.io/name: atuin
+spec:
+  selector:
+    app.kubernetes.io/name: atuin
+  ports:
+    - name: http
+      port: 8888
+      targetPort: http

@@ -1,0 +1,28 @@
+# Library volume — all photos, thumbnails, encoded video, profile images.
+# Sized for ~200Gi camera roll headroom. Grow by editing this manifest;
+# Longhorn supports online volume expansion.
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-library
+  namespace: immich
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 200Gi
+---
+# Separate cache PVC for the ML server (model files).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-ml-cache
+  namespace: immich
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi

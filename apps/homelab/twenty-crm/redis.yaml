@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-redis
+  namespace: twenty-crm
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: twenty-redis
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: twenty-redis
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: redis
+          image: docker.io/library/redis:7-alpine
+          # Twenty docs require maxmemory-policy noeviction.
+          args: ["--save", "", "--appendonly", "no", "--maxmemory-policy", "noeviction"]
+          ports:
+            - name: redis
+              containerPort: 6379
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: twenty-redis
+  namespace: twenty-crm
+spec:
+  selector:
+    app.kubernetes.io/name: twenty-redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis

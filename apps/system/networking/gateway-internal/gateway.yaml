@@ -18,6 +18,10 @@ metadata:
   namespace: envoy-gateway-system
 spec:
   gatewayClassName: eg-internal
+  # One listener per zone+pattern, matching the gateway-external split: each
+  # SNI matcher gets its own listener so Envoy doesn't NACK on xDS for
+  # duplicate filter chains. Both the wildcard and apex are listed so e.g.
+  # `ofnir.dev` and `docs.ofnir.dev` both attach.
   listeners:
     - name: https-urosevicvuk
       protocol: HTTPS
@@ -28,6 +32,30 @@ spec:
         certificateRefs:
           - kind: Secret
             name: wildcard-urosevicvuk-dev-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https-ofnir
+      protocol: HTTPS
+      port: 443
+      hostname: "*.ofnir.dev"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: wildcard-ofnir-dev-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https-ofnir-apex
+      protocol: HTTPS
+      port: 443
+      hostname: "ofnir.dev"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: wildcard-ofnir-dev-tls
       allowedRoutes:
         namespaces:
           from: All

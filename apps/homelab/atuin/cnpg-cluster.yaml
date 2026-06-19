@@ -1,0 +1,25 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: atuin-pg
+  namespace: atuin
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.4
+  storage:
+    size: 5Gi
+    storageClass: longhorn
+  bootstrap:
+    initdb:
+      database: atuin
+      owner: atuin
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  monitoring:
+    enablePodMonitor: true

@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ghostfolio-redis
+  namespace: ghostfolio
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ghostfolio-redis
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ghostfolio-redis
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: redis
+          image: docker.io/library/redis:7-alpine
+          # Ghostfolio v3 requires Redis auth. Pull password from the same
+          # secret the app reads, so the two endpoints can't disagree.
+          command:
+            - sh
+            - -c
+            - 'exec redis-server --save "" --appendonly no --requirepass "$REDIS_PASSWORD"'
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ghostfolio-secrets
+                  key: REDIS_PASSWORD
+          ports:
+            - name: redis
+              containerPort: 6379
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ghostfolio-redis
+  namespace: ghostfolio
+spec:
+  selector:
+    app.kubernetes.io/name: ghostfolio-redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis

@@ -1,0 +1,33 @@
+# Atuin server is fully self-contained at runtime. Clients push/pull; no
+# outbound calls.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: tenant-baseline
+  namespace: atuin
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            "k8s:io.kubernetes.pod.namespace": atuin
+    - fromEndpoints:
+        - matchLabels:
+            "k8s:io.kubernetes.pod.namespace": envoy-gateway-system
+    - fromEndpoints:
+        - matchLabels:
+            "k8s:io.kubernetes.pod.namespace": kube-prometheus-stack
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            "k8s:io.kubernetes.pod.namespace": atuin
+    - toEndpoints:
+        - matchLabels:
+            "k8s:io.kubernetes.pod.namespace": kube-system
+            "k8s:k8s-app": kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
