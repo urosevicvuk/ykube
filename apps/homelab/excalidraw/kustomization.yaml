@@ -4,9 +4,5 @@ namespace: excalidraw
 
 resources:
   - namespace.yaml
-  # Tenant guardrails (quota/limit/netpol) disabled while we stabilize.
-  # - resource-quota.yaml
-  # - limit-range.yaml
-  # - network-policy.yaml
   - deployment.yaml
   - httproute.yaml

@@ -4,10 +4,6 @@ namespace: ghostfolio
 
 resources:
   - namespace.yaml
-  # Tenant guardrails (quota/limit/netpol) disabled while we stabilize.
-  # - resource-quota.yaml
-  # - limit-range.yaml
-  # - network-policy.yaml
   - cnpg-cluster.yaml
   - secrets.yaml
   - redis.yaml

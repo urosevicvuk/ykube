@@ -4,10 +4,6 @@ namespace: vaultwarden
 
 resources:
   - namespace.yaml
-  # Tenant guardrails (quota/limit/netpol) disabled while we stabilize.
-  # - resource-quota.yaml
-  # - limit-range.yaml
-  # - network-policy.yaml
   - cnpg-cluster.yaml
   - secrets.yaml
   - httproute.yaml
@@ -15,7 +11,7 @@ resources:
 helmCharts:
   - name: vaultwarden
     repo: https://guerzon.github.io/vaultwarden
-    version: 0.38.0  # renovate: depName=vaultwarden registryUrl=https://guerzon.github.io/vaultwarden
+    version: 0.39.1  # renovate: depName=vaultwarden registryUrl=https://guerzon.github.io/vaultwarden
     releaseName: vaultwarden
     namespace: vaultwarden
     valuesFile: values.yaml
