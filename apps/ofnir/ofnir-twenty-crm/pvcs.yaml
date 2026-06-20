@@ -6,7 +6,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: twenty-server-data
-  namespace: twenty-crm
+  namespace: ofnir-twenty-crm
 spec:
   accessModes: [ReadWriteOnce]
   storageClassName: longhorn
@@ -18,7 +18,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: twenty-docker-data
-  namespace: twenty-crm
+  namespace: ofnir-twenty-crm
 spec:
   accessModes: [ReadWriteOnce]
   storageClassName: longhorn

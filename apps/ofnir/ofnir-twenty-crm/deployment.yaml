@@ -5,7 +5,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: twenty-server
-  namespace: twenty-crm
+  namespace: ofnir-twenty-crm
   labels:
     app.kubernetes.io/name: twenty-server
 spec:
@@ -87,7 +87,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: twenty-server
-  namespace: twenty-crm
+  namespace: ofnir-twenty-crm
   labels:
     app.kubernetes.io/name: twenty-server
 spec:

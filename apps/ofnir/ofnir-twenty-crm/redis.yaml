@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: twenty-redis
-  namespace: twenty-crm
+  namespace: ofnir-twenty-crm
 spec:
   replicas: 1
   strategy:
@@ -35,7 +35,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: twenty-redis
-  namespace: twenty-crm
+  namespace: ofnir-twenty-crm
 spec:
   selector:
     app.kubernetes.io/name: twenty-redis

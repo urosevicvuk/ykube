@@ -1,4 +1,4 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: twenty-crm
+  name: ofnir-twenty-crm

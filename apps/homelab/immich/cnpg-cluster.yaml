@@ -4,10 +4,12 @@
 # schema-compatible — do not bump to 1.x without Immich also accepting the
 # newer extension.
 #
-# vchord and vectors must be in shared_preload_libraries — the image bundles
-# the .so files but Postgres still needs to be told to load them at startup,
-# otherwise `CREATE EXTENSION vchord` fails with
-# "vchord must be loaded via shared_preload_libraries".
+# vchord must be in shared_preload_libraries — the image bundles the .so
+# but Postgres still needs to load it at startup, otherwise `CREATE EXTENSION
+# vchord` fails with "vchord must be loaded via shared_preload_libraries".
+# Note: this image bundles ONLY vectorchord (vchord), not pgvectors (vectors).
+# Immich's own postgres image bundles both, but Immich v2 with
+# DB_VECTOR_EXTENSION=vectorchord only requires vchord.
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
@@ -21,7 +23,6 @@ spec:
   postgresql:
     shared_preload_libraries:
       - vchord.so
-      - vectors.so
   storage:
     size: 20Gi
     storageClass: longhorn

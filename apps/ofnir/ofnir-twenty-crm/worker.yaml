@@ -5,7 +5,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: twenty-worker
-  namespace: twenty-crm
+  namespace: ofnir-twenty-crm
   labels:
     app.kubernetes.io/name: twenty-worker
 spec:

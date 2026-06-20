@@ -1,6 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: twenty-crm
+namespace: ofnir-twenty-crm
 
 resources:
   - namespace.yaml

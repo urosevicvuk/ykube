@@ -2,7 +2,7 @@ apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
   name: twenty-pg
-  namespace: twenty-crm
+  namespace: ofnir-twenty-crm
   annotations:
     argocd.argoproj.io/sync-wave: "-10"
 spec:
