@@ -13,7 +13,7 @@ spec:
   storageClassName: longhorn
   resources:
     requests:
-      storage: 100Gi
+      storage: 50Gi
 ---
 # Separate cache PVC for the ML server (model files).
 apiVersion: v1
