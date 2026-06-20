@@ -12,7 +12,7 @@ spec:
     - name: gateway-internal
       namespace: envoy-gateway-system
   hostnames:
-    - pass.urosevicvuk.dev
+    - passwords.urosevicvuk.dev
   rules:
     - matches:
         - path:
