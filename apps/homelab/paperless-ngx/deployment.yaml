@@ -53,6 +53,10 @@ spec:
                   key: password
             - name: PAPERLESS_OCR_LANGUAGE
               value: eng+srp
+            # Image ships eng only; PAPERLESS_OCR_LANGUAGES tells the entrypoint
+            # to apt-install the listed tesseract language packs on startup.
+            - name: PAPERLESS_OCR_LANGUAGES
+              value: "eng srp"
             - name: PAPERLESS_TIME_ZONE
               value: Europe/Belgrade
             - name: USERMAP_UID

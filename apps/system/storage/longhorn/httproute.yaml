@@ -3,12 +3,6 @@ kind: HTTPRoute
 metadata:
   name: longhorn
   namespace: longhorn
-  annotations:
-    # Tailnet-only — Longhorn UI has no built-in auth at all (delete-volumes
-    # admin access for anyone who hits the URL). Public exposure would be a
-    # serious vulnerability. Grey-cloud A record pointing at the
-    # gateway-internal tailnet IP.
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
 spec:
   parentRefs:
     - name: gateway-internal

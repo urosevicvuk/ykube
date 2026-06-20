@@ -3,10 +3,6 @@ kind: HTTPRoute
 metadata:
   name: prometheus
   namespace: kube-prometheus-stack
-  annotations:
-    # Tailnet-only — Prometheus has no built-in auth. See vault httproute.yaml
-    # for the full grey-cloud / gateway-internal explanation.
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
 spec:
   parentRefs:
     - name: gateway-internal

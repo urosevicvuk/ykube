@@ -1,6 +1,7 @@
 # Library volume — all photos, thumbnails, encoded video, profile images.
-# Sized for ~200Gi camera roll headroom. Grow by editing this manifest;
-# Longhorn supports online volume expansion.
+# Starts at 100Gi to fit current Longhorn schedulable budget (~113Gi free
+# after raf-banka/harbor/etc. reservations). Longhorn supports online expansion —
+# raise this number once you've freed disk elsewhere or added a Longhorn disk.
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -12,7 +13,7 @@ spec:
   storageClassName: longhorn
   resources:
     requests:
-      storage: 200Gi
+      storage: 100Gi
 ---
 # Separate cache PVC for the ML server (model files).
 apiVersion: v1

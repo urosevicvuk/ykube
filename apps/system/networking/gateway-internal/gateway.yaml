@@ -16,6 +16,14 @@ kind: Gateway
 metadata:
   name: gateway-internal
   namespace: envoy-gateway-system
+  annotations:
+    # external-dns reads annotations from both the parent Gateway and the
+    # HTTPRoute (route wins on conflict). Setting this once here means every
+    # route attached to gateway-internal publishes as grey-cloud DNS-only —
+    # required because the LB IP is a CGNAT tailnet 100.x that Cloudflare
+    # refuses to put behind orange-cloud proxying. Pair to gateway-external,
+    # which sets the same annotation to "true" for the public LB.
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
 spec:
   gatewayClassName: eg-internal
   # One listener per zone+pattern, matching the gateway-external split: each
