@@ -7,7 +7,7 @@ image:
   repository: vaultwarden/server
   tag: "1.36.0"
 
-domain: https://pass.urosevicvuk.dev
+domain: https://passwords.urosevicvuk.dev
 
 # Disable signups after first user; manual invites only.
 signupsAllowed: false
