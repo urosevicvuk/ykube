@@ -67,7 +67,7 @@ spec:
     spec:
       containers:
         - name: cwa
-          image: crocodilestickz/calibre-web-automated:latest
+          image: crocodilestick/calibre-web-automated:latest
           env:
             - name: PUID
               value: "1000"
