@@ -68,10 +68,18 @@ configs:
         - /spec/volumeName
         - /spec/volumeMode
 
-    # StatefulSet volumeClaimTemplates default volumeMode same as PVCs.
+    # StatefulSet volumeClaimTemplates: the API server expands the embedded
+    # PVC to a full resource (adding apiVersion/kind/status/volumeMode) on
+    # read. Helm charts also frequently render `metadata.annotations: {}`
+    # which SSA drops. Silence all of these for index 0 (tempo only has
+    # one VCT today; expand if a multi-VCT StatefulSet lands).
     resource.customizations.ignoreDifferences.apps_StatefulSet: |
-      jqPathExpressions:
-        - .spec.volumeClaimTemplates[].spec.volumeMode
+      jsonPointers:
+        - /spec/volumeClaimTemplates/0/apiVersion
+        - /spec/volumeClaimTemplates/0/kind
+        - /spec/volumeClaimTemplates/0/status
+        - /spec/volumeClaimTemplates/0/spec/volumeMode
+        - /spec/volumeClaimTemplates/0/metadata/annotations
 
     # Secrets owned by other controllers: Cilium regenerates cilium-ca and
     # hubble-*-certs after install; ESO labels every Secret it reconciles

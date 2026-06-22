@@ -10,7 +10,13 @@ spec:
       group: gateway.networking.k8s.io
       kind: Gateway
   rules:
-    - filters:
+    # CRD admission webhook defaults `matches: [{path: PathPrefix /}]` when
+    # no match is specified; write it explicitly so git matches live.
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
         - type: RequestRedirect
           requestRedirect:
             scheme: https
