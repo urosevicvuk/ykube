@@ -6,8 +6,6 @@ resources:
   - namespace.yaml
   - cnpg-cluster.yaml
   - httproute.yaml
-  - renovate-cronworkflow.yaml
-  - renovate-secret.yaml
 
 helmCharts:
   - name: argo-workflows

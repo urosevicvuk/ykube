@@ -9,7 +9,6 @@ data:
   glance.yml: |
     server:
       port: 8080
-      assets-path: /app/assets
 
     theme:
       background-color: 240 8 9
