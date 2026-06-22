@@ -1,0 +1,28 @@
+# Postgres for Argo Workflows run-history archive. Generates the secret
+# `argo-workflows-pg-app` with discrete `username` / `password` keys — the
+# chart wires these via userNameSecret/passwordSecret in values.yaml.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: argo-workflows-pg
+  namespace: argo-workflows
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.4
+  storage:
+    size: 5Gi
+    storageClass: longhorn
+  bootstrap:
+    initdb:
+      database: argo_workflows
+      owner: argo_workflows
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  monitoring:
+    enablePodMonitor: true

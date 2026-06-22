@@ -1,0 +1,14 @@
+# Stakater Reloader — restart pods on ConfigMap/Secret changes.
+# Opt-in mode: only workloads with `reloader.stakater.com/auto: "true"`
+# or `secret.reloader.stakater.com/reload` annotation get restarted.
+# Keeps blast radius small.
+reloader:
+  watchGlobally: true
+  reloadStrategy: annotations  # opt-in via annotations
+  readOnlyRootFileSystem: true
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      memory: 128Mi

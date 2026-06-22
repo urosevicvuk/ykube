@@ -1,7 +1,15 @@
-# TODO: configure argo-events
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: argo-events
 
 resources:
   - namespace.yaml
+
+helmCharts:
+  - name: argo-events
+    repo: https://argoproj.github.io/argo-helm
+    version: 2.4.13  # renovate: depName=argo-events registryUrl=https://argoproj.github.io/argo-helm
+    releaseName: argo-events
+    namespace: argo-events
+    valuesFile: values.yaml
+    includeCRDs: true

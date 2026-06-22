@@ -1,0 +1,49 @@
+# Argo Workflows chart values. Server fronted by gateway-internal (Tailscale);
+# Postgres archive via CNPG. No artifact repo — Workflows that need cross-step
+# artifact passing will block on Rook-Ceph (CephObjectStore via OBC).
+
+# Where Workflow CRs are allowed. Empty list = all namespaces; we restrict
+# to the argo-workflows namespace for now and add more (e.g. a CI namespace)
+# when needed.
+controller:
+  workflowNamespaces:
+    - argo-workflows
+
+  # Persist completed Workflow status to Postgres so the UI shows history
+  # after pod GC kicks in.
+  persistence:
+    archive: true
+    archiveTTL: 30d
+    postgresql:
+      host: argo-workflows-pg-rw
+      port: 5432
+      database: argo_workflows
+      tableName: argo_workflows
+      userNameSecret:
+        name: argo-workflows-pg-app
+        key: username
+      passwordSecret:
+        name: argo-workflows-pg-app
+        key: password
+
+  metricsConfig:
+    enabled: true
+
+server:
+  enabled: true
+  # Tailscale handles user identity. authMode `server` makes the UI act as
+  # the argo-server SA, no per-user login required.
+  authModes:
+    - server
+  serviceType: ClusterIP
+  # HTTPRoute terminates TLS; server serves plain HTTP to envoy.
+  extraArgs:
+    - --auth-mode=server
+    - --secure=false
+
+# Create the default `argo-workflow` SA used by Workflows for pod creation.
+workflow:
+  serviceAccount:
+    create: true
+  rbac:
+    create: true

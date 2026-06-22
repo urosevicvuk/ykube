@@ -1,0 +1,21 @@
+# Public via Cloudflare Tunnel. CWA has built-in user auth; rotate the
+# default admin password (admin/admin123) immediately after first sync.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: calibre-web-automated
+  namespace: calibre-web-automated
+spec:
+  parentRefs:
+    - name: gateway-external
+      namespace: envoy-gateway-system
+  hostnames:
+    - books.urosevicvuk.dev
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: calibre-web-automated
+          port: 8083

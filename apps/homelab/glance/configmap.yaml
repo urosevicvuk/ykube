@@ -1,0 +1,127 @@
+# Starter Glance config. Iterate via PRs — the whole thing is one YAML.
+# Reloader restarts the pod on this ConfigMap changing.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: glance-config
+  namespace: glance
+data:
+  glance.yml: |
+    server:
+      port: 8080
+      assets-path: /app/assets
+
+    theme:
+      background-color: 240 8 9
+      primary-color: 50 90 70
+      contrast-multiplier: 1.1
+
+    pages:
+      - name: Home
+        columns:
+          - size: small
+            widgets:
+              - type: calendar
+                first-day-of-week: monday
+
+              - type: weather
+                location: Belgrade, Serbia
+                units: metric
+                hour-format: 24h
+
+              - type: monitor
+                cache: 5m
+                title: Services
+                sites:
+                  - title: Argo CD
+                    url: https://cd.argoproj.io
+                    icon: si:argo
+                  - title: Workflows
+                    url: https://workflows.urosevicvuk.dev
+                    icon: si:argo
+                  - title: Forgejo
+                    url: https://forgejo.urosevicvuk.dev
+                    icon: si:forgejo
+                  - title: Harbor
+                    url: https://harbor.urosevicvuk.dev
+                    icon: si:harbor
+                  - title: Vaultwarden
+                    url: https://passwords.urosevicvuk.dev
+                    icon: si:bitwarden
+                  - title: Immich
+                    url: https://photos.urosevicvuk.dev
+                    icon: si:immich
+                  - title: Paperless
+                    url: https://paperless.urosevicvuk.dev
+                    icon: si:files
+                  - title: ActualBudget
+                    url: https://budget.urosevicvuk.dev
+                    icon: si:actualbudget
+                  - title: Ghostfolio
+                    url: https://ghost.urosevicvuk.dev
+                    icon: si:ghostfolio
+                  - title: n8n
+                    url: https://n8n.urosevicvuk.dev
+                    icon: si:n8n
+                  - title: Calibre
+                    url: https://books.urosevicvuk.dev
+                    icon: si:calibre
+
+          - size: full
+            widgets:
+              - type: hacker-news
+                limit: 15
+
+              - type: lobsters
+                limit: 10
+
+              - type: rss
+                title: Reading
+                limit: 20
+                style: detailed-list
+                feeds:
+                  # Populate after deploy — feed URL list is yours to curate.
+                  - url: https://news.ycombinator.com/rss
+                    title: Hacker News
+
+          - size: small
+            widgets:
+              - type: releases
+                cache: 1d
+                show-source-icon: true
+                repositories:
+                  - argoproj/argo-cd
+                  - argoproj/argo-workflows
+                  - cloudnative-pg/cloudnative-pg
+                  - longhorn/longhorn
+                  - cilium/cilium
+                  - immich-app/immich
+                  - n8n-io/n8n
+                  - binwiederhier/ntfy
+                  - dxflrs/garage
+                  - glanceapp/glance
+                  - siderolabs/talos
+                  - go-gitea/gitea
+
+              - type: bookmarks
+                groups:
+                  - title: Self
+                    links:
+                      - title: Atuin
+                        url: https://atuin.urosevicvuk.dev
+                      - title: Excalidraw
+                        url: https://draw.urosevicvuk.dev
+                      - title: Stirling PDF
+                        url: https://pdf.urosevicvuk.dev
+                      - title: OpenCloud
+                        url: https://cloud.urosevicvuk.dev
+                      - title: ntfy
+                        url: https://ntfy.urosevicvuk.dev
+                  - title: External
+                    links:
+                      - title: Gmail
+                        url: https://mail.google.com
+                      - title: Calendar
+                        url: https://calendar.google.com
+                      - title: GitHub
+                        url: https://github.com

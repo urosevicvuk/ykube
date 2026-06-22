@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cwa-config
+  namespace: calibre-web-automated
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cwa-library
+  namespace: calibre-web-automated
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cwa-ingest
+  namespace: calibre-web-automated
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: calibre-web-automated
+  namespace: calibre-web-automated
+spec:
+  type: ClusterIP
+  selector:
+    app: calibre-web-automated
+  ports:
+    - name: http
+      port: 8083
+      targetPort: 8083
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calibre-web-automated
+  namespace: calibre-web-automated
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: calibre-web-automated
+  template:
+    metadata:
+      labels:
+        app: calibre-web-automated
+    spec:
+      containers:
+        - name: cwa
+          image: crocodilestickz/calibre-web-automated:latest
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: Europe/Belgrade
+          ports:
+            - containerPort: 8083
+              name: http
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: library
+              mountPath: /calibre-library
+            - name: ingest
+              mountPath: /cwa-book-ingest
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8083
+            periodSeconds: 10
+            initialDelaySeconds: 30
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8083
+            periodSeconds: 60
+            initialDelaySeconds: 120
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: cwa-config
+        - name: library
+          persistentVolumeClaim:
+            claimName: cwa-library
+        - name: ingest
+          persistentVolumeClaim:
+            claimName: cwa-ingest

@@ -1,0 +1,47 @@
+# Daily Renovate run against Forgejo. Inaugural workload for Argo Workflows.
+# Renovate's `gitea` platform speaks Forgejo's API natively.
+#
+# Config lives in this Workflow's env (RENOVATE_*) rather than a config.js
+# file so the whole pipeline is grokable from one place. Move to a ConfigMap
+# if it grows past ~20 env vars.
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: renovate
+  namespace: argo-workflows
+spec:
+  schedule: "0 3 * * *"   # daily at 03:00 UTC
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  workflowSpec:
+    entrypoint: run
+    serviceAccountName: argo-workflow
+    activeDeadlineSeconds: 3600
+    templates:
+      - name: run
+        container:
+          image: renovate/renovate:latest  # renovate: depName=renovate/renovate
+          env:
+            - name: LOG_LEVEL
+              value: info
+            - name: RENOVATE_PLATFORM
+              value: gitea
+            - name: RENOVATE_ENDPOINT
+              value: https://forgejo.urosevicvuk.dev/api/v1
+            - name: RENOVATE_AUTODISCOVER
+              value: "true"
+            - name: RENOVATE_GIT_AUTHOR
+              value: "Renovate Bot <renovate@urosevicvuk.dev>"
+            - name: RENOVATE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: renovate-forgejo
+                  key: RENOVATE_TOKEN
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              memory: 2Gi

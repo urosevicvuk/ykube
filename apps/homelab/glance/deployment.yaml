@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: glance
+  namespace: glance
+spec:
+  type: ClusterIP
+  selector:
+    app: glance
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: glance
+  namespace: glance
+  annotations:
+    configmap.reloader.stakater.com/reload: "glance-config"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: glance
+  template:
+    metadata:
+      labels:
+        app: glance
+    spec:
+      containers:
+        - name: glance
+          image: glanceapp/glance:v0.7.0
+          ports:
+            - containerPort: 8080
+              name: http
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            periodSeconds: 30
+            initialDelaySeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: glance-config

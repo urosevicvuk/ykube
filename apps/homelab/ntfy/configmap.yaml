@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ntfy-config
+  namespace: ntfy
+data:
+  server.yml: |
+    # Tailnet-only — base URL is the gateway-internal hostname.
+    base-url: "https://ntfy.urosevicvuk.dev"
+    listen-http: ":80"
+
+    # Cache messages on disk so the mobile app can replay missed pushes.
+    cache-file: "/var/cache/ntfy/cache.db"
+    cache-duration: "12h"
+
+    # Auth defaults to anonymous read+write. Tailscale is the access boundary;
+    # tighten with `auth-default-access: deny-all` + tokens if multiple users.
+    auth-file: "/var/cache/ntfy/user.db"
+    auth-default-access: "read-write"
+
+    # Behind envoy — trust X-Forwarded-* so rate limits work per-real-IP.
+    behind-proxy: true
+    enable-metrics: true
+    metrics-listen-http: ":9090"

@@ -1,0 +1,7 @@
+# CWA's default admin login is admin/admin123 — CHANGE IT in Settings before
+# the HTTPRoute is in DNS for more than ~30 seconds (it's publicly exposed
+# via Cloudflare Tunnel below).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: calibre-web-automated

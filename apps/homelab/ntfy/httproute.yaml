@@ -1,0 +1,23 @@
+# Tailnet-only. Phone needs Tailscale on to receive pushes — the ntfy app
+# happily uses any base-url, including a private hostname.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ntfy
+  namespace: ntfy
+  annotations:
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+spec:
+  parentRefs:
+    - name: gateway-internal
+      namespace: envoy-gateway-system
+  hostnames:
+    - ntfy.urosevicvuk.dev
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: ntfy
+          port: 80

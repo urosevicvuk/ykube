@@ -34,6 +34,14 @@ spec:
       server: https://kubernetes.default.svc
     - namespace: atuin
       server: https://kubernetes.default.svc
+    - namespace: n8n
+      server: https://kubernetes.default.svc
+    - namespace: ntfy
+      server: https://kubernetes.default.svc
+    - namespace: calibre-web-automated
+      server: https://kubernetes.default.svc
+    - namespace: glance
+      server: https://kubernetes.default.svc
   # Tenant projects only get cluster-scoped Namespace creation. Anything else
   # (CRDs, ClusterRole/Binding) belongs in the `system` project.
   clusterResourceWhitelist:

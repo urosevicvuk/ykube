@@ -1,0 +1,8 @@
+# Argo Events chart values. Deploying controller only — EventBus,
+# EventSources, and Sensors land when the first webhook-driven CI workflow
+# lands. Controller is idle until then; cost is one Deployment + RBAC.
+controller:
+  metrics:
+    enabled: true
+
+# No SSO/auth; controller doesn't expose a UI.
