@@ -9,6 +9,8 @@ spec:
   parentRefs:
     - name: gateway-internal
       namespace: envoy-gateway-system
+      group: gateway.networking.k8s.io
+      kind: Gateway
   hostnames:
     - photos.urosevicvuk.dev
   rules:
@@ -19,3 +21,6 @@ spec:
       backendRefs:
         - name: immich-server
           port: 2283
+          group: ""
+          kind: Service
+          weight: 1

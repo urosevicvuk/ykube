@@ -13,6 +13,8 @@ spec:
   parentRefs:
     - name: gateway-external
       namespace: envoy-gateway-system
+      group: gateway.networking.k8s.io
+      kind: Gateway
   hostnames:
     - otel.urosevicvuk.dev
   rules:
@@ -23,3 +25,6 @@ spec:
       backendRefs:
         - name: alloy
           port: 4318
+          group: ""
+          kind: Service
+          weight: 1

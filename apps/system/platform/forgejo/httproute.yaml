@@ -7,6 +7,8 @@ spec:
   parentRefs:
     - name: gateway-external
       namespace: envoy-gateway-system
+      group: gateway.networking.k8s.io
+      kind: Gateway
   hostnames:
     - git.urosevicvuk.dev
   rules:
@@ -17,3 +19,6 @@ spec:
       backendRefs:
         - name: forgejo-http
           port: 3000
+          group: ""
+          kind: Service
+          weight: 1

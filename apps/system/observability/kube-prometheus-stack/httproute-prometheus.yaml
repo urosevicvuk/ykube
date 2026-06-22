@@ -9,6 +9,8 @@ spec:
   parentRefs:
     - name: gateway-internal
       namespace: envoy-gateway-system
+      group: gateway.networking.k8s.io
+      kind: Gateway
   hostnames:
     - prometheus.urosevicvuk.dev
   rules:
@@ -19,3 +21,6 @@ spec:
       backendRefs:
         - name: kube-prometheus-stack-prometheus
           port: 9090
+          group: ""
+          kind: Service
+          weight: 1

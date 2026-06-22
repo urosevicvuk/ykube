@@ -48,6 +48,39 @@ configs:
     # and ../appsets/* — by default kustomize forbids cross-directory resource refs.
     kustomize.buildOptions: "--enable-helm --load-restrictor=LoadRestrictionsNone"
     application.resourceTrackingMethod: annotation
+
+    # Global compare options — applied to every Application's diff.
+    resource.compareoptions: |
+      # Don't compare .status (controllers own it; never our concern).
+      ignoreResourceStatusField: all
+      # ClusterRole aggregation: rules get filled by k8s controllers, not us.
+      ignoreAggregatedRoles: true
+
+    # Per-kind drift suppression for fields owned by controllers or the API
+    # server's CRD defaulter. CRD admission defaults that we *can* write
+    # explicitly in our manifests are kept out of here — those belong in
+    # the YAML next to the resource (see HTTPRoute/ExternalSecret/Gateway
+    # files). This map is reserved for things you genuinely don't author.
+
+    # Storage controller fills volumeName + volumeMode after binding.
+    resource.customizations.ignoreDifferences.PersistentVolumeClaim: |
+      jsonPointers:
+        - /spec/volumeName
+        - /spec/volumeMode
+
+    # StatefulSet volumeClaimTemplates default volumeMode same as PVCs.
+    resource.customizations.ignoreDifferences.apps_StatefulSet: |
+      jqPathExpressions:
+        - .spec.volumeClaimTemplates[].spec.volumeMode
+
+    # Secrets owned by other controllers: Cilium regenerates cilium-ca and
+    # hubble-*-certs after install; ESO labels every Secret it reconciles
+    # into with reconcile.external-secrets.io/managed=true. Both managers
+    # legitimately own those bytes — Argo shouldn't fight them.
+    resource.customizations.ignoreDifferences.Secret: |
+      managedFieldsManagers:
+        - cilium-operator
+        - external-secrets
   params:
     server.insecure: "true"
   # Admin password is materialized into the `argocd-initial-admin-secret`

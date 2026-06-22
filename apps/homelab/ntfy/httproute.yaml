@@ -11,6 +11,8 @@ spec:
   parentRefs:
     - name: gateway-internal
       namespace: envoy-gateway-system
+      group: gateway.networking.k8s.io
+      kind: Gateway
   hostnames:
     - ntfy.urosevicvuk.dev
   rules:
@@ -21,3 +23,6 @@ spec:
       backendRefs:
         - name: ntfy
           port: 80
+          group: ""
+          kind: Service
+          weight: 1

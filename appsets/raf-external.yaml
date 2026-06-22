@@ -28,6 +28,18 @@ spec:
         server: https://kubernetes.default.svc
         # Convention: name banka → namespace raf-banka.
         namespace: 'raf-{{name}}'
+      # PodMonitor source at RAF-SI-2025/Banka-3-Infrastructure omits
+      # `action: replace` on relabeling entries; the prometheus-operator
+      # CRD admission webhook defaults it. The proper fix is a 2-line PR
+      # adding `action: replace` upstream; until then, ignore the field
+      # for this app.
+      ignoreDifferences:
+        - group: monitoring.coreos.com
+          kind: PodMonitor
+          name: banka-services
+          namespace: raf-banka
+          jsonPointers:
+            - /spec/podMetricsEndpoints/0/relabelings/0/action
       syncPolicy:
         automated:
           prune: true

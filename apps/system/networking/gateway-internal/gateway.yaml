@@ -40,6 +40,7 @@ spec:
         certificateRefs:
           - kind: Secret
             name: wildcard-urosevicvuk-dev-tls
+            group: ""
       allowedRoutes:
         namespaces:
           from: All
@@ -52,6 +53,7 @@ spec:
         certificateRefs:
           - kind: Secret
             name: wildcard-ofnir-dev-tls
+            group: ""
       allowedRoutes:
         namespaces:
           from: All
@@ -64,6 +66,7 @@ spec:
         certificateRefs:
           - kind: Secret
             name: wildcard-ofnir-dev-tls
+            group: ""
       allowedRoutes:
         namespaces:
           from: All

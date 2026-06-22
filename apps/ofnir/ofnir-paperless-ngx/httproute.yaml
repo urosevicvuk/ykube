@@ -9,6 +9,8 @@ spec:
   parentRefs:
     - name: gateway-internal
       namespace: envoy-gateway-system
+      group: gateway.networking.k8s.io
+      kind: Gateway
   hostnames:
     - docs.ofnir.dev
   rules:
@@ -19,3 +21,6 @@ spec:
       backendRefs:
         - name: paperless-ngx
           port: 8000
+          group: ""
+          kind: Service
+          weight: 1

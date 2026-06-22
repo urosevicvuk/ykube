@@ -31,6 +31,8 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+      tls:
+        certificateRefs: []
     # One listener per zone+pattern. Envoy needs per-listener `hostname:`
     # to generate distinct SNI matchers — a single listener with multiple
     # certificateRefs produces duplicate filter chains with the same matcher
@@ -49,6 +51,7 @@ spec:
         certificateRefs:
           - kind: Secret
             name: wildcard-urosevicvuk-dev-tls
+            group: ""
       allowedRoutes:
         namespaces:
           from: All
@@ -61,6 +64,7 @@ spec:
         certificateRefs:
           - kind: Secret
             name: wildcard-urosevicvuk-dev-tls
+            group: ""
       allowedRoutes:
         namespaces:
           from: All
@@ -73,6 +77,7 @@ spec:
         certificateRefs:
           - kind: Secret
             name: wildcard-morel-rs-tls
+            group: ""
       allowedRoutes:
         namespaces:
           from: All
@@ -85,6 +90,7 @@ spec:
         certificateRefs:
           - kind: Secret
             name: wildcard-morel-rs-tls
+            group: ""
       allowedRoutes:
         namespaces:
           from: All
@@ -97,6 +103,7 @@ spec:
         certificateRefs:
           - kind: Secret
             name: wildcard-raf-project-com-tls
+            group: ""
       allowedRoutes:
         namespaces:
           from: All
@@ -109,6 +116,7 @@ spec:
         certificateRefs:
           - kind: Secret
             name: wildcard-raf-project-com-tls
+            group: ""
       allowedRoutes:
         namespaces:
           from: All
@@ -121,6 +129,7 @@ spec:
         certificateRefs:
           - kind: Secret
             name: wildcard-ofnir-dev-tls
+            group: ""
       allowedRoutes:
         namespaces:
           from: All
@@ -133,6 +142,7 @@ spec:
         certificateRefs:
           - kind: Secret
             name: wildcard-ofnir-dev-tls
+            group: ""
       allowedRoutes:
         namespaces:
           from: All

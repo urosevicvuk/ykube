@@ -9,6 +9,8 @@ spec:
   parentRefs:
     - name: gateway-external
       namespace: envoy-gateway-system
+      group: gateway.networking.k8s.io
+      kind: Gateway
   hostnames:
     - books.urosevicvuk.dev
   rules:
@@ -19,3 +21,6 @@ spec:
       backendRefs:
         - name: calibre-web-automated
           port: 8083
+          group: ""
+          kind: Service
+          weight: 1
