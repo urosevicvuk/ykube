@@ -31,8 +31,6 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
-      tls:
-        certificateRefs: []
     # One listener per zone+pattern. Envoy needs per-listener `hostname:`
     # to generate distinct SNI matchers — a single listener with multiple
     # certificateRefs produces duplicate filter chains with the same matcher

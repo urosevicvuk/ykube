@@ -47,9 +47,17 @@ tempo:
 
 persistence:
   enabled: true
-  storageClass: longhorn
+  # Chart key is `storageClassName`, not `storageClass`. With the wrong key
+  # the chart rendered `storageClassName: null` and Argo saw permanent drift
+  # against the live PVC (Longhorn becomes the default class either way, so
+  # the volume bound correctly — but the rendered YAML never matched live).
+  storageClassName: longhorn
   size: 20Gi
   accessModes: [ReadWriteOnce]
+  # Empty map (not omitted/null) so the chart's `toYaml | nindent` renders
+  # `annotations: {}` instead of `annotations: null` — the latter never
+  # round-trips through the API server cleanly and Argo sees it as drift.
+  annotations: {}
 
 resources:
   requests:
