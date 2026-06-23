@@ -32,8 +32,6 @@ kind: Deployment
 metadata:
   name: ntfy
   namespace: ntfy
-  annotations:
-    configmap.reloader.stakater.com/reload: "ntfy-config"
 spec:
   replicas: 1
   strategy:
