@@ -96,6 +96,15 @@ l2announcements:
 externalIPs:
   enabled: true
 
+# Cilium agent + operator self-metrics. kube-prometheus-stack auto-
+# discovers ServiceMonitors cluster-wide so flipping these on is the
+# whole wiring — Prometheus picks them up on its next reconcile.
+prometheus:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    trustCRDsExist: true
+
 # Hubble for observability. Relay aggregates flows; UI is web frontend.
 # Expose UI via the Cilium Gateway later; until then, port-forward.
 hubble:
@@ -106,6 +115,15 @@ hubble:
     enabled: true
   metrics:
     enableOpenMetrics: true
+    # ServiceMonitor for Hubble metrics — same auto-discovery story as
+    # Cilium agent. Without this, the metrics endpoint is exposed but
+    # Prometheus never scrapes it.
+    serviceMonitor:
+      enabled: true
+    # httpV2 supersedes the old `http` metric set: better histogram
+    # buckets, exemplars (jump from metric → trace in Grafana), and
+    # source/destination namespace context labels for top-N queries.
+    # See https://docs.cilium.io/en/stable/observability/metrics/#hubble-metrics
     enabled:
       - dns
       - drop
@@ -113,7 +131,15 @@ hubble:
       - flow
       - port-distribution
       - icmp
-      - http
+      - httpV2:exemplars=true;labelsContext=source_namespace,destination_namespace,source_workload,destination_workload,traffic_direction
+
+operator:
+  replicas: 1
+  # Operator self-metrics (reconcile loop counters, error rates).
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
 
 # Single-stack IPv4 for the homelab. Flip if you go dual-stack.
 ipv4:
@@ -121,8 +147,6 @@ ipv4:
 ipv6:
   enabled: false
 
-# Operator: 1 replica is enough for homelab. The chart defaults to 2.
-operator:
-  replicas: 1
+# CRDs are baked into the chart and tracked via ServerSideApply (see ApplicationSet syncOptions).
 
 # CRDs are baked into the chart and tracked via ServerSideApply (see ApplicationSet syncOptions).

@@ -13,9 +13,12 @@ spec:
   # Empty selector → all nodes participate.
   nodeSelector:
     matchLabels: {}
-  # Match all interfaces on each node. Tighten if you have multi-homed nodes
-  # and want LB traffic on a specific NIC only.
+  # Scope to firelink's LAN NIC only. The blanket `^.*$` would also try to
+  # ARP on tailscale0 (point-to-point, ARP-unaware), cilium_host (internal),
+  # cilium_vxlan, and the dynamic lxc* veth pairs — none of which should
+  # announce LB IPs. When multi-NIC Talos VMs join, add their NIC patterns
+  # (likely `^ens.+$` or `^enp.+$` depending on hardware).
   interfaces:
-    - ^.*$
+    - ^eno1$
   externalIPs: true
   loadBalancerIPs: true

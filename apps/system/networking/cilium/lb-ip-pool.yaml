@@ -1,7 +1,13 @@
 # Cilium LoadBalancer IP pool.
-# These IPs are handed out to Services of type=LoadBalancer.
-# TODO: replace placeholder range with the real LAN range once on-site.
-# Must be: same L2 segment as cluster nodes, OUTSIDE DHCP scope, contiguous.
+# These IPs get handed out to Services of type=LoadBalancer.
+#
+# firelink LAN is 192.168.0.0/24. Router DHCP scope: .10-.254. The only
+# usable static range is .2-.9 (with .1 = gateway, .33 = node). 8 IPs —
+# plenty for the 2-3 LoadBalancer services this cluster owns (envoy-
+# external, envoy-internal, future cilium-gateway-internal if migrated).
+#
+# When moving to Talos+3VMs, also shrink the router's DHCP scope to
+# something like .50-.200 and expand this pool to .201-.254 for headroom.
 apiVersion: cilium.io/v2alpha1
 kind: CiliumLoadBalancerIPPool
 metadata:
@@ -9,5 +15,5 @@ metadata:
   namespace: kube-system
 spec:
   blocks:
-    - start: 192.168.1.240
-      stop: 192.168.1.250
+    - start: 192.168.0.2
+      stop: 192.168.0.9
