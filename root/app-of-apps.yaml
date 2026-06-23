@@ -14,6 +14,21 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
+  # Per-app drift suppression. The chart renders argocd-secret with an empty
+  # data block; argocd-server populates admin.password + server.secretkey on
+  # startup; ESO Merges in webhook.github.secret + stamps its tracking
+  # annotations. None of those writes are ours — ignore the contested fields
+  # so the root app stays Synced.
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: argocd-secret
+      namespace: argocd
+      jsonPointers:
+        - /data
+        - /metadata/labels/reconcile.external-secrets.io~1managed
+        - /metadata/annotations/reconcile.external-secrets.io~1data-hash
+        - /metadata/annotations/force-sync
   syncPolicy:
     automated:
       prune: true
