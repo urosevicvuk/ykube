@@ -26,6 +26,28 @@ loki:
     retention_enabled: true
     delete_request_store: filesystem
 
+  # Ruler — turns LogQL expressions in PrometheusRule CRs into firing
+  # Alertmanager alerts. Without this, Loki can show you "logs that
+  # match $pattern" in Grafana but can't *alert* on them.
+  #
+  # Discovery via the bundled prometheus-operator's PrometheusRule CRs:
+  # any rule with `alert:` + a LogQL `expr:` and the label
+  # `loki_rule=true` is picked up. (See loki-rules.yaml in this dir.)
+  rulerConfig:
+    enable_api: true
+    enable_alertmanager_v2: true
+    alertmanager_url: http://kube-prometheus-stack-alertmanager.kube-prometheus-stack.svc:9093
+    storage:
+      type: local
+      local:
+        directory: /var/loki/rules
+    rule_path: /var/loki/rules-tmp
+    ring:
+      kvstore:
+        store: inmemory
+    evaluation_interval: 1m
+    poll_interval: 1m
+
 singleBinary:
   replicas: 1
   persistence:

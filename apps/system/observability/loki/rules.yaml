@@ -1,0 +1,77 @@
+# Loki ruler rules.
+#
+# Discovery: the chart ships a `sidecar.rules` watcher (enabled by default)
+# that scans for ConfigMaps with the `loki_rule` label in the loki namespace
+# and drops their contents into the ruler's rules directory. The single-
+# binary Loki then loads them and fires alerts via the alertmanager URL
+# configured in values.yaml `rulerConfig`.
+#
+# Loki tenancy: `auth_enabled: false` means a single tenant called `fake`
+# owns everything; the rules file is namespaced under that tenant via the
+# `fake/` subdir (the sidecar lays them out automatically when the key
+# name starts with `<tenant>-`).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-rules
+  namespace: loki
+  labels:
+    loki_rule: "true"
+data:
+  # Starter rule set. Add more by appending to this file or shipping
+  # additional ConfigMaps with the same `loki_rule: "true"` label.
+  fake-rules.yaml: |
+    groups:
+      - name: pod-fatal
+        interval: 1m
+        rules:
+          - alert: PodLoggedFatal
+            # Match any line at FATAL level across any pod, last 5m.
+            # `unwrap` is unused — we just count line occurrences.
+            expr: |
+              sum by (namespace, pod, container) (
+                count_over_time({namespace=~".+"} |~ "(?i)fatal" [5m])
+              ) > 3
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "{{ $labels.pod }} logged FATAL repeatedly"
+              description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) logged FATAL {{ $value }} times in 5m."
+
+      - name: pod-oom
+        interval: 1m
+        rules:
+          - alert: PodOOMKilledFromEvents
+            # kubernetes-event-exporter ships OOMKilled events as logs with
+            # reason=OOMKilling. Triggers near-instantly after the kubelet
+            # records the event.
+            expr: |
+              sum by (namespace, kind) (
+                count_over_time(
+                  {source="kubernetes-event-exporter", reason="OOMKilling"} [5m]
+                )
+              ) > 0
+            for: 0m
+            labels:
+              severity: warning
+            annotations:
+              summary: "OOMKilled in {{ $labels.namespace }}"
+              description: "{{ $value }} OOMKilling events in the last 5m for {{ $labels.kind }} in {{ $labels.namespace }}."
+
+      - name: pod-crashlooping
+        interval: 1m
+        rules:
+          - alert: PodCrashLoopBackOffFromEvents
+            expr: |
+              sum by (namespace, reason) (
+                count_over_time(
+                  {source="kubernetes-event-exporter", reason="BackOff"} [10m]
+                )
+              ) > 5
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "CrashLoopBackOff storm in {{ $labels.namespace }}"
+              description: "{{ $value }} BackOff events in the last 10m."

@@ -1,0 +1,41 @@
+# kubernetes-event-exporter — ships kubectl events to Loki so OOMKilled /
+# FailedScheduling / Unhealthy / FailedMount etc. become searchable and
+# alertable like any other log stream.
+#
+# Sends to Loki's HTTP push API at /loki/api/v1/push with labels that line
+# up with what Alloy is already shipping (namespace, severity), so Grafana
+# joins work out of the box.
+
+# Run as a Deployment (single replica is fine — it watches the API server
+# event stream which is itself persisted, not the per-node /var/log/pods).
+replicaCount: 1
+
+config:
+  logLevel: info
+  logFormat: json
+  # Cluster name shows up as a Loki label so multi-cluster Grafana setups
+  # can filter. We only have one cluster today but it's free hygiene.
+  clusterName: firelink
+
+  receivers:
+    - name: loki
+      loki:
+        streamLabels:
+          source: kubernetes-event-exporter
+          cluster: firelink
+        url: http://loki.loki:3100/loki/api/v1/push
+        # Loki labels per event — keep cardinality reasonable (no event
+        # name / uid in labels, those go in the log line body).
+        labels:
+          namespace: "{{ .Namespace }}"
+          severity: "{{ .Type }}"        # Normal | Warning
+          reason: "{{ .Reason }}"
+          kind: "{{ .InvolvedObject.Kind }}"
+
+  route:
+    # Single catch-all rule sending every event to Loki. Filter at query
+    # time in Grafana / Loki rules, not at ship time — keeps the firehose
+    # available for unexpected investigations.
+    routes:
+      - match:
+          - receiver: loki

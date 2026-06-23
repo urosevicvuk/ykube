@@ -164,6 +164,11 @@ grafana:
           hide: false
         lokiSearch:
           datasourceUid: loki
+    - name: Pyroscope
+      type: grafana-pyroscope-datasource
+      access: proxy
+      uid: pyroscope
+      url: http://pyroscope.pyroscope:4040
 
   serviceMonitor:
     enabled: true

@@ -1,0 +1,66 @@
+# Default AlertmanagerConfig — catch-all receiver pointing at ntfy.
+#
+# The chart's alertmanagerConfigSelector is `{}` (match-all from every
+# namespace, OnNamespace matcher strategy). This config lives in the
+# kube-prometheus-stack namespace and so applies to alerts whose source
+# namespace is also kube-prometheus-stack — i.e. cluster-wide system
+# alerts emitted by the bundled rules (KubeNodeNotReady, etcd, kubelet,
+# Prometheus operator, alertmanager itself, etc.).
+#
+# Tenant-scoped alerts (raf-banka, ofnir, etc.) ship their own
+# AlertmanagerConfig in their own namespace with their own receiver —
+# the OnNamespace matcher strategy keeps the routes isolated.
+#
+# Why ntfy: we already host ntfy at ntfy.urosevicvuk.dev (Tailscale-only),
+# the phone subscribes to a topic, no extra SaaS dependency. Replacing
+# the URL with Discord/Slack/Pagerduty is a one-line change later.
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: ntfy-default
+  namespace: kube-prometheus-stack
+spec:
+  route:
+    receiver: ntfy
+    # Group similar alerts so the phone doesn't buzz 30 times for one
+    # node going down — Alertmanager batches by these labels.
+    groupBy:
+      - alertname
+      - severity
+      - namespace
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 4h
+    # Subroute pattern: critical alerts get re-notified more aggressively
+    # so they don't get lost in the 4h gap above.
+    routes:
+      - receiver: ntfy
+        matchers:
+          - name: severity
+            value: critical
+            matchType: =
+        repeatInterval: 30m
+
+  receivers:
+    - name: ntfy
+      webhookConfigs:
+        # ntfy speaks raw HTTP POST — Alertmanager's webhook format is
+        # JSON; ntfy treats the body as the message. Title/priority via
+        # headers; we set them in `httpConfig.headers` below.
+        #
+        # Topic `cluster-alerts` is opaque — pick whatever you subscribe
+        # to on your phone. Public ntfy.sh would need auth; our self-
+        # hosted ntfy has `auth-default-access: read-write` so anonymous
+        # write works inside the tailnet.
+        - url: http://ntfy.ntfy:80/cluster-alerts
+          sendResolved: true
+          httpConfig:
+            # ntfy reads these headers to set message title + priority.
+            # See https://docs.ntfy.sh/publish/#message-headers
+            #
+            # NOTE: Alertmanager webhookConfig doesn't directly support
+            # custom request headers in v0.27 (it only supports auth
+            # headers). For full header control wrap with alertmanager-
+            # ntfy proxy. Below works as a fallback — ntfy parses the
+            # JSON body and produces a generic notification.
+            followRedirects: true

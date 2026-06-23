@@ -1,0 +1,50 @@
+# Pyroscope — continuous profiling (4th pillar of observability after
+# metrics/logs/traces). Stores CPU + memory flamegraphs that you can scrub
+# through in Grafana like log lines, and joins with traces/metrics by
+# pod/service/container labels.
+#
+# Single-binary mode for the single-node cluster; switch to microservices
+# (`pyroscope.microservices: true`) when traffic warrants and Rook-Ceph
+# S3 lands for the long-term store.
+#
+# How profiles get to Pyroscope:
+#   1. The Grafana Alloy DaemonSet can scrape eBPF profiles cluster-wide
+#      (per-pod, automatic) when you add a `pyroscope.scrape` block to its
+#      config. Wire later — for now, only first-party apps that push.
+#   2. Apps push themselves via the Pyroscope SDK (Go: `pyroscope-go`,
+#      Python: `pyroscope-io`, etc.) to http://pyroscope.pyroscope:4040.
+
+pyroscope:
+  replicaCount: 1
+
+  # Don't push self-profiles to ourselves — adds noise + circular dep.
+  disableSelfProfile: true
+
+  service:
+    type: ClusterIP
+    port: 4040
+
+  persistence:
+    enabled: true
+    storageClassName: longhorn
+    accessModes: [ReadWriteOnce]
+    size: 20Gi
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+# Disable Alloy auto-deployment from the pyroscope chart — we already run
+# Alloy as the cluster-wide collection agent (apps/system/observability/
+# alloy/). Add the eBPF profile-scrape block to that values.yaml when
+# ready to feed profiles in.
+alloy:
+  enabled: false
+
+# ServiceMonitor for Pyroscope's own metrics (request rate, ingestion lag).
+# Picked up by kube-prometheus-stack auto-discovery.
+serviceMonitor:
+  enabled: true

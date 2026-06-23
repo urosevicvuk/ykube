@@ -8,6 +8,7 @@ resources:
   - httproute-grafana.yaml
   - httproute-prometheus.yaml
   - httproute-alertmanager.yaml
+  - alertmanager-config.yaml
 
 helmCharts:
   - name: kube-prometheus-stack
