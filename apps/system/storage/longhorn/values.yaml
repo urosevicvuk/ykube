@@ -10,8 +10,10 @@
 #   - replicaAutoBalance: disabled (nothing to balance to)
 # When a second node lands, bump defaultReplicaCount to 2 and re-evaluate.
 #
-# Keep local-path as the cluster default StorageClass; Longhorn is for
-# workloads that opt in via `storageClassName: longhorn` (Vault, CNPG, etc.).
+# k3s `--disable=local-storage` (ynix k3s.nix) removes the local-path
+# provisioner, leaving Longhorn as the only SC. `persistence.defaultClass`
+# below flags it default so PVCs that omit `storageClassName` land here
+# instead of failing to bind.
 
 defaultSettings:
   defaultDataPath: /var/lib/longhorn/
@@ -23,7 +25,7 @@ defaultSettings:
   createDefaultDiskLabeledNodes: false
 
 persistence:
-  defaultClass: false
+  defaultClass: true
   defaultClassReplicaCount: 1
   reclaimPolicy: Delete
 
