@@ -10,6 +10,22 @@
 # event stream which is itself persisted, not the per-node /var/log/pods).
 replicaCount: 1
 
+# Bitnami's chart ships images at `bitnami/kubernetes-event-exporter:<app>-debian-12-rXX`
+# and rotates the rXX suffix; old tags eventually disappear from Docker Hub
+# and pods land in ImagePullBackOff. Pin to upstream resmoio image — same
+# binary, stable tags.
+image:
+  registry: ghcr.io
+  repository: resmoio/kubernetes-event-exporter
+  tag: v1.7.0
+  pullPolicy: IfNotPresent
+
+# Bitnami's chart hard-rejects "non-standard" images via a template-rendered
+# NOTES.txt error. Opt out — we know what we're pointing at.
+global:
+  security:
+    allowInsecureImages: true
+
 config:
   logLevel: info
   logFormat: json
