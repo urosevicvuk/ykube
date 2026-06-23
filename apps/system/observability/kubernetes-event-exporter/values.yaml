@@ -17,7 +17,9 @@ replicaCount: 1
 image:
   registry: ghcr.io
   repository: resmoio/kubernetes-event-exporter
-  tag: v1.7.0
+  # Upstream uses MAJOR.MINOR scheme (v1.7), not MAJOR.MINOR.PATCH;
+  # bitnami's chart pinned an `1.7.0` that doesn't exist upstream.
+  tag: v1.7
   pullPolicy: IfNotPresent
 
 # Bitnami's chart hard-rejects "non-standard" images via a template-rendered
