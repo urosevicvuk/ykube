@@ -97,4 +97,15 @@ configs:
   # but ESO writes the Secret directly, so we leave Helm's secret unset and let
   # ESO populate it after first sync. Until then the default ArgoCD random
   # password applies (recoverable via `argocd-initial-admin-secret`).
+  #
+  # `secret.createSecret: false` makes ESO the sole owner of `argocd-secret`
+  # (see argocd-webhook-secret.yaml). The chart used to render an empty
+  # Secret here; if anything deleted it (manual cleanup, prune cascade),
+  # the ESO with `creationPolicy: Merge` couldn't recreate it and the
+  # whole sync wedged with "secret will not be created due to
+  # CreationPolicy=Merge". argocd-server still auto-generates its TLS
+  # cert + session signing key into the same Secret on startup — ESO
+  # only owns the `webhook.github.secret` field via SSA field manager.
+  secret:
+    createSecret: false
   repositories: {}
