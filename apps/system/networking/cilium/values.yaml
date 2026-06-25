@@ -109,6 +109,19 @@ gatewayAPI:
   # listeners that need to serve both HTTP/2 and HTTP/1.1 clients.
   enableAlpn: true
 
+# Dedicated Envoy DaemonSet (vs embedded in cilium-agent). Hypothesis:
+# this is the missing variable for same-node Gateway API. With Envoy
+# embedded in cilium-agent (default), it lives in the host network
+# namespace and the eBPF datapath can't cleanly separate "envoy-as-
+# ingress-proxy" from "kubelet-as-host-daemon" on the return path —
+# the entity-classification confusion behind #42325.
+# A dedicated Envoy pod gets its own cilium identity (regular pod
+# network), which should let the return SYN-ACK find a clean
+# pod→pod identity pair instead of a host-ambiguous one.
+# Cilium 1.16+ recommendation regardless; this is the canonical setup.
+envoy:
+  enabled: true
+
 # L2 announcements replace MetalLB. Combined with kubeProxyReplacement, lets Cilium
 # advertise LB IPs on the LAN via ARP/NDP. Pool + policy live in separate manifests
 # so they can be tweaked independently of the chart values.
