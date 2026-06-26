@@ -92,6 +92,47 @@ bpf:
   # cleanly-ACKed cilium-envoy.)
   tproxy: true
 
+  # --- Perf tuning for this box (40 vCPU / 400 GB RAM — favour speed over memory) ---
+  # Preallocate BPF maps at full size on startup instead of growing on demand:
+  # trades memory for lower, steadier latency (no rehash stalls under load).
+  preallocateMaps: true
+  # Size CT/NAT/policy maps as a fraction of total RAM (default 0.0025). Bumped so
+  # the conntrack + NAT tables are effectively never the bottleneck on this host.
+  mapDynamicSizeRatio: 0.005
+  # Full per-packet flow visibility in Hubble (default "medium" aggregates flows).
+  # We want the richest observability and don't care about the extra trace volume.
+  monitorAggregation: none
+
+  # --- Phase 2, needs a NODE REBOOT — enable on its own, after 1.20-pre is healthy ---
+  # netkit: replace veth pod devices with netkit for ~host-network datapath perf.
+  # Requires kernel >=6.8 (have 7.0) + native routing (have it). Invasive: every
+  # pod's netdev is recreated, so expect a dataplane blip. To enable, uncomment:
+  # datapathMode: netkit
+
+# ===========================================================================
+# Advanced datapath features (2026-06-26, Cilium 1.20.0-pre.3).
+# L7 stays on standalone Envoy Gateway; here we turn Cilium up to the best
+# L3/L4 datapath this box can run. (Cilium's own L7 proxy/Gateway is still
+# wired up + retested on every bump, but Envoy Gateway is the load-bearing L7.)
+# ===========================================================================
+
+# EDT-based egress shaping + BBR congestion control for pod traffic. BBR beats
+# CUBIC on throughput/latency under load; needs kernel >=5.18 (on 7.0). This is
+# the modern eBPF replacement for the tc/HTB shaper.
+bandwidthManager:
+  enabled: true
+  bbr: true
+
+# Local Redirect Policy machinery: lets a CiliumLocalRedirectPolicy steer pod
+# traffic to a node-local backend (node-local DNS cache, topology redirects).
+# Off by default — enabling it now so LRPs work without another rollout.
+localRedirectPolicy: true
+
+# CiliumEndpointSlice: batch endpoint state into slices instead of one
+# CiliumEndpoint per pod — much less apiserver/etcd churn at this pod density.
+ciliumEndpointSlice:
+  enabled: true
+
 # k3s apiserver listens on 6443 on every node (single-node cluster, this is firelink itself).
 k8sServiceHost: 127.0.0.1
 k8sServicePort: "6443"
