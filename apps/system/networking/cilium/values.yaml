@@ -18,6 +18,31 @@
 ipam:
   mode: kubernetes
 
+# Native (direct) routing instead of vxlan encapsulation.
+#
+# Why (2026-06-26): the Cilium Gateway API L7 proxy redirect was completely
+# dead on this cluster — a pod (or any origin) hitting the gateway's
+# ClusterIP/LB IP/NodePort gets `-> proxy port 15581` in the datapath but the
+# SYN never reaches Envoy (0 downstream connections, no drop logged), so every
+# request times out. Switching the TPROXY mechanism (iptables -> bpf.tproxy)
+# didn't help — the loss is in the to-proxy redirect itself, which carries the
+# vxlan-tunnel + socket-LB signature of cilium/cilium#46284. This blocks the
+# real ingress model here: cloudflared (pod) and the tailscale-operator proxy
+# (pod) both reach services pod->ClusterIP, exactly the broken path.
+#
+# On a SINGLE node vxlan is pure overhead anyway — every pod is local, there's
+# no peer to encapsulate toward — so native routing is both the natural config
+# and the change that removes the vxlan leg of the bug.
+#
+# ipv4NativeRoutingCIDR = the k3s cluster pod CIDR (10.42.0.0/16; this node owns
+# 10.42.0.0/24). Traffic inside it is routed natively and NOT masqueraded;
+# everything else still gets BPF-masqueraded out eno1. autoDirectNodeRoutes is a
+# no-op on one node but is the canonical native-routing companion for when this
+# grows to the Talos+3VM cluster (L2-adjacent nodes).
+routingMode: native
+ipv4NativeRoutingCIDR: 10.42.0.0/16
+autoDirectNodeRoutes: true
+
 # Replace kube-proxy entirely.
 kubeProxyReplacement: true
 
