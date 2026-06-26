@@ -75,7 +75,9 @@ bpf:
   masquerade: true
   # BPF TPROXY (bpf_sk_assign) for the L7 proxy redirect — REQUIRED here.
   #
-  # Root cause (2026-06-26, Cilium 1.19.5): the gateway Envoy listener is emitted
+  # Root cause (2026-06-26, confirmed on BOTH Cilium 1.19.5 AND 1.20.0-pre.3 —
+  # so it's NOT a version bug; prime remaining suspect is the bleeding-edge
+  # kernel 7.0, see the LTS-kernel note): the gateway Envoy listener is emitted
   # WITHOUT the `transparent`/IP_TRANSPARENT socket option (verified in Envoy's
   # config_dump: transparent=null, no SOL_IP/IP_TRANSPARENT in socketOptions).
   # The default iptables xt_TPROXY delivery *requires* a transparent listen
@@ -164,34 +166,32 @@ securityContext:
       - SYS_ADMIN
       - SYS_RESOURCE
 
-# Gateway API: ENABLED to test viability of moving off Envoy Gateway.
+# Gateway API in HOST-NETWORK MODE — the workaround for the same-node L7 dead end.
 #
-# Background — what we audited (2026-06-23, Cilium 1.19.5):
-#   - #35559 / #36004: original L7 return-path bugs, CLOSED in 1.17.x line
-#   - #42325: STILL OPEN. Same-node ingress→workload TCP SYN-ACK gets dropped
-#     because Cilium's policy engine misclassifies the source as "host" instead
-#     of "ingress" and denies return traffic. Our single-node cluster is the
-#     exact failure mode this bug describes. Bug fires even with no explicit
-#     CiliumNetworkPolicy in place — it's entity-classification at the eBPF
-#     datapath layer.
+# The default LoadBalancer-VIP path is fundamentally broken for us: Cilium's
+# TPROXY socket-steal to the local Envoy is only honoured on the INGRESS
+# (PREROUTING) path, never for locally-originated (TX) traffic (cilium/cilium
+# #46284, kretprobe-confirmed; #36004 is our exact single-node symptom, still
+# open). On a single node EVERY client (cloudflared pod, tailscale-operator pod,
+# any pod) originates locally → the steal never fires → SYN dropped → timeout.
+# Not fixable by bpf.tproxy / routing mode / rp_filter (all tried + confirmed by
+# upstream). See the bpf.tproxy + routingMode notes for the full local diagnosis.
 #
-# Migration plan: enable gatewayAPI here, leave Envoy Gateway-managed routes
-# untouched (different GatewayClass — they coexist), then run a sandbox
-# HTTPRoute with `gatewayClassName: cilium` against a throwaway echo pod
-# scheduled to the same node as the ingress. If a same-node curl succeeds,
-# #42325 doesn't trigger on our cluster and we migrate gateway-internal +
-# gateway-external. If it times out, revert this flag and re-evaluate when
-# #42325 closes or when we land Talos+3VM (cross-node paths work fine).
-#
-# enabled=true also flips on `enable-envoy-config` automatically. Envoy
-# runs embedded in cilium-agent for now; if we keep Cilium Gateway, the
-# next step is `envoy.enabled: true` to run it as a dedicated DaemonSet
-# (cleaner upgrades, separate scaling, the Cilium 1.16+ recommendation).
+# hostNetwork mode sidesteps TPROXY entirely: Envoy binds a REAL listening
+# socket on 0.0.0.0:<port> in the host netns, so a locally-originated connection
+# to nodeIP:<port> reaches a genuine listener — no socket-steal needed. It's
+# still Cilium's Envoy (bpf_metadata filter), so we keep L7 + Hubble visibility.
+# Mutually exclusive with LoadBalancer mode for cilium-class Gateways (Envoy
+# Gateway's eg-* classes are a different controller and unaffected).
+# Per-Gateway listener ports come from spec.listeners.port; <=1023 needs the
+# NET_BIND_SERVICE cap below.
 gatewayAPI:
   enabled: true
   # ALPN negotiation (HTTP/2 → HTTP/1.1 fallback). Required for HTTPS
   # listeners that need to serve both HTTP/2 and HTTP/1.1 clients.
   enableAlpn: true
+  hostNetwork:
+    enabled: true
 
 # Dedicated Envoy DaemonSet (vs embedded in cilium-agent).
 # NOTE (2026-06-26): originally enabled on the hypothesis that it fixed the
@@ -204,6 +204,12 @@ gatewayAPI:
 # agent and the TPROXY/socket plumbing is identical to the embedded case.
 envoy:
   enabled: true
+  # hostNetwork gateways binding privileged ports (80/443) need NET_BIND_SERVICE —
+  # cilium-envoy drops all caps by default. Required for the real eg-* migration;
+  # harmless for high-port test gateways.
+  securityContext:
+    capabilities:
+      keepCapNetBindService: true
 
 # L2 announcements replace MetalLB. Combined with kubeProxyReplacement, lets Cilium
 # advertise LB IPs on the LAN via ARP/NDP. Pool + policy live in separate manifests
