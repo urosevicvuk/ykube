@@ -73,14 +73,24 @@ socketLB:
 # pull from GitHub. BPF masquerade bypasses iptables for this path entirely.
 bpf:
   masquerade: true
-  # NOTE (2026-06-26): we briefly set `tproxy: true` (BPF bpf_sk_assign) to fix
-  # the Gateway L7 redirect — the redirected SYN never reaches Envoy (pod stuck
-  # in SYN_SENT, no SYN_RECV on Envoy, no drop logged). It did NOT help. Reverted
-  # to the chart default (iptables xt_TPROXY), because the iptables delivery path
-  # was never actually validated here: every prior test ran against a stale
-  # cilium-envoy that was NACKing the listener ("reuse port cannot be changed
-  # during an update") — see the routingMode note. With Envoy freshly restarted
-  # and the listener cleanly ACKed, xt_TPROXY is the battle-tested path to retest.
+  # BPF TPROXY (bpf_sk_assign) for the L7 proxy redirect — REQUIRED here.
+  #
+  # Root cause (2026-06-26, Cilium 1.19.5): the gateway Envoy listener is emitted
+  # WITHOUT the `transparent`/IP_TRANSPARENT socket option (verified in Envoy's
+  # config_dump: transparent=null, no SOL_IP/IP_TRANSPARENT in socketOptions).
+  # The default iptables xt_TPROXY delivery *requires* a transparent listen
+  # socket — without it, TPROXY's socket lookup at 127.0.0.1:15581 finds no
+  # eligible socket and drops the SYN inside the TPROXY target. Evidence: the
+  # `-j TPROXY` rule counter increments (packet matches) but CILIUM_INPUT's
+  # "ACCEPT for proxy traffic" (mark 0x200) rule shows 0 packets ever, no
+  # SYN_RECV on Envoy, no firewall drop, no SNMP counter. Silent black hole.
+  #
+  # bpf_sk_assign assigns Envoy's socket in eBPF and does NOT depend on the
+  # listener being transparent, so it sidesteps the missing flag entirely.
+  # (An earlier tproxy:true test FAILED only because Envoy was stale/NACKing the
+  # listener then — never a valid test. Retest requires a freshly-restarted,
+  # cleanly-ACKed cilium-envoy.)
+  tproxy: true
 
 # k3s apiserver listens on 6443 on every node (single-node cluster, this is firelink itself).
 k8sServiceHost: 127.0.0.1
