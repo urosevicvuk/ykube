@@ -73,29 +73,14 @@ socketLB:
 # pull from GitHub. BPF masquerade bypasses iptables for this path entirely.
 bpf:
   masquerade: true
-  # BPF-based TPROXY (bpf_sk_assign) instead of iptables xt_TPROXY for the L7
-  # proxy redirect. REQUIRED for Cilium Gateway API to work on this cluster.
-  #
-  # Diagnosis (2026-06-26, live capture, Cilium 1.19.5): a same-node curl to a
-  # `gatewayClassName: cilium` HTTPRoute times out. Traced hop-by-hop, every
-  # control-plane stage is correct — Gateway Programmed, CEC/xDS ACKed, BPF LB
-  # has the VIP→`L7LB Proxy Port 15581` redirect, Envoy is listening on
-  # 127.0.0.1:15581, the BPF datapath fires `-> proxy port 15581 ... SYN`, and
-  # the iptables `-j TPROXY --on-port 15581` rule counter increments per SYN.
-  # But ZERO connections reach Envoy and `cilium monitor` records NO drop.
-  #
-  # This is NOT #42325 (that's a policy DROP on the return SYN-ACK — we see no
-  # SYN-ACK and no drop at all). The SYN never reaches Envoy: with iptables
-  # TPROXY under bpf host-routing + vxlan tunnel + socket-LB, the TPROXY
-  # socket-steal isn't honored, so the marked packet falls through to the
-  # to-proxy routing rule (table 2004 `local default dev lo`), nobody owns
-  # 192.168.0.2:80 on lo, and the kernel silently drops it below the BPF layer.
-  # (Same machinery as the toFQDNs DNS-proxy drop in cilium/cilium#46284.)
-  #
-  # bpf.tproxy moves the socket assignment into the tc BPF program at the moment
-  # the redirect is chosen, eliminating the iptables xt_TPROXY rule and the
-  # table-2004 fallback entirely. Kernel supports it (bpf host-routing is active).
-  tproxy: true
+  # NOTE (2026-06-26): we briefly set `tproxy: true` (BPF bpf_sk_assign) to fix
+  # the Gateway L7 redirect — the redirected SYN never reaches Envoy (pod stuck
+  # in SYN_SENT, no SYN_RECV on Envoy, no drop logged). It did NOT help. Reverted
+  # to the chart default (iptables xt_TPROXY), because the iptables delivery path
+  # was never actually validated here: every prior test ran against a stale
+  # cilium-envoy that was NACKing the listener ("reuse port cannot be changed
+  # during an update") — see the routingMode note. With Envoy freshly restarted
+  # and the listener cleanly ACKed, xt_TPROXY is the battle-tested path to retest.
 
 # k3s apiserver listens on 6443 on every node (single-node cluster, this is firelink itself).
 k8sServiceHost: 127.0.0.1
