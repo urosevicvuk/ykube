@@ -18,6 +18,13 @@ spec:
   template:
     metadata:
       name: '{{path[2]}}-{{path.basename}}'
+      annotations:
+        # System (cluster plumbing) reconciles before any tenant on a fresh
+        # bootstrap / full DR. Steady state is handled by selfHeal regardless;
+        # the wave only matters for first-sync ordering so cilium/cnpg/ESO/vault
+        # come up before tenant apps try to mount PVCs or pull ExternalSecrets.
+        # Tenant AppSets carry no wave (default 0).
+        argocd.argoproj.io/sync-wave: "-10"
       finalizers:
         - resources-finalizer.argocd.argoproj.io
     spec:

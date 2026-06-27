@@ -13,8 +13,6 @@ spec:
   template:
     metadata:
       name: 'ofnir-{{path.basename}}'
-      annotations:
-        argocd.argoproj.io/sync-wave: "0"
       finalizers:
         - resources-finalizer.argocd.argoproj.io
     spec:
@@ -25,7 +23,7 @@ spec:
         path: '{{path}}'
       destination:
         server: https://kubernetes.default.svc
-        namespace: '{{path.basename}}'
+        namespace: 'ofnir-{{path.basename}}'
       syncPolicy:
         automated:
           prune: true

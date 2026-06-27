@@ -10,7 +10,7 @@ namespace: kube-system
 resources:
   - lb-ip-pool.yaml
   - l2-announcement-policy.yaml
-  - hubble-route.yaml
+  - httproute.yaml
   # CCNPs disabled — a CCNP that selects reserved:host implicitly turns on
   # host-firewall enforcement, which adds another moving piece while we're
   # stabilizing the base cluster. Re-enable once everything else works.
@@ -24,3 +24,13 @@ helmCharts:
     namespace: kube-system
     valuesFile: values.yaml
     includeCRDs: true
+
+# Stamp recommended k8s labels on every rendered resource.
+# Uses `labels:` (not deprecated `commonLabels:`) with includeSelectors=false so
+# selector matchLabels are untouched — required because Deployment selectors are
+# immutable post-creation.
+labels:
+  - includeSelectors: false
+    pairs:
+      app.kubernetes.io/part-of: system
+      app.kubernetes.io/managed-by: argocd

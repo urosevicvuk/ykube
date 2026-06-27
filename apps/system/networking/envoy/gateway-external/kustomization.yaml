@@ -17,4 +17,4 @@ resources:
   - envoyproxy.yaml
   - gateway.yaml
   - gateway-service.yaml
-  - http-redirect-route.yaml
+  - httproute-http-redirect.yaml

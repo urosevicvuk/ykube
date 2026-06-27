@@ -13,8 +13,6 @@ spec:
   template:
     metadata:
       name: 'eko-servis-{{path.basename}}'
-      annotations:
-        argocd.argoproj.io/sync-wave: "0"
       finalizers:
         - resources-finalizer.argocd.argoproj.io
     spec:

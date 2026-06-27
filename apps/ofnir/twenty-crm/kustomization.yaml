@@ -1,17 +1,16 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: kubernetes-event-exporter
+namespace: ofnir-twenty-crm
 
 resources:
   - namespace.yaml
-
-helmCharts:
-  - name: kubernetes-event-exporter
-    repo: https://charts.bitnami.com/bitnami
-    version: 3.6.3  # renovate: depName=bitnami/kubernetes-event-exporter
-    releaseName: kubernetes-event-exporter
-    namespace: kubernetes-event-exporter
-    valuesFile: values.yaml
+  - cnpg-cluster.yaml
+  - secrets.yaml
+  - redis.yaml
+  - pvcs.yaml
+  - deployment.yaml
+  - worker.yaml
+  - httproute.yaml
 
 # Stamp recommended k8s labels on every rendered resource.
 # Uses `labels:` (not deprecated `commonLabels:`) with includeSelectors=false so
@@ -20,5 +19,5 @@ helmCharts:
 labels:
   - includeSelectors: false
     pairs:
-      app.kubernetes.io/part-of: system
+      app.kubernetes.io/part-of: ofnir
       app.kubernetes.io/managed-by: argocd

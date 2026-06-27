@@ -1,14 +1,14 @@
-# Envoy Gateway — controller + shared infrastructure.
+# Envoy Gateway — controller + both ingress lanes (one Argo Application owns all).
 #
 # Owns:
 #   - The Envoy Gateway controller (Helm chart) in envoy-gateway-system.
-#   - The four wildcard TLS Certificates issued by cert-manager. Both lane
-#     Gateways live in this namespace and reference these Secrets by name;
-#     keeping certs here means no cross-namespace refs and no ReferenceGrant.
+#   - The four wildcard TLS Certificates issued by cert-manager.
+#   - gateway-external/ — public lane (cloudflared origin).
+#   - gateway-internal/ — tailnet lane (tailscale-operator LB class).
 #
-# Lane apps (gateway-external, gateway-internal) hold everything specific to
-# their lane: GatewayClass, EnvoyProxy params, and the Gateway resource. They
-# share this namespace but are owned by separate Argo Applications.
+# Lane subdirs hold everything specific to their lane (GatewayClass,
+# EnvoyProxy params, the Gateway resource). They share envoy-gateway-system
+# and reference the cert Secrets by name (no cross-ns refs, no ReferenceGrant).
 #
 # Gateway API CRDs are NOT managed here. They're installed by the bootstrap
 # script (seed-k3s/scripts/00-cilium-install.sh) directly via
@@ -26,6 +26,8 @@ namespace: envoy-gateway-system
 resources:
   - namespace.yaml
   - certificate.yaml
+  - gateway-external
+  - gateway-internal
 
 helmCharts:
   - name: gateway-helm
@@ -63,3 +65,13 @@ patches:
       kind: ValidatingAdmissionPolicyBinding
       metadata:
         name: safe-upgrades.gateway.networking.k8s.io
+
+# Stamp recommended k8s labels on every rendered resource.
+# Uses `labels:` (not deprecated `commonLabels:`) with includeSelectors=false so
+# selector matchLabels are untouched — required because Deployment selectors are
+# immutable post-creation.
+labels:
+  - includeSelectors: false
+    pairs:
+      app.kubernetes.io/part-of: system
+      app.kubernetes.io/managed-by: argocd

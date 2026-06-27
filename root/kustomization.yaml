@@ -7,7 +7,7 @@ namespace: argocd
 
 resources:
   - namespace.yaml
-  - argocd-route.yaml
+  - httproute.yaml
   - argocd-webhook-secret.yaml
   - ../projects/system.yaml
   - ../projects/homelab.yaml
