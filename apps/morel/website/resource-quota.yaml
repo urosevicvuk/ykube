@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ResourceQuota
 metadata:
   name: tenant-quota
-  namespace: morel
+  namespace: morel-website
 spec:
   hard:
     requests.cpu: "4"

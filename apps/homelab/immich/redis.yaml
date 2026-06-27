@@ -1,44 +1,16 @@
-apiVersion: apps/v1
-kind: Deployment
+# Cache for Immich (queue + session). Provisioned by the Dragonfly Operator
+# (apps/system/storage/dragonfly-operator/). Service name matches the previous
+# hand-rolled Redis Service so immich pods' REDIS_HOST=immich-redis is unchanged.
+apiVersion: dragonflydb.io/v1alpha1
+kind: Dragonfly
 metadata:
   name: immich-redis
   namespace: immich
 spec:
   replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: immich-redis
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: immich-redis
-    spec:
-      automountServiceAccountToken: false
-      containers:
-        - name: redis
-          image: docker.io/library/redis:7-alpine
-          args: ["--save", "", "--appendonly", "no"]
-          ports:
-            - name: redis
-              containerPort: 6379
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              memory: 256Mi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: immich-redis
-  namespace: immich
-spec:
-  selector:
-    app.kubernetes.io/name: immich-redis
-  ports:
-    - name: redis
-      port: 6379
-      targetPort: redis
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi

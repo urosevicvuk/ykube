@@ -1,0 +1,32 @@
+# Dragonfly Operator — Redis-as-a-service via per-app `Dragonfly` CR.
+#
+# Pattern mirrors CloudNativePG: the operator runs cluster-wide in
+# dragonfly-operator-system, and each app that needs cache declares a
+# `Dragonfly` CR in its own namespace (file convention: redis.yaml, top-level
+# peer of cnpg-cluster.yaml). The operator provisions a StatefulSet + Service
+# named after the CR.
+#
+# Picked over Redis (sentinel/cluster operators) for homelab scale: single
+# binary, Redis-protocol compatible, drop-in for cache/broker workloads, much
+# simpler ops surface.
+#
+# Manifest is the canonical kubectl-apply bundle — single file holds CRD +
+# operator Deployment + RBAC + its own namespace. Pinned to a tag so commits
+# pin to a version; uses URL-based resources (requires `--load-restrictor=
+# LoadRestrictionsNone` which root/values.yaml already sets cluster-wide).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # renovate: depName=dragonflydb/dragonfly-operator
+  - https://raw.githubusercontent.com/dragonflydb/dragonfly-operator/v1.6.1/manifests/dragonfly-operator.yaml
+
+# Stamp recommended k8s labels on every rendered resource.
+# Uses `labels:` (not deprecated `commonLabels:`) with includeSelectors=false so
+# selector matchLabels are untouched — required because Deployment selectors are
+# immutable post-creation.
+labels:
+  - includeSelectors: false
+    pairs:
+      app.kubernetes.io/part-of: system
+      app.kubernetes.io/managed-by: argocd

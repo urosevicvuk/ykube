@@ -5,7 +5,7 @@ apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
   name: tenant-baseline
-  namespace: morel
+  namespace: morel-website
 spec:
   endpointSelector: {}
   ingress:

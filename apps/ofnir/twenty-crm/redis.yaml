@@ -1,45 +1,18 @@
-apiVersion: apps/v1
-kind: Deployment
+# Cache for Twenty CRM. Provisioned by the Dragonfly Operator.
+# Twenty's docs require maxmemory-policy=noeviction — Dragonfly's default
+# behaviour (no cache_mode flag) is noeviction (refuses writes when full
+# rather than evicting), so no extra args needed. Service name preserved
+# so twenty's REDIS_URL=redis://twenty-redis:6379 is unchanged.
+apiVersion: dragonflydb.io/v1alpha1
+kind: Dragonfly
 metadata:
   name: twenty-redis
   namespace: ofnir-twenty-crm
 spec:
   replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: twenty-redis
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: twenty-redis
-    spec:
-      automountServiceAccountToken: false
-      containers:
-        - name: redis
-          image: docker.io/library/redis:7-alpine
-          # Twenty docs require maxmemory-policy noeviction.
-          args: ["--save", "", "--appendonly", "no", "--maxmemory-policy", "noeviction"]
-          ports:
-            - name: redis
-              containerPort: 6379
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              memory: 256Mi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: twenty-redis
-  namespace: ofnir-twenty-crm
-spec:
-  selector:
-    app.kubernetes.io/name: twenty-redis
-  ports:
-    - name: redis
-      port: 6379
-      targetPort: redis
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi

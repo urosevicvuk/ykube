@@ -1,6 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: morel
+namespace: morel-website
 
 resources:
   - namespace.yaml

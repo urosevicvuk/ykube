@@ -1,46 +1,17 @@
-# Tiny Redis for Paperless's celery broker + cache. No persistence (broker
-# state can be lost — celery just re-enqueues).
-apiVersion: apps/v1
-kind: Deployment
+# Cache for Paperless (celery broker + cache). Provisioned by the Dragonfly
+# Operator. Broker state is lossy by design — celery just re-enqueues on
+# restart — so no persistence config needed. Service name matches the previous
+# hand-rolled one so paperless config (REDIS_HOST=paperless-redis) is unchanged.
+apiVersion: dragonflydb.io/v1alpha1
+kind: Dragonfly
 metadata:
   name: paperless-redis
   namespace: paperless-ngx
 spec:
   replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: paperless-redis
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: paperless-redis
-    spec:
-      automountServiceAccountToken: false
-      containers:
-        - name: redis
-          image: docker.io/library/redis:7-alpine
-          args: ["--save", "", "--appendonly", "no"]
-          ports:
-            - name: redis
-              containerPort: 6379
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              memory: 128Mi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: paperless-redis
-  namespace: paperless-ngx
-spec:
-  selector:
-    app.kubernetes.io/name: paperless-redis
-  ports:
-    - name: redis
-      port: 6379
-      targetPort: redis
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
