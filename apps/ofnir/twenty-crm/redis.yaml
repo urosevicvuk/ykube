@@ -10,9 +10,11 @@ metadata:
   namespace: ofnir-twenty-crm
 spec:
   replicas: 1
+  args:
+    - "--threads=1"
   resources:
     requests:
       cpu: 50m
-      memory: 64Mi
-    limits:
       memory: 128Mi
+    limits:
+      memory: 256Mi

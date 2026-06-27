@@ -10,6 +10,8 @@ metadata:
   namespace: ghostfolio
 spec:
   replicas: 1
+  args:
+    - "--threads=1"
   authentication:
     passwordFromSecret:
       name: ghostfolio-secrets
@@ -17,6 +19,6 @@ spec:
   resources:
     requests:
       cpu: 50m
-      memory: 64Mi
-    limits:
       memory: 128Mi
+    limits:
+      memory: 256Mi
