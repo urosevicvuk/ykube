@@ -26,11 +26,67 @@ repoServer:
 applicationSet:
   replicas: 1
 
-# Disabled until SSO is actually configured. Enabling them without configuration
-# leaves dormant pods + a Dex login button that 500s.
+# Notifications controller → ntfy. Independent of Dex/SSO — it just watches
+# Application status and POSTs to ntfy's in-cluster JSON publish endpoint
+# (anonymous read-write inside the tailnet, so no token needed). Subscriptions
+# below are cluster-wide defaults, so every Application is covered without
+# per-app annotations. Dynamic strings go through `toJson` so an error message
+# containing quotes/newlines can't produce invalid JSON.
 notifications:
-  enabled: false
+  enabled: true
+  notifiers:
+    service.webhook.ntfy: |
+      url: http://ntfy.ntfy.svc.cluster.local
+      headers:
+        - name: Content-Type
+          value: application/json
+  templates:
+    template.app-sync-failed: |
+      webhook:
+        ntfy:
+          method: POST
+          path: /
+          body: |
+            {
+              "topic": "argocd",
+              "title": {{ (printf "ArgoCD sync failed: %s" .app.metadata.name) | toJson }},
+              "message": {{ .app.status.operationState.message | default "sync failed" | toJson }},
+              "priority": 4,
+              "tags": ["rotating_light"],
+              "click": {{ (printf "https://argocd.urosevicvuk.dev/applications/%s" .app.metadata.name) | toJson }}
+            }
+    template.app-health-degraded: |
+      webhook:
+        ntfy:
+          method: POST
+          path: /
+          body: |
+            {
+              "topic": "argocd",
+              "title": {{ (printf "ArgoCD degraded: %s" .app.metadata.name) | toJson }},
+              "message": {{ .app.status.health.message | default "health is Degraded" | toJson }},
+              "priority": 4,
+              "tags": ["warning"],
+              "click": {{ (printf "https://argocd.urosevicvuk.dev/applications/%s" .app.metadata.name) | toJson }}
+            }
+  triggers:
+    trigger.on-sync-failed: |
+      - when: app.status.operationState.phase in ['Error', 'Failed']
+        send: [app-sync-failed]
+    trigger.on-health-degraded: |
+      - when: app.status.health.status == 'Degraded'
+        send: [app-health-degraded]
+  # Cluster-wide default: subscribe every Application to both triggers.
+  subscriptions:
+    - recipients:
+        - ntfy
+      triggers:
+        - on-sync-failed
+        - on-health-degraded
 
+# Disabled until SSO is actually configured — enabling Dex without config
+# leaves a dormant pod + a login button that 500s. (Authentik will replace
+# the need for Dex entirely.)
 dex:
   enabled: false
 

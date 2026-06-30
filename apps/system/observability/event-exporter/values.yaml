@@ -50,10 +50,34 @@ config:
           reason: "{{ .Reason }}"
           kind: "{{ .InvolvedObject.Kind }}"
 
+    # High-signal failures also fan out to ntfy (phone push). The full event
+    # firehose still goes to Loki above; this receiver is narrowed by the
+    # Warning route below. event-exporter marshals `layout` to JSON itself, so
+    # no manual escaping is needed; ntfy reads the topic from the body.
+    - name: ntfy
+      webhook:
+        endpoint: http://ntfy.ntfy.svc.cluster.local/
+        headers:
+          Content-Type: application/json
+        layout:
+          topic: k8s-events
+          title: "{{ .Reason }}: {{ .InvolvedObject.Kind }}/{{ .InvolvedObject.Name }}"
+          message: "{{ .Message }}"
+          priority: 4
+          tags:
+            - warning
+
   route:
-    # Single catch-all rule sending every event to Loki. Filter at query
-    # time in Grafana / Loki rules, not at ship time — keeps the firehose
-    # available for unexpected investigations.
+    # Catch-all sends every event to Loki. Filter at query time in Grafana /
+    # Loki rules, not at ship time — keeps the firehose available for
+    # unexpected investigations.
     routes:
       - match:
           - receiver: loki
+      # Only genuinely-actionable Warnings page the phone. Broaden the reason
+      # regex to taste — Unhealthy/FailedScheduling are noisy on a single node,
+      # so they're intentionally left out.
+      - match:
+          - type: Warning
+            reason: "(OOMKilling|Evicted|BackOff|FailedMount|FailedAttachVolume|ErrImagePull|ImagePullBackOff|FailedCreatePodSandBox)"
+            receiver: ntfy
