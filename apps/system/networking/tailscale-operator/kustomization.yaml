@@ -10,7 +10,7 @@ resources:
 helmCharts:
   - name: tailscale-operator
     repo: https://pkgs.tailscale.com/helmcharts
-    version: 1.98.3  # renovate: depName=tailscale/tailscale-operator
+    version: 1.98.4  # renovate: depName=tailscale/tailscale-operator
     releaseName: tailscale-operator
     namespace: tailscale
     valuesFile: values.yaml
