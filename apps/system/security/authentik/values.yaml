@@ -1,0 +1,50 @@
+# goauthentik/authentik. External Postgres via CNPG (authentik-pg) and Redis via
+# Dragonfly (authentik-redis) — the chart's bundled subcharts are disabled. The
+# secret key + bootstrap admin + DB password come from ESO/CNPG secrets, injected
+# as env. Ingress is Gateway API (httproute.yaml), so the chart ingress is off.
+
+# Bring-your-own datastores.
+postgresql:
+  enabled: false
+redis:
+  enabled: false
+
+authentik:
+  # Non-secret connection config; password is injected via global.env below.
+  postgresql:
+    host: authentik-pg-rw
+    name: authentik
+    user: authentik
+  redis:
+    host: authentik-redis
+
+# Secret-sourced env, applied to both server and worker.
+global:
+  env:
+    - name: AUTHENTIK_POSTGRESQL__PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: authentik-pg-app
+          key: password
+    - name: AUTHENTIK_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: authentik-secret
+          key: secret-key
+    - name: AUTHENTIK_BOOTSTRAP_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: authentik-secret
+          key: bootstrap-password
+    - name: AUTHENTIK_BOOTSTRAP_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: authentik-secret
+          key: bootstrap-token
+
+server:
+  ingress:
+    enabled: false
+
+worker:
+  replicas: 1

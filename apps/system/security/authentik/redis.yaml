@@ -1,0 +1,17 @@
+# Cache / message broker for Authentik (Celery task queue + sessions).
+# Provisioned by the Dragonfly Operator; service name authentik-redis.
+apiVersion: dragonflydb.io/v1alpha1
+kind: Dragonfly
+metadata:
+  name: authentik-redis
+  namespace: authentik
+spec:
+  replicas: 1
+  args:
+    - "--proactor_threads=1"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
