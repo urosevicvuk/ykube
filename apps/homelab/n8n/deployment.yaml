@@ -45,7 +45,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: n8n
-          image: docker.n8n.io/n8nio/n8n:1.74.0
+          image: docker.n8n.io/n8nio/n8n:1.123.62
           env:
             - name: N8N_HOST
               value: n8n.urosevicvuk.dev
