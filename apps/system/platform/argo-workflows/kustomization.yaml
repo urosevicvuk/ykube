@@ -6,6 +6,12 @@ resources:
   - namespace.yaml
   - cnpg-cluster.yaml
   - httproute.yaml
+  # Argo Events plumbing shared by all event-driven workflows.
+  - eventbus.yaml
+  - events-rbac.yaml
+  # Workflow definitions, grouped one dir per workflow under workflows/.
+  - workflows/renovate
+  - workflows/build-and-push
 
 helmCharts:
   - name: argo-workflows

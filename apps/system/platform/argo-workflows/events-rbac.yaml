@@ -1,0 +1,32 @@
+# ServiceAccount a Sensor's trigger runs as when it creates Workflows. Scoped
+# to argo-workflows (where both the Sensor and the Workflows live), so a plain
+# namespaced Role is enough — no cluster RBAC.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: operate-workflow-sa
+  namespace: argo-workflows
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: operate-workflow
+  namespace: argo-workflows
+rules:
+  - apiGroups: ["argoproj.io"]
+    resources: ["workflows", "workflowtemplates"]
+    verbs: ["create", "get", "list", "watch", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: operate-workflow
+  namespace: argo-workflows
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: operate-workflow
+subjects:
+  - kind: ServiceAccount
+    name: operate-workflow-sa
+    namespace: argo-workflows

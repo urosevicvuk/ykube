@@ -1,0 +1,95 @@
+# Generic "build a repo, push to Harbor" template — the reusable core of the
+# "host a friend's project" flow: they drop a Dockerfile in their repo, you wire
+# the repo here, the image lands in Harbor, and you write the deployment in an
+# AppSet.
+#
+# BuildKit takes the GIT URL directly as the build context, so there's no clone
+# step, no shared PVC, and no Workflow artifact repo — which is why this runs
+# fine without the deferred object storage.
+#
+# Invoke manually:
+#   argo submit -n argo-workflows --from workflowtemplate/build-and-push \
+#     -p repo=urosevicvuk/morel-website \
+#     -p imageName=morel/website \
+#     -p imageTag=1.3.0
+#
+# Later, an Argo Events WorkflowEventBinding can submit this on a GitHub webhook
+# (that's the #3b follow-up).
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: build-and-push
+  namespace: argo-workflows
+spec:
+  serviceAccountName: argo-workflow
+  entrypoint: build
+  arguments:
+    parameters:
+      - name: repo # GitHub <owner>/<name>
+      - name: revision # branch / tag / sha
+        value: main
+      - name: dockerfile # path to Dockerfile, relative to repo root
+        value: Dockerfile
+      - name: imageName # image path within the registry, e.g. morel/website
+      - name: imageTag
+        value: latest
+      - name: registry
+        value: registry.urosevicvuk.dev
+  volumes:
+    # Harbor robot creds as a docker config.json for `buildctl` push auth.
+    - name: docker-config
+      secret:
+        secretName: harbor-push
+        items:
+          - key: .dockerconfigjson
+            path: config.json
+  templates:
+    - name: build
+      container:
+        image: moby/buildkit:v0.31.1-rootless
+        command: [buildctl-daemonless.sh]
+        args:
+          - build
+          - --frontend=dockerfile.v0
+          - --opt
+          - context=https://github.com/{{workflow.parameters.repo}}.git#{{workflow.parameters.revision}}
+          - --opt
+          - filename={{workflow.parameters.dockerfile}}
+          # Authenticates the git context fetch for private repos; harmless for
+          # public ones.
+          - --secret
+          - id=GIT_AUTH_TOKEN,env=GIT_AUTH_TOKEN
+          - --output
+          - type=image,name={{workflow.parameters.registry}}/{{workflow.parameters.imageName}}:{{workflow.parameters.imageTag}},push=true
+        env:
+          # Unprivileged rootless build — pairs with the Unconfined seccomp/
+          # AppArmor below. Modern kernel gives rootless overlayfs (no fuse).
+          - name: BUILDKITD_FLAGS
+            value: --oci-worker-no-process-sandbox
+          - name: DOCKER_CONFIG
+            value: /home/user/.docker
+          - name: GIT_AUTH_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: build-git-auth
+                key: token
+        volumeMounts:
+          - name: docker-config
+            mountPath: /home/user/.docker
+        # Rootless BuildKit needs to create user namespaces — it can't do that
+        # under the default seccomp/AppArmor profiles, hence Unconfined. Still
+        # runs as a non-root UID, not privileged.
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          seccompProfile:
+            type: Unconfined
+          appArmorProfile:
+            type: Unconfined
+        # No CPU limit (avoids throttling long builds); memory bounded.
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            memory: 4Gi

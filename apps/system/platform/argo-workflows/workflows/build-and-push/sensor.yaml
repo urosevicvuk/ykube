@@ -1,0 +1,63 @@
+# On a push to morel-website's main branch, submit the build-and-push template
+# with the pushed commit SHA as both the build revision and the image tag.
+#
+# This is the per-project wiring: one Sensor per repo→image mapping (repo name
+# rarely matches the Harbor image path, so it can't be fully auto-derived). To
+# onboard another project, copy this Sensor, change the repo filter + the repo/
+# imageName params, and add the repo to the EventSource above.
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: build-morel-website
+  namespace: argo-workflows
+spec:
+  eventBusName: default
+  template:
+    serviceAccountName: operate-workflow-sa
+  dependencies:
+    - name: morel-push
+      eventSourceName: github
+      eventName: build
+      filters:
+        data:
+          # Only main-branch pushes build.
+          - path: body.ref
+            type: string
+            value:
+              - refs/heads/main
+  triggers:
+    - template:
+        name: build-and-push
+        k8s:
+          operation: create
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: build-morel-website-
+                namespace: argo-workflows
+              spec:
+                serviceAccountName: argo-workflow
+                workflowTemplateRef:
+                  name: build-and-push
+                arguments:
+                  parameters:
+                    - name: repo
+                      value: urosevicvuk/morel-website
+                    - name: imageName
+                      value: morel/website
+                    - name: revision # overwritten from payload below
+                      value: main
+                    - name: imageTag # overwritten from payload below
+                      value: latest
+          parameters:
+            # body.after = the new commit SHA of the push.
+            - src:
+                dependencyName: morel-push
+                dataKey: body.after
+              dest: spec.arguments.parameters.2.value
+            - src:
+                dependencyName: morel-push
+                dataKey: body.after
+              dest: spec.arguments.parameters.3.value

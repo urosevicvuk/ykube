@@ -1,0 +1,19 @@
+# JetStream EventBus backing every EventSource/Sensor in this namespace. Argo
+# Events' controller is cluster-wide, so we run the whole CI event pipeline here
+# in argo-workflows (next to the build template + the argo-workflow SA) rather
+# than in argo-events, which keeps the Sensor→Workflow hop in-namespace.
+#
+# replicas:3 is JetStream's clustered default; on the single node today they
+# co-locate (soft anti-affinity). Revisit on the multi-node Talos rebuild.
+apiVersion: argoproj.io/v1alpha1
+kind: EventBus
+metadata:
+  name: default
+  namespace: argo-workflows
+spec:
+  jetstream:
+    version: 2.9.16
+    replicas: 3
+    persistence:
+      storageClassName: longhorn
+      volumeSize: 1Gi
