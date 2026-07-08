@@ -28,8 +28,15 @@ helmCharts:
 # Uses `labels:` (not deprecated `commonLabels:`) with includeSelectors=false so
 # selector matchLabels are untouched — required because Deployment selectors are
 # immutable post-creation.
+#
+# NOTE: unlike the other system apps, we intentionally do NOT stamp
+# `app.kubernetes.io/part-of` here. Kyverno reserves that label: its controller
+# ClusterRoles aggregate rules from the `:core` roles via an aggregationRule that
+# selects on `app.kubernetes.io/part-of: kyverno`. `includeSelectors: false`
+# protects Deployment/Service selectors but NOT aggregationRule selectors, so
+# overwriting the label to `system` breaks aggregation — the controller SAs end
+# up with zero rules and the pods CrashLoop on their startup sanity check.
 labels:
   - includeSelectors: false
     pairs:
-      app.kubernetes.io/part-of: system
       app.kubernetes.io/managed-by: argocd
