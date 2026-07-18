@@ -9,7 +9,7 @@ resources:
 helmCharts:
   - name: vault
     repo: https://helm.releases.hashicorp.com
-    version: 0.32.0  # renovate: depName=hashicorp/vault
+    version: 0.34.0  # renovate: depName=hashicorp/vault
     releaseName: vault
     namespace: vault
     valuesFile: values.yaml

@@ -9,7 +9,7 @@ resources:
 helmCharts:
   - name: external-secrets
     repo: https://charts.external-secrets.io
-    version: 2.4.1  # renovate: depName=external-secrets/external-secrets
+    version: 2.7.0  # renovate: depName=external-secrets/external-secrets
     releaseName: external-secrets
     namespace: external-secrets
     valuesFile: values.yaml

@@ -8,7 +8,7 @@ resources:
 helmCharts:
   - name: argo-events
     repo: https://argoproj.github.io/argo-helm
-    version: 2.4.13  # renovate: depName=argo-events registryUrl=https://argoproj.github.io/argo-helm
+    version: 2.4.23  # renovate: depName=argo-events registryUrl=https://argoproj.github.io/argo-helm
     releaseName: argo-events
     namespace: argo-events
     valuesFile: values.yaml
