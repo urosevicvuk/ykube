@@ -28,7 +28,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: stirling-pdf
-          image: docker.io/stirlingtools/stirling-pdf:2.10.1
+          image: docker.io/stirlingtools/stirling-pdf:2.14.2
           # No container securityContext: init.sh needs CAP_CHOWN/CAP_FOWNER
           # to fix dir ownership and CAP_SETUID/CAP_SETGID for su-exec to drop
           # to stirlingpdfuser. Matches the upstream chart's default.

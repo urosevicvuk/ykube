@@ -18,7 +18,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: atuin
-          image: ghcr.io/atuinsh/atuin:18.16.1
+          image: ghcr.io/atuinsh/atuin:18.17.1
           # v18 split out a separate `atuin-server` binary as the image ENTRYPOINT.
           # v17 was ENTRYPOINT=atuin with args=["server","start"]; v18 just takes ["start"].
           args: ["start"]
