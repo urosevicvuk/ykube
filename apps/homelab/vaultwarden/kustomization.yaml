@@ -11,7 +11,7 @@ resources:
 helmCharts:
   - name: vaultwarden
     repo: https://guerzon.github.io/vaultwarden
-    version: 0.39.1  # renovate: depName=vaultwarden registryUrl=https://guerzon.github.io/vaultwarden
+    version: 0.43.1  # renovate: depName=vaultwarden registryUrl=https://guerzon.github.io/vaultwarden
     releaseName: vaultwarden
     namespace: vaultwarden
     valuesFile: values.yaml
