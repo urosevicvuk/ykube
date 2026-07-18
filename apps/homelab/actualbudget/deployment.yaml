@@ -27,7 +27,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: actualbudget
-          image: docker.io/actualbudget/actual-server:26.6.0
+          image: docker.io/actualbudget/actual-server:26.7.0
           ports:
             - name: http
               containerPort: 5006

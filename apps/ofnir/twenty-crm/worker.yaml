@@ -21,7 +21,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: twenty-worker
-          image: docker.io/twentycrm/twenty:v2.14.3
+          image: docker.io/twentycrm/twenty:v2.22.0
           command: ["yarn", "worker:prod"]
           env:
             - name: SERVER_URL
