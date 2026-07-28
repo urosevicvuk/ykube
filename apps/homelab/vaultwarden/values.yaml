@@ -5,7 +5,10 @@
 image:
   registry: docker.io
   repository: vaultwarden/server
-  tag: "1.36.0"
+  # 1.37.0+ is required by Bitwarden clients >= 2026.7.0; older servers make the
+  # desktop app and browser extension fail to deserialise ciphers. Also carries
+  # the 2026-07-24 batch of security advisories. Overrides chart appVersion 1.36.0.
+  tag: "1.37.0"
 
 domain: https://passwords.urosevicvuk.dev
 
