@@ -53,7 +53,7 @@ singleBinary:
   persistence:
     enabled: true
     storageClass: longhorn
-    size: 30Gi
+    size: 15Gi
     accessModes: [ReadWriteOnce]
   resources:
     requests:

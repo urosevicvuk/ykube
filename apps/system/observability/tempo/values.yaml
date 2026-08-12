@@ -52,7 +52,7 @@ persistence:
   # against the live PVC (Longhorn becomes the default class either way, so
   # the volume bound correctly — but the rendered YAML never matched live).
   storageClassName: longhorn
-  size: 20Gi
+  size: 10Gi
   accessModes: [ReadWriteOnce]
   # Empty map (not omitted/null) so the chart's `toYaml | nindent` renders
   # `annotations: {}` instead of `annotations: null` — the latter never
