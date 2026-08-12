@@ -23,6 +23,7 @@ resources:
   - secrets.yaml
   - bucket-job.yaml
   - httproute-pairing.yaml
+  - httproute-admin.yaml
   - backendtrafficpolicy.yaml
 
 helmCharts:

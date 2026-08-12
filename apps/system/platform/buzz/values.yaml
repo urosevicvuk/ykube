@@ -124,6 +124,25 @@ relay:
   # MUST be set back to null/false before ever scaling past one replica.
   huddleAudioAvailable: true
 
+  # The chart exposes no values for these, so they go through extraEnv.
+  extraEnv:
+    # Without this, `/` serves the NIP-11 JSON document to browsers instead of
+    # the web bundle — the relay only serves HTML at `/` and `/repos` when this
+    # is on (router.rs: should_serve_spa / is_git_web_gui_path). Defaults false.
+    # Note this is the git forge browser, not a chat UI; chat is the desktop app.
+    - name: BUZZ_SERVE_GIT_WEB_GUI
+      value: "true"
+    # Read-only moderation/feedback dashboard, served from this same relay
+    # process but only on this exact Host. The admin host short-circuits
+    # everything else: no NIP-11, no WebSocket, no public bundle.
+    # Routed to gateway-internal (tailnet-only) because upstream's docs/admin
+    # state the private ingress IS the access control — there is no per-operator
+    # auth. Do not move this to gateway-external.
+    - name: BUZZ_ADMIN_HOST
+      value: "buzz-admin.urosevicvuk.dev"
+    - name: BUZZ_ADMIN_WEB_DIR
+      value: "/srv/buzz/admin-web"
+
 ingress:
   enabled: false
 
