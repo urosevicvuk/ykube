@@ -14,7 +14,7 @@ prometheus:
   prometheusSpec:
     replicas: 1
     retention: 30d
-    retentionSize: 18GiB
+    retentionSize: 15GiB
     # Auto-discover ServiceMonitors / PodMonitors / PrometheusRules cluster-wide.
     serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorSelectorNilUsesHelmValues: false
