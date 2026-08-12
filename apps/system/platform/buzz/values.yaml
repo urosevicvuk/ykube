@@ -108,6 +108,20 @@ httproute:
       kind: Gateway
   hostnames:
     - buzz.urosevicvuk.dev
+  # Spelled out rather than letting the chart render its default rule. The API
+  # server defaults group/kind/weight on backendRefs; the chart omits them, so
+  # live and rendered never match and Argo reports permanent drift.
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: buzz
+          port: 3000
+          group: ""
+          kind: Service
+          weight: 1
 
 pairingRelay:
   # Stateless NIP-AB device-pairing relay, same image, its own Deployment and

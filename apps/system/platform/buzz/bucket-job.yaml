@@ -26,8 +26,11 @@
 # loop below waits for the object store, and the relay's own startup probe
 # retries until the bucket appears.
 #
-# Replace=true because a completed Job's spec is immutable — without it, any
-# future edit to this file makes the sync fail with a field-immutable error.
+# No Replace=true. It forces `kubectl replace` on EVERY sync regardless of
+# drift, and that always fails here: a Job's spec.selector and its controller-uid
+# template labels are server-generated, so the object in git is never complete
+# enough to replace with. It failed every sync and blocked the whole app.
+# Editing this Job's spec later means deleting it by hand first.
 #
 # Deliberately NO ttlSecondsAfterFinished. The AppSet runs with selfHeal: true,
 # so a TTL-reaped Job is immediately re-created by Argo (present in git, absent
@@ -39,8 +42,6 @@ kind: Job
 metadata:
   name: buzz-bucket-init
   namespace: buzz
-  annotations:
-    argocd.argoproj.io/sync-options: Replace=true
 spec:
   backoffLimit: 10
   template:
