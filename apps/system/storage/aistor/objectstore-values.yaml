@@ -1,0 +1,55 @@
+# AIStor ObjectStore — single-node, erasure-coded, in-cluster S3.
+
+secrets:
+  # Root credentials come from Vault via ESO (secrets.yaml). With
+  # existingSecret: true the chart skips its own Secret template entirely —
+  # templates/object-store-configuration.yaml is guarded on
+  # `not .Values.secrets.existingSecret`, and would otherwise hard-fail
+  # demanding .secrets.accessKey. The name here is what the rendered
+  # ObjectStore CR references as spec.configuration.name.
+  name: objectstore-env-configuration
+  existingSecret: true
+
+objectStore:
+  name: firelink-store
+
+  pools:
+    - name: pool-0
+      # servers: 1 is mandated by the AIStor Free licence, which permits
+      # "standalone mode (single-node deployments without distributed
+      # clustering or high availability)" only. Do not raise this.
+      servers: 1
+      # Four volumes on one node gives single-node erasure coding (SNMD),
+      # keeping MinIO's full feature set and bitrot healing. SNSD
+      # (volumesPerServer: 1) is positioned by MinIO for evaluation only.
+      volumesPerServer: 4
+      size: 10Gi
+      # The default `longhorn` class is already numberOfReplicas: 1, so MinIO's
+      # erasure coding is the only redundancy layer — no double replication.
+      # Note firelink is one node with one disk: erasure coding buys bitrot
+      # detection, NOT survival of a disk failure. Backups are the real answer.
+      storageClassName: longhorn
+
+  certificates:
+    # NOTE: the values key is `certificates` (plural). `certificate` silently
+    # does nothing and leaves autoCert on.
+    #
+    # Default is false, which makes the operator mint its own CA and serve
+    # HTTPS. Buzz has no "trust an extra CA" value, so its startup S3
+    # conformance probe would fail cert verification and the relay would never
+    # become ready. Serving plain HTTP on a ClusterIP keeps this east-west
+    # inside the cluster; nothing is exposed off-node.
+    #
+    # To harden later: issue a cert-manager cert, then mount a CA bundle into
+    # the relay via the buzz chart's extraVolumes/extraVolumeMounts extension
+    # points and set SSL_CERT_FILE.
+    disableAutoCert: true
+
+  services:
+    minio:
+      # Named explicitly so consumers have a stable DNS name. Left unset, the
+      # operator derives it and the endpoint becomes a moving target.
+      name: s3
+      serviceType: ClusterIP
+    console:
+      serviceType: ClusterIP

@@ -1,0 +1,112 @@
+# Creates the bucket Buzz stores git objects and media in.
+#
+# WHY THIS EXISTS AT ALL: neither the AIStor ObjectStore CRD nor its Helm chart
+# exposes declarative bucket creation (verified against aistor-objectstore
+# 1.0.17 — there is no `buckets` key), and Buzz does not create its own bucket.
+# Its startup S3 conformance probe is fatal, so without the bucket the relay
+# never becomes ready.
+#
+# This does bend the standing no-imperative-bootstrap rule, narrowly and
+# deliberately. The distinction from the Garage rollback matters: Garage needed
+# `layout assign` + `key create` and forced reading GENERATED credentials back
+# out, which cannot be expressed in git. Here every credential is ours, declared
+# in Vault and injected as env; the Job only creates a bucket namespace,
+# idempotently (`--ignore-existing`), converging to the same state every run.
+#
+# WHY A NORMAL RESOURCE AND NOT A SYNC HOOK — this is the important part.
+# An Argo PostSync hook deadlocks: PostSync only fires once the sync is Healthy,
+# but the relay can never become Healthy without this bucket, so the hook would
+# never run and the relay would CrashLoopBackOff forever. Buzz's own chart hit
+# the same wall with Helm hooks and documents it in
+# templates/quickstart-minio-init.yaml ("a `post-install` hook cannot satisfy
+# that ... a deadlock"). A PreSync hook fails the other way: it would run before
+# the object store exists.
+#
+# As a normal resource, Argo creates this Job alongside the relay; the `until`
+# loop below waits for the object store, and the relay's own startup probe
+# retries until the bucket appears.
+#
+# Replace=true because a completed Job's spec is immutable — without it, any
+# future edit to this file makes the sync fail with a field-immutable error.
+#
+# Deliberately NO ttlSecondsAfterFinished. The AppSet runs with selfHeal: true,
+# so a TTL-reaped Job is immediately re-created by Argo (present in git, absent
+# from the cluster), which re-runs it, which gets reaped again — a permanent
+# loop on the TTL interval. Upstream can use a TTL because Helm names its Job
+# per release revision; a GitOps-declared Job must persist once complete.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: buzz-bucket-init
+  namespace: buzz
+  annotations:
+    argocd.argoproj.io/sync-options: Replace=true
+spec:
+  backoffLimit: 10
+  template:
+    metadata:
+      name: buzz-bucket-init
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mc
+          # Pinned to the same mc release the Buzz chart itself pins for its
+          # bundled-MinIO path — known-good against this S3 lineage, and its
+          # /bin/sh is confirmed present by that chart's own init Job.
+          image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            readOnlyRootFilesystem: true
+          env:
+            - name: S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: buzz-secrets
+                  key: BUZZ_S3_ACCESS_KEY
+            - name: S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: buzz-secrets
+                  key: BUZZ_S3_SECRET_KEY
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              # --config-dir is mandatory here. The image declares no USER and no
+              # HOME, so upstream's Job runs it as root and mc writes to /root.
+              # We run as 65532, which cannot write /root or /, so mc would fail
+              # to persist the alias. Point it at the writable emptyDir instead.
+              MC="mc --config-dir /tmp/.mc"
+              # The object store may still be coming up on a first sync; retry
+              # rather than fail the whole app.
+              until $MC alias set store \
+                  "http://s3.aistor.svc.cluster.local:9000" \
+                  "$S3_ACCESS_KEY" "$S3_SECRET_KEY"; do
+                echo "waiting for object store..." >&2
+                sleep 5
+              done
+              $MC mb --ignore-existing store/buzz-media
+              # Explicitly deny anonymous access. Mirrors upstream's init Job —
+              # this bucket holds private git objects and media.
+              $MC anonymous set none store/buzz-media
+              echo "bucket buzz-media ready"
+          volumeMounts:
+            - name: mc-config
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+      volumes:
+        - name: mc-config
+          emptyDir: {}

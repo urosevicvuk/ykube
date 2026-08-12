@@ -1,0 +1,14 @@
+# AIStor operator values.
+#
+# `license` is deliberately left empty. The chart's templates/secret-license.yaml
+# is guarded by `{{- if .Values.license }}`, so an empty value means the chart
+# renders no Secret at all, and the operator falls back to reading the
+# out-of-band `minio-license` Secret that secrets.yaml materialises from Vault.
+#
+# The chart's own comment agrees: "it is not advised to expose the license key in
+# the Helm chart. Instead, it is recommended to create a secret manually." Its
+# NOTES.txt names the contract exactly — a Secret named `minio-license` with key
+# `minio.license`.
+#
+# Setting this to a real JWT would commit an enterprise licence token to git.
+license: ""
