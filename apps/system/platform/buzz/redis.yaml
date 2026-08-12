@@ -1,0 +1,24 @@
+# Cache/pubsub for Buzz. Provisioned by the Dragonfly Operator
+# (apps/system/storage/dragonfly-operator/), same pattern as immich.
+#
+# Required despite replicaCount: 1. The chart README says Redis is only needed
+# above one replica, but the relay's /_readiness gates on it unconditionally and
+# returns 503 with {"postgres":true,"redis":false,"status":"not_ready"} without
+# it — the pod never becomes Ready and the Service gets no endpoints.
+apiVersion: dragonflydb.io/v1alpha1
+kind: Dragonfly
+metadata:
+  name: buzz-redis
+  namespace: buzz
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  replicas: 1
+  args:
+    - "--proactor_threads=1"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi

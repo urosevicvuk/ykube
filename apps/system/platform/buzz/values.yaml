@@ -44,8 +44,9 @@ minio:      { enabled: false }
 # Left empty on purpose: DATABASE_URL is supplied through buzz-secrets so the
 # password never appears in values. Setting both would be ambiguous.
 externalPostgresql: { url: "" }
-# Redis is only required at replicaCount > 1 (buzz-pubsub fan-out). At one
-# replica fan-out is in-process.
+# Left empty: the chart never injects this value, it only flips whether the
+# REDIS_URL env is optional. The actual URL is in buzz-secrets (see redis.yaml —
+# Redis is required even at replicaCount 1, the README notwithstanding).
 externalRedis: { url: "" }
 
 s3:
