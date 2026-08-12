@@ -87,8 +87,9 @@ spec:
               MC="mc --config-dir /tmp/.mc"
               # The object store may still be coming up on a first sync; retry
               # rather than fail the whole app.
+              # Port 80, not 9000 — the operator's Service maps 80 -> 9000.
               until $MC alias set store \
-                  "http://s3.aistor.svc.cluster.local:9000" \
+                  "http://s3.aistor.svc.cluster.local:80" \
                   "$S3_ACCESS_KEY" "$S3_SECRET_KEY"; do
                 echo "waiting for object store..." >&2
                 sleep 5
