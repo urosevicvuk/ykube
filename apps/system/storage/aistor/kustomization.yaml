@@ -1,0 +1,83 @@
+# MinIO AIStor — the cluster's S3-compatible object storage system.
+#
+# Structured like longhorn/: ONE Application owns the whole storage system
+# (controller + the single store it manages), and consuming apps request their
+# own units from it. The per-app unit here is a *bucket*, exactly as it is a PVC
+# for Longhorn — one ObjectStore serves many buckets, so an ObjectStore is not a
+# per-app instance the way a CNPG `Cluster` or a `Dragonfly` CR is.
+#
+# (Consumers must currently create their bucket with a Job — neither the
+# ObjectStore CRD nor its chart exposes declarative bucket creation. See
+# apps/system/platform/buzz/bucket-job.yaml.)
+#
+# Both charts land in the `aistor` namespace so this stays a single Application:
+# kustomize's `namespace:` transformer rewrites Namespace object names as well
+# as metadata.namespace, so two Namespaces in one kustomization collide with
+# "namespace transformation produces ID conflict".
+#
+# Why AIStor and not community MinIO: MinIO CE was archived read-only on
+# 2026-04-25 — still AGPLv3 and runnable, but permanently unpatched. AIStor Free
+# is the maintained continuation of the same S3 lineage, licensed perpetually
+# for single-node production use with no capacity limit, which is exactly this
+# cluster's shape. Rook-Ceph RGW remains the end state.
+# See docs/superpowers/specs/2026-08-12-buzz-design.md.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: aistor
+
+resources:
+  - namespace.yaml
+  - secrets.yaml
+
+helmCharts:
+  # The controller. Installs the ObjectStore CRD that the second chart's CR
+  # depends on — Argo applies CRDs ahead of custom resources, and retries the CR
+  # if the operator's webhook is not yet serving.
+  - name: aistor-operator
+    repo: https://helm.min.io/
+    version: 5.11.3  # renovate: depName=minio/aistor-operator
+    releaseName: aistor
+    namespace: aistor
+    valuesFile: values.yaml
+    includeCRDs: true
+
+  # The store itself. Renders exactly one ObjectStore CR — no Deployment, no
+  # Secret; the operator builds the StatefulSet, Services and PVCs from it.
+  - name: aistor-objectstore
+    repo: https://helm.min.io/
+    version: 1.0.17  # renovate: depName=minio/aistor-objectstore
+    releaseName: objectstore
+    namespace: aistor
+    valuesFile: objectstore-values.yaml
+
+# The ObjectStore CR and the CRD that defines it are created by the same Argo
+# sync. Argo dry-runs every resource before applying, and that dry-run fails for
+# a CR whose CRD does not exist yet — on a fresh cluster this app would go red on
+# first sync with "the server could not find the requested resource".
+#
+# SkipDryRunOnMissingResource is Argo's documented answer: skip the dry-run for
+# this resource only while its CRD is absent, then apply normally once the
+# operator's CRDs have landed.
+patches:
+  - target:
+      group: aistor.min.io
+      version: v1
+      kind: ObjectStore
+      name: firelink-store
+    patch: |
+      apiVersion: aistor.min.io/v1
+      kind: ObjectStore
+      metadata:
+        name: firelink-store
+        annotations:
+          argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+
+# Stamp recommended k8s labels on every rendered resource.
+# Uses `labels:` (not deprecated `commonLabels:`) with includeSelectors=false so
+# selector matchLabels are untouched — required because Deployment selectors are
+# immutable post-creation.
+labels:
+  - includeSelectors: false
+    pairs:
+      app.kubernetes.io/part-of: system
+      app.kubernetes.io/managed-by: argocd
