@@ -1,0 +1,35 @@
+# Buzz's read-only admin dashboard. Served by the same relay process/Service as
+# the public site, selected purely by Host header (BUZZ_ADMIN_HOST in values).
+#
+# Deliberately on gateway-internal (tailnet-only), NOT gateway-external.
+# docs/admin/README.md is explicit that "a private ingress limits access to the
+# operator VPN or approved source IPs" and that "the human trust boundary
+# remains the private admin ingress" — the dashboard has no per-operator
+# authentication of its own. Exposing this publicly would put moderation
+# reports, product feedback and their attachments behind nothing at all.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: buzz-admin
+  namespace: buzz
+  annotations:
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+spec:
+  parentRefs:
+    - name: gateway-internal
+      namespace: envoy-gateway-system
+      group: gateway.networking.k8s.io
+      kind: Gateway
+  hostnames:
+    - buzz-admin.urosevicvuk.dev
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: buzz
+          port: 3000
+          group: ""
+          kind: Service
+          weight: 1
