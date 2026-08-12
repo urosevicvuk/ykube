@@ -19,6 +19,7 @@ namespace: buzz
 resources:
   - namespace.yaml
   - cnpg-cluster.yaml
+  - redis.yaml
   - secrets.yaml
   - bucket-job.yaml
   - httproute-pairing.yaml
