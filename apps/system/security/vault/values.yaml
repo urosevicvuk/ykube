@@ -15,7 +15,7 @@ injector:
 server:
   image:
     repository: hashicorp/vault
-    tag: "1.18.3"
+    tag: "1.21.4"
 
   dataStorage:
     enabled: true
