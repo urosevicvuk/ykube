@@ -8,7 +8,7 @@ resources:
 helmCharts:
   - name: tempo
     repo: https://grafana.github.io/helm-charts
-    version: 1.23.3  # renovate: depName=grafana/tempo
+    version: 1.24.4  # renovate: depName=grafana/tempo
     releaseName: tempo
     namespace: tempo
     valuesFile: values.yaml
