@@ -55,7 +55,6 @@
 
         shellHook = ''
           export INFRA_ROOT="$PWD/seed-talos"
-          export KUBECONFIG=~/.kube/firelink.yaml
         '';
       };
     });
