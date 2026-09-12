@@ -11,7 +11,7 @@ resources:
 helmCharts:
   - name: forgejo
     repo: oci://code.forgejo.org/forgejo-helm
-    version: 12.0.0  # renovate: depName=forgejo/forgejo
+    version: 12.5.4  # renovate: depName=forgejo/forgejo
     releaseName: forgejo
     namespace: forgejo
     valuesFile: values.yaml
