@@ -35,7 +35,7 @@ helmCharts:
   # if the operator's webhook is not yet serving.
   - name: aistor-operator
     repo: https://helm.min.io/
-    version: 5.11.3  # renovate: depName=minio/aistor-operator
+    version: 5.11.4  # renovate: depName=minio/aistor-operator
     releaseName: aistor
     namespace: aistor
     valuesFile: values.yaml
