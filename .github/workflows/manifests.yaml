@@ -1,0 +1,206 @@
+# Renders every app touched by a PR exactly the way ArgoCD renders it, validates
+# the output against Kubernetes + CRD schemas, and posts the manifest diff as a
+# PR comment.
+#
+# WHY: every AppSet in this repo sets automated sync with selfHeal, so merging to
+# main deploys straight to the cluster with nothing in between. This job is the
+# "nothing in between".
+#
+# WHAT IT CANNOT DO: it proves the manifests render, validate, and are internally
+# consistent. It does NOT prove the upgrade works. It will not catch a required
+# manual migration step, a changed chart default that breaks this cluster's
+# specific config, or Longhorn's no-skipping-minors rule. Read the changelog for
+# anything under apps/system/.
+name: manifests
+
+on:
+  pull_request:
+    paths:
+      - "apps/**"
+      - "root/**"
+      - ".github/workflows/manifests.yaml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: manifests-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  # MUST match argocd-cm's kustomize.buildOptions, or CI renders something other
+  # than what ArgoCD will apply and a green tick means nothing. Check with:
+  #   kubectl get cm -n argocd argocd-cm -o jsonpath='{.data.kustomize\.buildOptions}'
+  KUSTOMIZE_FLAGS: "--enable-helm --load-restrictor=LoadRestrictionsNone"
+  # kustomize + helm are pinned to the versions in flake.nix's devShell so that a
+  # local `kustomize build` reproduces CI byte for byte.
+  KUSTOMIZE_VERSION: "5.8.1"
+  HELM_VERSION: "3.20.2"
+  KUBECONFORM_VERSION: "0.8.0"
+  YQ_VERSION: "4.53.2"
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install tools
+        run: |
+          set -euo pipefail
+          cd /tmp
+          curl -sSfL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz" | tar xz
+          sudo install -m755 linux-amd64/helm /usr/local/bin/helm
+          curl -sSfL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" | tar xz
+          sudo install -m755 kustomize /usr/local/bin/kustomize
+          curl -sSfL "https://github.com/yannh/kubeconform/releases/download/v${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" | tar xz
+          sudo install -m755 kubeconform /usr/local/bin/kubeconform
+          curl -sSfL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" -o yq
+          sudo install -m755 yq /usr/local/bin/yq
+          kustomize version && helm version --short && kubeconform -v && yq --version
+
+      - name: Find changed apps
+        id: changed
+        run: |
+          set -euo pipefail
+          BASE="$(git merge-base "origin/${{ github.base_ref }}" HEAD)"
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+
+          # Map each changed file to the nearest ancestor dir holding a
+          # kustomization.yaml -- that is the unit ArgoCD renders.
+          # apps/archive/** is skipped: no AppSet generator points at it.
+          git diff --name-only "$BASE" HEAD -- apps root | while read -r f; do
+            case "$f" in apps/archive/*) continue ;; esac
+            d="$(dirname "$f")"
+            while [ "$d" != "." ] && [ "$d" != "/" ]; do
+              if [ -f "$d/kustomization.yaml" ]; then echo "$d"; break; fi
+              d="$(dirname "$d")"
+            done
+          done | sort -u > /tmp/apps.txt
+
+          echo "Changed apps:"; cat /tmp/apps.txt
+          echo "count=$(wc -l < /tmp/apps.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Render, validate, diff
+        if: steps.changed.outputs.count != '0'
+        id: run
+        run: |
+          set -uo pipefail
+          mkdir -p /tmp/out
+          # A worktree at the merge base gives us the "before" render.
+          git worktree add -q /tmp/base "${{ steps.changed.outputs.base }}"
+
+          FAILED=0
+          : > /tmp/report.md
+          while read -r app; do
+            echo "::group::$app"
+            name="$(echo "$app" | tr '/' '_')"
+
+            if ! kustomize build $KUSTOMIZE_FLAGS "$app" > "/tmp/out/$name.head" 2>"/tmp/out/$name.err"; then
+              { echo "### \`$app\` — RENDER FAILED"
+                echo '```'; tail -30 "/tmp/out/$name.err"; echo '```'; echo
+              } >> /tmp/report.md
+              FAILED=1; echo "::endgroup::"; continue
+            fi
+
+            # Missing CRD schemas are ignored rather than failed: this cluster
+            # runs CRDs that are in no public catalog, and failing on those would
+            # make the job useless. Everything with a known schema is strict.
+            if ! kubeconform -strict -summary -ignore-missing-schemas \
+                  -schema-location default \
+                  -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+                  "/tmp/out/$name.head" > "/tmp/out/$name.conform" 2>&1; then
+              { echo "### \`$app\` — SCHEMA VALIDATION FAILED"
+                echo '```'; tail -30 "/tmp/out/$name.conform"; echo '```'; echo
+              } >> /tmp/report.md
+              FAILED=1
+            fi
+
+            # "Before" render. A newly added app has no base; treat as empty.
+            : > "/tmp/out/$name.base"
+            if [ -d "/tmp/base/$app" ]; then
+              kustomize build $KUSTOMIZE_FLAGS "/tmp/base/$app" > "/tmp/out/$name.base" 2>/dev/null \
+                || : > "/tmp/out/$name.base"
+            fi
+
+            # Redact Secret values before diffing, for two reasons:
+            #  1. SAFETY. Charts that mint their own certs (cilium/hubble,
+            #     harbor) render real private keys. Those must never be posted
+            #     into a PR comment.
+            #  2. SIGNAL. Those certs are regenerated on EVERY render, so an
+            #     un-redacted diff of two identical commits is ~30KB of base64
+            #     churn that buries the one line you actually care about.
+            # Keys added/removed still show; only the values are masked. The
+            # copy handed to kubeconform above is the real, unredacted render.
+            for side in base head; do
+              yq '(select(.kind == "Secret") | .data[]) |= "REDACTED"' \
+                "/tmp/out/$name.$side" > "/tmp/out/$name.$side.red" 2>/dev/null \
+                || cp "/tmp/out/$name.$side" "/tmp/out/$name.$side.red"
+            done
+
+            if ! diff -u "/tmp/out/$name.base.red" "/tmp/out/$name.head.red" \
+                 --label "a/$app" --label "b/$app" > "/tmp/out/$name.diff"; then
+              { echo "<details><summary><code>$app</code></summary>"; echo
+                echo '```diff'
+                head -c 40000 "/tmp/out/$name.diff"
+                echo '```'
+                echo "</details>"; echo
+              } >> /tmp/report.md
+            fi
+            echo "::endgroup::"
+          done < /tmp/apps.txt
+
+          git worktree remove -f /tmp/base || true
+          echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Comment on PR
+        if: always() && steps.changed.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          FAILED: ${{ steps.run.outputs.failed }}
+        run: |
+          set -euo pipefail
+          MARKER="<!-- manifest-diff -->"
+          {
+            echo "$MARKER"
+            echo "## Rendered manifest diff"
+            echo
+            if [ "${FAILED:-}" = "1" ]; then
+              echo "> **Render or schema validation failed — do not merge.**"
+              echo
+            fi
+            if [ -s /tmp/report.md ]; then cat /tmp/report.md
+            else echo "_No change to the rendered output._"; fi
+            echo
+            echo "---"
+            echo "<sub>Rendered with \`kustomize build ${KUSTOMIZE_FLAGS}\` (matches \`argocd-cm\`). Proves the manifests render and validate — <b>not</b> that the upgrade works. Read the changelog for anything under <code>apps/system/</code>.</sub>"
+          } > /tmp/body.md
+
+          # GitHub caps a comment at 65536 characters.
+          if [ "$(wc -c < /tmp/body.md)" -gt 60000 ]; then
+            head -c 60000 /tmp/body.md > /tmp/body.trunc
+            printf '\n\n_…truncated. See the job log for the full diff._\n' >> /tmp/body.trunc
+            mv /tmp/body.trunc /tmp/body.md
+          fi
+
+          jq -Rs '{body: .}' < /tmp/body.md > /tmp/payload.json
+
+          ID="$(gh api "repos/$REPO/issues/$PR/comments" --paginate \
+                  --jq ".[] | select(.body | startswith(\"$MARKER\")) | .id" | head -1)"
+          if [ -n "$ID" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$ID" --input /tmp/payload.json > /dev/null
+            echo "Updated comment $ID"
+          else
+            gh api -X POST "repos/$REPO/issues/$PR/comments" --input /tmp/payload.json > /dev/null
+            echo "Created comment"
+          fi
+
+      - name: Fail if render or validation broke
+        if: steps.run.outputs.failed == '1'
+        run: exit 1

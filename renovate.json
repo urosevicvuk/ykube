@@ -22,14 +22,47 @@
   ],
   "packageRules": [
     {
-      "description": "Group container image bumps",
-      "matchManagers": ["kubernetes"],
-      "groupName": "container images"
+      "description": "apps/archive/** is not deployed. The AppSet generators only scan apps/system/*/* and apps/homelab/* (see appsets/), so nothing under archive/ ever reaches the cluster. Renovate was opening PRs for ~6 dead apps.",
+      "matchFileNames": ["apps/archive/**"],
+      "enabled": false
     },
     {
-      "description": "Group Helm chart bumps from kustomization.yaml helmCharts blocks",
+      "description": "Homelab container images: grouped. Blast radius is one stateless app each, so an all-or-nothing PR is fine and keeps the queue short.",
+      "matchManagers": ["kubernetes"],
+      "matchFileNames": ["apps/homelab/**"],
+      "groupName": "homelab container images"
+    },
+    {
+      "description": "Homelab Helm charts: grouped, same reasoning.",
       "matchManagers": ["kustomize"],
-      "groupName": "helm charts"
+      "matchFileNames": ["apps/homelab/**"],
+      "groupName": "homelab helm charts"
+    },
+    {
+      "description": "System charts + the root ArgoCD chart get ONE PR PER DEPENDENCY. No groupName is set for these, and that absence is what splits them. These can take the cluster down (cilium = CNI, longhorn = data, argo-cd = the thing doing the deploying), so each needs its own reviewable diff and its own revert. separateMinorPatch additionally splits e.g. a cert-manager patch from a cert-manager minor.",
+      "matchFileNames": ["apps/system/**", "root/**"],
+      "separateMinorPatch": true
+    },
+    {
+      "description": "Longhorn does NOT support skipping minor versions (1.10 -> 1.11 -> 1.12, never 1.10 -> 1.12). Renovate cannot express a stepped upgrade path, so minor and major bumps are surfaced on the Dependency Dashboard only and must be driven by hand, one minor at a time, against the release notes.",
+      "matchPackageNames": ["longhorn/longhorn"],
+      "matchUpdateTypes": ["minor", "major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Cilium is deliberately pinned to a pre-release (1.20.0-pre.3) -- see the rationale in apps/system/networking/cilium/values.yaml. Moving off it is a decision, not a routine bump, and any chart change restarts the agent on a single-node cluster.",
+      "matchPackageNames": ["cilium/cilium"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Majors never open a PR unprompted. Tick them on the Dependency Dashboard once you have read the upgrade notes. Reverting a major is usually impossible: CRD storage-version migrations and startup DB migrations are one-way.",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Let a release sit before offering it, so yanked or immediately-hotfixed releases never reach a PR.",
+      "matchFileNames": ["apps/**", "root/**"],
+      "minimumReleaseAge": "3 days"
     }
   ]
 }
