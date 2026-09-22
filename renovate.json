@@ -54,12 +54,23 @@
       "groupName": "homelab helm charts"
     },
     {
-      "description": "System charts + the root ArgoCD chart get ONE PR PER DEPENDENCY. No groupName is set for these, and that absence is what splits them. These can take the cluster down (cilium = CNI, longhorn = data, argo-cd = the thing doing the deploying), so each needs its own reviewable diff and its own revert. separateMinorPatch additionally splits e.g. a cert-manager patch from a cert-manager minor.",
+      "description": "System charts + the root ArgoCD chart get ONE PR PER DEPENDENCY. No groupName is set for these, and that absence is what splits them. These can take the cluster down (cilium = CNI, longhorn = data, argo-cd = the thing doing the deploying), so each needs its own reviewable diff and its own revert. separateMinorPatch is deliberately NOT set: it opened a second PR for the older line of the same chart (cert-manager 1.20.4 alongside 1.21.2, alloy 1.8.2 alongside 1.12.1, and six more), doubling the queue with PRs that would only ever be closed unread.",
       "matchFileNames": [
         "apps/system/**",
         "root/**"
-      ],
-      "separateMinorPatch": true
+      ]
+    },
+    {
+      "description": "Observability travels together. Nothing else in the cluster depends on alloy/loki/tempo/pyroscope/kube-prometheus-stack, and a bad one announces itself immediately in the dashboards it owns, so a single revert of the group is an acceptable blast radius. Majors are excluded and stay individual.",
+      "matchFileNames": ["apps/system/observability/**"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "observability"
+    },
+    {
+      "description": "Platform likewise: argo-events, argo-workflows, forgejo, harbor. Self-contained services rather than cluster plumbing. NOTE this excludes root/** deliberately -- argo-cd itself is the thing performing the sync and must never ride along in a group. Majors excluded and stay individual.",
+      "matchFileNames": ["apps/system/platform/**"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "platform"
     },
     {
       "description": "Let a release sit before offering it, so yanked or immediately-hotfixed releases never reach a PR.",
