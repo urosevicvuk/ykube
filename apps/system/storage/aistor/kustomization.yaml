@@ -35,7 +35,7 @@ helmCharts:
   # if the operator's webhook is not yet serving.
   - name: aistor-operator
     repo: https://helm.min.io/
-    version: 5.11.3  # renovate: depName=minio/aistor-operator
+    version: 5.11.4  # renovate: depName=minio/aistor-operator
     releaseName: aistor
     namespace: aistor
     valuesFile: values.yaml
@@ -45,7 +45,7 @@ helmCharts:
   # Secret; the operator builds the StatefulSet, Services and PVCs from it.
   - name: aistor-objectstore
     repo: https://helm.min.io/
-    version: 1.0.17  # renovate: depName=minio/aistor-objectstore
+    version: 1.1.0  # renovate: depName=minio/aistor-objectstore
     releaseName: objectstore
     namespace: aistor
     valuesFile: objectstore-values.yaml
