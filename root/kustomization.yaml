@@ -9,6 +9,7 @@ resources:
   - namespace.yaml
   - httproute.yaml
   - argocd-webhook-secret.yaml
+  - morel-infra-repo.yaml
   - ../projects/system.yaml
   - ../projects/homelab.yaml
   - ../projects/morel.yaml
