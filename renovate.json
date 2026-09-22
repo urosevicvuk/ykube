@@ -68,6 +68,13 @@
         "root/**"
       ],
       "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Exempt forgejo from the soak. Its chart lives on oci://code.forgejo.org/forgejo-helm, whose registry API returns 401 to anonymous requests, so Renovate can read the tag list but NOT the manifest metadata carrying each release's publish date. minimumReleaseAge needs that timestamp, and under the default internalChecksFilter=strict an update whose age cannot be determined is held forever rather than for 3 days -- forgejo updates were stranded in the dashboard's 'Pending Status Checks' with no branch created at all. null restores Renovate's default (no soak) for this path only. Note the other OCI chart, gateway-helm on docker.io, is unaffected because Docker Hub answers anonymously.",
+      "matchFileNames": [
+        "apps/system/platform/forgejo/**"
+      ],
+      "minimumReleaseAge": null
     }
   ]
 }
