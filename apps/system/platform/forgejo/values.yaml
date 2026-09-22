@@ -2,19 +2,29 @@
 # Postgres from CNPG, repos on Longhorn. HTTPS push/pull via the Gateway.
 # SSH disabled (TCP needs the VPS+WG frontend — separate task).
 
-# Bitnami moved to "Bitnami Secure Images" in 2025/2026 and the bundled
-# redis sub-chart now refuses to render with any non-BSI image (returns
-# "Unrecognized images: ..." and exits 1 from helm template). We use
-# `bitnamilegacy/redis` (their own legacy archive registry) because the
-# BSI images require a subscription. Setting allowInsecureImages bypasses
-# the chart's hard-block, the image still works fine — it's literally the
-# same binary Bitnami built last year.
-global:
-  security:
-    allowInsecureImages: true
-
-redis-cluster:
-  enabled: false
+# NO BUNDLED REDIS ANY MORE (chart 12 -> 17, 2026-09-22).
+#
+# Chart 17.1.7 dropped the bundled cache sub-chart entirely: its Chart.yaml
+# declares exactly one dependency (`common`), and the word "redis" does not
+# appear anywhere in the chart's values.yaml. The old `redis:` /
+# `redis-cluster:` blocks here became dead config — silently ignored, nothing
+# deployed — while gitea.config still pointed cache/session/queue at
+# `forgejo-redis-master`. Result: Forgejo started fine, then every
+# `/api/healthz` returned 424 Failed Dependency on
+# `lookup forgejo-redis-master: no such host`, readiness never passed and the
+# Deployment sat at 0/1 indefinitely (it was NOT crashlooping, which is why it
+# looked healthy from the outside).
+#
+# With one replica, Forgejo's own defaults are the right answer and remove the
+# dependency altogether: in-process cache, sessions in the Postgres we already
+# run, and the queue on the Longhorn volume we already mount. The whole
+# Bitnami/bitnamilegacy workaround that used to live here died with the
+# sub-chart, so it's gone too.
+#
+# If a real cache is ever wanted, this cluster already runs
+# dragonfly-operator (apps/system/storage/dragonfly-operator) — point
+# cache/session/queue at a Dragonfly instance rather than reviving a
+# sub-chart the upstream chart no longer ships.
 
 # Use CNPG cluster instead of the in-chart Postgres.
 postgresql:
@@ -22,25 +32,6 @@ postgresql:
 
 postgresql-ha:
   enabled: false
-
-# In-chart Redis stands in as a cache backend; persistence off (cache only).
-#
-# Bitnami archived their old image tags into `docker.io/bitnamilegacy/...`
-# in 2025/2026. The forgejo 12.0.0 sub-chart pins
-# `docker.io/bitnami/redis:7.4.2-debian-12-r6`, which now 404s on pull —
-# `failed to resolve reference`. Override the repository to the legacy
-# registry; the same exact tag still exists there.
-redis:
-  enabled: true
-  architecture: standalone
-  auth:
-    enabled: false
-  image:
-    registry: docker.io
-    repository: bitnamilegacy/redis
-  master:
-    persistence:
-      enabled: false
 
 persistence:
   enabled: true
@@ -71,16 +62,18 @@ gitea:
       HOST: forgejo-pg-rw.forgejo:5432
       NAME: forgejo
       USER: forgejo
+    # All three used to point at the chart's bundled redis, which chart 17 no
+    # longer ships (see the note at the top of this file).
     cache:
       ENABLED: true
-      ADAPTER: redis
-      HOST: redis://forgejo-redis-master:6379/0
+      ADAPTER: memory
     session:
-      PROVIDER: redis
-      PROVIDER_CONFIG: redis://forgejo-redis-master:6379/0
+      # db, not memory: sessions live in the CNPG Postgres we already run, so
+      # a restart doesn't log everyone out.
+      PROVIDER: db
     queue:
-      TYPE: redis
-      CONN_STR: redis://forgejo-redis-master:6379/0
+      # LevelDB on the Longhorn volume mounted at persistence.
+      TYPE: level
     service:
       DISABLE_REGISTRATION: true   # admin invites only — multi-tenant hygiene
 

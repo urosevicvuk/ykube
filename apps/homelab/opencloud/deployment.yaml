@@ -39,6 +39,12 @@ spec:
             - name: http
               containerPort: 9200
               protocol: TCP
+          # The service account v8 needs for `sharing:` — see secrets.yaml for
+          # why this is env rather than a config edit. Global override, so it
+          # reaches every service, and it survives a config regeneration.
+          envFrom:
+            - secretRef:
+                name: opencloud-service-account
           env:
             - name: OC_URL
               value: https://cloud.urosevicvuk.dev
