@@ -4,7 +4,7 @@
     "config:recommended"
   ],
   "automerge": false,
-  "//limits": "0 = unlimited, overriding config:recommended's prHourlyLimit 2 / prConcurrentLimit 10. Every available update opens a PR immediately rather than queueing in the dashboard's Rate-Limited section. Opening a PR is not deploying -- ArgoCD only acts on what lands on main -- so the cost of this is PR noise and CI minutes, not risk.",
+  "description": "0 = unlimited, overriding config:recommended's prHourlyLimit 2 / prConcurrentLimit 10. Every available update opens a PR immediately rather than queueing in the dashboard's Rate-Limited section. Opening a PR is not deploying -- ArgoCD only acts on what lands on main -- so the cost is PR noise and CI minutes, not risk.",
   "prHourlyLimit": 0,
   "prConcurrentLimit": 0,
   "kubernetes": {
