@@ -5,6 +5,7 @@ namespace: opencloud
 resources:
   - namespace.yaml
   - pvcs.yaml
+  - secrets.yaml
   - deployment.yaml
   - httproute.yaml
 

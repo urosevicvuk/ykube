@@ -70,3 +70,39 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    # morel.rs on the INTERNAL gateway (2026-09-22): morel-system is an office-
+    # internal app and stays tailnet-only while it's being brought up. Without
+    # these listeners an HTTPRoute for `system.morel.rs` cannot attach here at
+    # all — Gateway API requires the route hostname to intersect a listener
+    # hostname, and the route would silently sit unattached rather than error.
+    # Same wildcard Secret the external gateway uses; TLS terminates in Envoy
+    # either way, so one cert serves both interfaces.
+    #
+    # Note morel.rs A records published for routes on THIS gateway point at the
+    # tailnet CGNAT address — resolvable publicly, routable only on the tailnet.
+    - name: https-morel
+      protocol: HTTPS
+      port: 443
+      hostname: "*.morel.rs"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: wildcard-morel-rs-tls
+            group: ""
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https-morel-apex
+      protocol: HTTPS
+      port: 443
+      hostname: "morel.rs"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: wildcard-morel-rs-tls
+            group: ""
+      allowedRoutes:
+        namespaces:
+          from: All

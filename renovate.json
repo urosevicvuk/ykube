@@ -1,7 +1,12 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": [
+    "config:recommended"
+  ],
   "automerge": false,
+  "description": "0 = unlimited, overriding config:recommended's prHourlyLimit 2 / prConcurrentLimit 10. Every available update opens a PR immediately rather than queueing in the dashboard's Rate-Limited section. Opening a PR is not deploying -- ArgoCD only acts on what lands on main -- so the cost is PR noise and CI minutes, not risk.",
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
   "kubernetes": {
     "managerFilePatterns": [
       "/apps/.+\\.yaml$/"
@@ -22,14 +27,58 @@
   ],
   "packageRules": [
     {
-      "description": "Group container image bumps",
-      "matchManagers": ["kubernetes"],
-      "groupName": "container images"
+      "description": "apps/archive/** is not deployed. The AppSet generators only scan apps/system/*/* and apps/homelab/* (see appsets/), so nothing under archive/ ever reaches the cluster. Renovate was opening PRs for ~6 dead apps.",
+      "matchFileNames": [
+        "apps/archive/**"
+      ],
+      "enabled": false
     },
     {
-      "description": "Group Helm chart bumps from kustomization.yaml helmCharts blocks",
-      "matchManagers": ["kustomize"],
-      "groupName": "helm charts"
+      "description": "Homelab container images: grouped. Blast radius is one stateless app each, so an all-or-nothing PR is fine and keeps the queue short.",
+      "matchManagers": [
+        "kubernetes"
+      ],
+      "matchFileNames": [
+        "apps/homelab/**"
+      ],
+      "groupName": "homelab container images"
+    },
+    {
+      "description": "Homelab Helm charts: grouped, same reasoning.",
+      "matchManagers": [
+        "kustomize"
+      ],
+      "matchFileNames": [
+        "apps/homelab/**"
+      ],
+      "groupName": "homelab helm charts"
+    },
+    {
+      "description": "System charts + the root ArgoCD chart get ONE PR PER DEPENDENCY. No groupName is set for these, and that absence is what splits them. These can take the cluster down (cilium = CNI, longhorn = data, argo-cd = the thing doing the deploying), so each needs its own reviewable diff and its own revert. separateMinorPatch is deliberately NOT set: it opened a second PR for the older line of the same chart (cert-manager 1.20.4 alongside 1.21.2, alloy 1.8.2 alongside 1.12.1, and six more), doubling the queue with PRs that would only ever be closed unread.",
+      "matchFileNames": [
+        "apps/system/**",
+        "root/**"
+      ]
+    },
+    {
+      "description": "Observability travels together. Nothing else in the cluster depends on alloy/loki/tempo/pyroscope/kube-prometheus-stack, and a bad one announces itself immediately in the dashboards it owns, so a single revert of the group is an acceptable blast radius. Majors are excluded and stay individual.",
+      "matchFileNames": ["apps/system/observability/**"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "observability"
+    },
+    {
+      "description": "Platform likewise: argo-events, argo-workflows, forgejo, harbor. Self-contained services rather than cluster plumbing. NOTE this excludes root/** deliberately -- argo-cd itself is the thing performing the sync and must never ride along in a group. Majors excluded and stay individual.",
+      "matchFileNames": ["apps/system/platform/**"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "platform"
+    },
+    {
+      "description": "Let a release sit before offering it, so yanked or immediately-hotfixed releases never reach a PR.",
+      "matchFileNames": [
+        "apps/**",
+        "root/**"
+      ],
+      "minimumReleaseAge": "3 days"
     }
   ]
 }

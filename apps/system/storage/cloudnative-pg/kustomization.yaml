@@ -8,7 +8,7 @@ resources:
 helmCharts:
   - name: cloudnative-pg
     repo: https://cloudnative-pg.io/charts/
-    version: 0.28.0  # renovate: depName=cloudnative-pg/cloudnative-pg
+    version: 0.29.0  # renovate: depName=cloudnative-pg/cloudnative-pg
     releaseName: cloudnative-pg
     namespace: cloudnative-pg
     valuesFile: values.yaml

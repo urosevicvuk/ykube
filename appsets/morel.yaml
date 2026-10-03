@@ -6,10 +6,14 @@ metadata:
 spec:
   generators:
     - git:
-        repoURL: https://github.com/urosevicvuk/ykube
+        # Manifests live in morelrs/infra, not here: ykube is a public personal
+        # repo and this is a company's infrastructure. Credentials for the
+        # private repo are in root/morel-infra-repo.yaml — they cannot live in
+        # the repo they unlock.
+        repoURL: https://github.com/morelrs/infra
         revision: main
         directories:
-          - path: apps/morel/*
+          - path: apps/*
   template:
     metadata:
       name: 'morel-{{path.basename}}'
@@ -18,7 +22,7 @@ spec:
     spec:
       project: morel
       source:
-        repoURL: https://github.com/urosevicvuk/ykube
+        repoURL: https://github.com/morelrs/infra
         targetRevision: main
         path: '{{path}}'
       destination:
