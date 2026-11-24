@@ -1,5 +1,5 @@
 # Cilium L2 announcement policy.
-# Tells Cilium to ARP-announce LB IPs on every node's primary interface.
+# Tells Cilium to ARP-announce LB IPs on the nodes' LAN uplink interface.
 # Without this the LB IPs are assigned but unreachable from the LAN.
 apiVersion: cilium.io/v2alpha1
 kind: CiliumL2AnnouncementPolicy
@@ -10,15 +10,17 @@ spec:
   # Empty selector → applies to every Service of type=LoadBalancer.
   serviceSelector:
     matchLabels: {}
-  # Empty selector → all nodes participate.
+  # Workers only. Controlplanes keep their NoSchedule taint and run no
+  # workload pods; announcing from them would just add ARP churn on the LAN.
   nodeSelector:
-    matchLabels: {}
-  # Scope to firelink's LAN NIC only. The blanket `^.*$` would also try to
-  # ARP on tailscale0 (point-to-point, ARP-unaware), cilium_host (internal),
-  # cilium_vxlan, and the dynamic lxc* veth pairs — none of which should
-  # announce LB IPs. When multi-NIC Talos VMs join, add their NIC patterns
-  # (likely `^ens.+$` or `^enp.+$` depending on hardware).
+    matchExpressions:
+      - key: node-role.kubernetes.io/control-plane
+        operator: DoesNotExist
+  # The 1G LAN uplink only (Proxmox net0 → ens18 in Talos; see
+  # seed/talos/02-proxmox-provision). Never the mesh (ens19): LAN clients
+  # can't reach it, so an IP announced there would be a black hole. Also
+  # never tailscale0, cilium_host or the lxc* veths.
   interfaces:
-    - ^eno1$
+    - ^ens18$
   externalIPs: true
   loadBalancerIPs: true

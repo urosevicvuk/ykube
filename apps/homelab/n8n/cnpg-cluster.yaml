@@ -6,11 +6,17 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "-10"
 spec:
-  instances: 1
+  # Primary + one streaming replica, required to sit on a different Proxmox
+  # host. The operator promotes the replica if the primary's host dies.
+  instances: 2
+  affinity:
+    enablePodAntiAffinity: true
+    podAntiAffinityType: required
+    topologyKey: topology.kubernetes.io/zone
   imageName: ghcr.io/cloudnative-pg/postgresql:16.4
   storage:
     size: 5Gi
-    storageClass: longhorn
+    storageClass: ceph-block
   bootstrap:
     initdb:
       database: n8n

@@ -1,5 +1,5 @@
 # Forgejo Helm values. Vanilla operational deploy: admin user from Vault,
-# Postgres from CNPG, repos on Longhorn. HTTPS push/pull via the Gateway.
+# Postgres from CNPG, repos on Ceph RBD. HTTPS push/pull via the Gateway.
 # SSH disabled (TCP needs the VPS+WG frontend — separate task).
 
 # NO BUNDLED REDIS ANY MORE (chart 12 -> 17, 2026-09-22).
@@ -17,7 +17,7 @@
 #
 # With one replica, Forgejo's own defaults are the right answer and remove the
 # dependency altogether: in-process cache, sessions in the Postgres we already
-# run, and the queue on the Longhorn volume we already mount. The whole
+# run, and the queue on the Ceph volume we already mount. The whole
 # Bitnami/bitnamilegacy workaround that used to live here died with the
 # sub-chart, so it's gone too.
 #
@@ -35,7 +35,7 @@ postgresql-ha:
 
 persistence:
   enabled: true
-  storageClass: longhorn
+  storageClass: ceph-block
   size: 10Gi
   accessModes: [ReadWriteOnce]
 
@@ -72,7 +72,7 @@ gitea:
       # a restart doesn't log everyone out.
       PROVIDER: db
     queue:
-      # LevelDB on the Longhorn volume mounted at persistence.
+      # LevelDB on the Ceph volume mounted at persistence.
       TYPE: level
     service:
       DISABLE_REGISTRATION: true   # admin invites only — multi-tenant hygiene

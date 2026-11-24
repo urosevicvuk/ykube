@@ -1,0 +1,70 @@
+# Rook-Ceph — the cluster's storage system: block (RBD, the default
+# StorageClass) and S3 object storage (RGW + ObjectBucketClaims).
+#
+# Structured like the old longhorn/ and aistor/ apps: ONE Application owns the
+# whole storage system (operator + the single CephCluster it manages), and
+# consuming apps request their own units from it — a PVC for block, an
+# ObjectBucketClaim for a bucket.
+#
+# Topology this assumes (seed/talos/): 3 Proxmox hosts, each with 2 worker
+# VMs carrying one OSD disk apiece (/dev/vdb). Every node is labelled
+# topology.kubernetes.io/zone=<proxmox host>; Rook maps that label into the
+# CRUSH map, and every pool uses failureDomain: zone so the 3 copies land on
+# 3 different physical machines — not merely 3 different VMs.
+# All Ceph traffic rides the nodes' InternalIPs, i.e. the 20G mesh.
+#
+# Both charts land in the `rook-ceph` namespace so this stays a single
+# Application (the chart docs assume operator and cluster share it).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: rook-ceph
+
+resources:
+  - namespace.yaml
+  - httproute.yaml
+
+helmCharts:
+  # The operator + CSI drivers. Installs the ceph.rook.io / objectbucket.io
+  # CRDs that the second chart's CRs depend on.
+  - name: rook-ceph
+    repo: https://charts.rook.io/release
+    version: v1.21.0  # renovate: depName=rook/rook
+    releaseName: rook-ceph
+    namespace: rook-ceph
+    valuesFile: operator-values.yaml
+    includeCRDs: true
+
+  # The CephCluster, its pools, the object store and the StorageClasses.
+  - name: rook-ceph-cluster
+    repo: https://charts.rook.io/release
+    version: v1.21.0  # renovate: depName=rook/rook
+    releaseName: rook-ceph-cluster
+    namespace: rook-ceph
+    valuesFile: cluster-values.yaml
+
+# The Ceph CRs and the CRDs that define them are created by the same Argo
+# sync. Argo dry-runs every resource before applying, and that dry-run fails
+# for a CR whose CRD does not exist yet — on a fresh cluster this app would go
+# red on first sync with "the server could not find the requested resource".
+# SkipDryRunOnMissingResource skips the dry-run only while the CRD is absent.
+# (The patch's kind/name are placeholders; `target` does the selecting.)
+patches:
+  - target:
+      group: ceph.rook.io
+    patch: |
+      apiVersion: ceph.rook.io/v1
+      kind: Any
+      metadata:
+        name: any
+        annotations:
+          argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+
+# Stamp recommended k8s labels on every rendered resource.
+# Uses `labels:` (not deprecated `commonLabels:`) with includeSelectors=false so
+# selector matchLabels are untouched — required because Deployment selectors are
+# immutable post-creation.
+labels:
+  - includeSelectors: false
+    pairs:
+      app.kubernetes.io/part-of: system
+      app.kubernetes.io/managed-by: argocd

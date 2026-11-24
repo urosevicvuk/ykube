@@ -10,8 +10,8 @@
 # same chart with literally the same values.
 
 locals {
-  # path.module is this stage's directory; ../.. is the repo root.
-  repo_root = "${path.module}/../.."
+  # path.module is this stage's directory (seed/talos/<stage>); ../../.. is the repo root.
+  repo_root = "${path.module}/../../.."
 
   cilium_dir           = "${local.repo_root}/apps/system/networking/cilium"
   cilium_kustomization = yamldecode(file("${local.cilium_dir}/kustomization.yaml"))
@@ -76,6 +76,37 @@ resource "null_resource" "cilium_resources" {
     environment = {
       INFRA_ROOT = "${path.module}/.."
       TF_DIR     = "${path.module}/../03-talos-configure"
+    }
+  }
+
+  depends_on = [helm_release.cilium]
+
+  lifecycle {
+    ignore_changes = all
+  }
+}
+
+# Prometheus Operator CRDs (ServiceMonitor, PodMonitor, PrometheusRule, ...).
+# Most system charts render ServiceMonitors and would SyncFail until
+# kube-prometheus-stack itself lands. Pre-installing the CRDs decouples the
+# order; kube-prometheus-stack adopts them via server-side apply. Mirrors
+# seed/k3s/scripts/00-cilium-install.sh — keep the two versions in step.
+resource "null_resource" "prometheus_operator_crds" {
+  triggers = {
+    version    = "v0.90.1"
+    infra_root = "${path.module}/.."
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      source ${self.triggers.infra_root}/scripts/common.sh
+      load_tf_kube_env
+      create_cert_dir
+      kubectl_wrapper apply --server-side -f https://github.com/prometheus-operator/prometheus-operator/releases/download/${self.triggers.version}/stripped-down-crds.yaml
+    EOT
+    environment = {
+      INFRA_ROOT = self.triggers.infra_root
+      TF_DIR     = "${self.triggers.infra_root}/03-talos-configure"
     }
   }
 

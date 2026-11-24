@@ -11,7 +11,7 @@
 # the ESO/cert-manager chain — see seed/README.md.
 
 locals {
-  repo_root = "${path.module}/../.."
+  repo_root = "${path.module}/../../.."
 
   argocd_dir           = "${local.repo_root}/root"
   argocd_kustomization = yamldecode(file("${local.argocd_dir}/kustomization.yaml"))

@@ -1,4 +1,5 @@
-# Tempo single-binary on Longhorn. Single replica (single node).
+# Tempo single-binary on Ceph RBD. Single replica — the volume is replicated
+# 3x by Ceph, so the pod reschedules onto another node with its data intact.
 # Alloy pushes OTLP to tempo:4317, Grafana datasource queries tempo:3100.
 #
 # Single-binary chart is grafana/tempo (not tempo-distributed); the
@@ -49,9 +50,9 @@ persistence:
   enabled: true
   # Chart key is `storageClassName`, not `storageClass`. With the wrong key
   # the chart rendered `storageClassName: null` and Argo saw permanent drift
-  # against the live PVC (Longhorn becomes the default class either way, so
+  # against the live PVC (the default class bound it either way, so
   # the volume bound correctly — but the rendered YAML never matched live).
-  storageClassName: longhorn
+  storageClassName: ceph-block
   size: 10Gi
   accessModes: [ReadWriteOnce]
   # Empty map (not omitted/null) so the chart's `toYaml | nindent` renders

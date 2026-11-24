@@ -1,0 +1,130 @@
+# Rook CephCluster + pools + object store.
+#
+# Only overrides are listed. Maps deep-merge with the chart defaults; LISTS
+# (cephBlockPools, cephFileSystems, cephObjectStores) replace them wholesale,
+# which is why the block pool repeats the chart's CSI secret parameters.
+
+# `ceph` CLI in a pod: kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph status
+toolbox:
+  enabled: true
+
+# ServiceMonitor for the mgr's Prometheus module + Ceph's alerting rules.
+monitoring:
+  enabled: true
+  createPrometheusRules: true
+
+cephClusterSpec:
+  # TLS terminates at the Gateway (httproute.yaml); the mgr serves HTTP on 7000.
+  dashboard:
+    enabled: true
+    ssl: false
+
+  # Chart defaults are already 3 mons / 2 mgrs with allowMultiplePerNode: false.
+  # That only spreads them across *nodes* — two workers share each Proxmox
+  # host, so it could still put 2 of 3 mons on one machine and lose quorum
+  # with it. Spread them across zones (= Proxmox hosts) instead.
+  placement:
+    mon:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: rook-ceph-mon
+    mgr:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: rook-ceph-mgr
+
+  # Chart default (useAllNodes + useAllDevices) is what we want: every worker's
+  # empty /dev/vdb becomes an OSD. The Talos install disk (/dev/vda) is never
+  # touched — Rook skips devices that carry partitions or a filesystem.
+  # Controlplanes keep their NoSchedule taint, so no Ceph daemons land there.
+  storage:
+    useAllNodes: true
+    useAllDevices: true
+
+# Default StorageClass `ceph-block`. 3 replicas, one per Proxmox host.
+cephBlockPools:
+  - name: ceph-blockpool
+    spec:
+      failureDomain: zone
+      replicated:
+        size: 3
+    storageClass:
+      enabled: true
+      name: ceph-block
+      isDefault: true
+      reclaimPolicy: Delete
+      allowVolumeExpansion: true
+      volumeBindingMode: Immediate
+      parameters:
+        imageFormat: "2"
+        imageFeatures: layering
+        csi.storage.k8s.io/provisioner-secret-name: rook-csi-rbd-provisioner
+        csi.storage.k8s.io/provisioner-secret-namespace: "{{ .Release.Namespace }}"
+        csi.storage.k8s.io/controller-expand-secret-name: rook-csi-rbd-provisioner
+        csi.storage.k8s.io/controller-expand-secret-namespace: "{{ .Release.Namespace }}"
+        csi.storage.k8s.io/controller-publish-secret-name: rook-csi-rbd-provisioner
+        csi.storage.k8s.io/controller-publish-secret-namespace: "{{ .Release.Namespace }}"
+        csi.storage.k8s.io/node-stage-secret-name: rook-csi-rbd-node
+        csi.storage.k8s.io/node-stage-secret-namespace: "{{ .Release.Namespace }}"
+        csi.storage.k8s.io/controller-modify-secret-name: rook-csi-rbd-provisioner
+        csi.storage.k8s.io/controller-modify-secret-namespace: "{{ .Release.Namespace }}"
+        csi.storage.k8s.io/node-publish-secret-name: rook-csi-rbd-node
+        csi.storage.k8s.io/node-publish-secret-namespace: "{{ .Release.Namespace }}"
+        csi.storage.k8s.io/fstype: ext4
+
+# No CephFS for now — every workload here is fine with RWO block. The chart
+# default would run an always-on MDS pair (4Gi each) for nothing. Add a
+# filesystem here if something genuinely needs ReadWriteMany.
+cephFileSystems: []
+
+# S3 object storage (replaces AIStor). Buckets are declarative: an app ships
+# an ObjectBucketClaim with storageClassName: ceph-bucket, and Rook creates
+# the bucket plus a Secret (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY) and a
+# ConfigMap (BUCKET_HOST / BUCKET_NAME / BUCKET_PORT) named after the claim.
+# In-cluster endpoint: http://rook-ceph-rgw-ceph-objectstore.rook-ceph.svc:80
+cephObjectStores:
+  - name: ceph-objectstore
+    spec:
+      metadataPool:
+        failureDomain: zone
+        replicated:
+          size: 3
+      # Erasure coded 2+1 across the 3 zones: survives losing a whole host at
+      # 1.5x raw overhead instead of 3x.
+      dataPool:
+        failureDomain: zone
+        erasureCoded:
+          dataChunks: 2
+          codingChunks: 1
+        parameters:
+          bulk: "true"
+      preservePoolsOnDelete: true
+      gateway:
+        port: 80
+        instances: 2
+        resources:
+          limits:
+            memory: 2Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        priorityClassName: system-cluster-critical
+    storageClass:
+      enabled: true
+      name: ceph-bucket
+      reclaimPolicy: Delete
+      volumeBindingMode: Immediate
+      parameters:
+        region: us-east-1
+    ingress:
+      enabled: false
+    route:
+      enabled: false

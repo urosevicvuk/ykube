@@ -2,8 +2,10 @@
 # so the first month of compliance violations surface in PolicyReports without
 # blocking workloads. Flip to Enforce after the audit is clean.
 
+# HA per Kyverno's docs: 3 admission replicas (it's in the request path of
+# every API write it has webhooks on), 2 of each background controller.
 admissionController:
-  replicas: 1
+  replicas: 3
   resources:
     requests:
       cpu: 100m
@@ -12,6 +14,7 @@ admissionController:
       memory: 512Mi
 
 backgroundController:
+  replicas: 2
   resources:
     requests:
       cpu: 50m
@@ -20,6 +23,7 @@ backgroundController:
       memory: 256Mi
 
 cleanupController:
+  replicas: 2
   resources:
     requests:
       cpu: 50m
@@ -28,6 +32,7 @@ cleanupController:
       memory: 256Mi
 
 reportsController:
+  replicas: 2
   resources:
     requests:
       cpu: 50m

@@ -1,6 +1,7 @@
 # ArgoCD self-management values.
-# Single-replica everywhere — k3s/firelink is a single-node cluster. When the
-# Talos+Proxmox target lands, flip replicas to 2-3 and enable redis-ha.
+# HA layout from the argo-helm README: 2x server / repo-server / applicationset,
+# redis-ha (3 redis + 3 haproxy, hard anti-affinity), one application
+# controller (a second replica only helps with sharding across many clusters).
 
 crds:
   install: true
@@ -13,7 +14,7 @@ controller:
   replicas: 1
 
 server:
-  replicas: 1
+  replicas: 2
   # Gateway terminates TLS; Argo speaks HTTP behind it. --insecure here means
   # "don't run TLS at the server level" — not "skip cert validation". Without
   # this, the Gateway gets a TLS-over-TLS situation.
@@ -21,10 +22,10 @@ server:
     - --insecure
 
 repoServer:
-  replicas: 1
+  replicas: 2
 
 applicationSet:
-  replicas: 1
+  replicas: 2
 
 # Notifications controller → ntfy. Independent of Dex/SSO — it just watches
 # Application status and POSTs to ntfy's in-cluster JSON publish endpoint
@@ -94,7 +95,7 @@ redis:
   enabled: true
 
 redis-ha:
-  enabled: false
+  enabled: true
 
 configs:
   cm:

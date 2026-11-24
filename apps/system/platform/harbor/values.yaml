@@ -1,5 +1,5 @@
 # Harbor — container registry. Vanilla operational: admin user from Vault,
-# CNPG-backed Postgres, in-chart Redis, Longhorn for registry blobs.
+# CNPG-backed Postgres, in-chart Redis, Ceph RBD for registry blobs.
 # Trivy/Notary disabled (deferred — vanilla scope).
 
 expose:
@@ -62,26 +62,26 @@ portal:
     limits:
       memory: 128Mi
 
-# Persistence on Longhorn.
+# Persistence on Ceph RBD (the default ceph-block class).
 persistence:
   enabled: true
   resourcePolicy: "keep"
   persistentVolumeClaim:
     registry:
-      storageClass: longhorn
+      storageClass: ceph-block
       accessMode: ReadWriteOnce
       size: 50Gi
     jobservice:
       jobLog:
-        storageClass: longhorn
+        storageClass: ceph-block
         accessMode: ReadWriteOnce
         size: 2Gi
     redis:
-      storageClass: longhorn
+      storageClass: ceph-block
       accessMode: ReadWriteOnce
       size: 2Gi
     trivy:
-      storageClass: longhorn
+      storageClass: ceph-block
       accessMode: ReadWriteOnce
       size: 5Gi
 

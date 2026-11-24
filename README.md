@@ -4,9 +4,11 @@ GitOps source of truth for a small professional Kubernetes platform - built
 to host workloads and services for multiple companies and domains under one cluster,
 with tenant isolation, observability, and a clean public surface.
 
-Currently runs on **k3s** on the NixOS host `firelink` (see
-[`seed-k3s/`](seed-k3s/README.md)). The Talos+Proxmox target is preserved
-in [`seed-talos/`](seed-talos/README.md) and will land as a separate task.
+Runs on **Talos** VMs on a three-host **Proxmox** cluster: per host, one
+controlplane and two workers, with the hosts joined by a 20G full mesh and
+**Rook-Ceph** providing block and S3 storage (see
+[`seed/talos/`](seed/talos/README.md)). The previous single-node k3s
+bootstrap for the NixOS host `firelink` is kept in [`seed/k3s/`](seed/k3s/README.md).
 
 ArgoCD reconciles everything in this repo into the cluster; nothing is
 applied imperatively after the initial bootstrap.
@@ -43,7 +45,7 @@ ykube/
 ├── apps/
 │   ├── system/               # cluster plumbing + shared services (one AppProject, one AppSet)
 │   │   ├── security/         # vault, external-secrets, kyverno (+ policies)
-│   │   ├── storage/          # longhorn, cloudnative-pg
+│   │   ├── storage/          # rook-ceph (block + S3), cloudnative-pg, dragonfly-operator
 │   │   ├── networking/       # cilium (+ cluster-policies), cert-manager, external-dns, cloudflared, envoy (+ gateway-external, gateway-internal), tailscale-operator
 │   │   ├── platform/         # harbor, forgejo (argo-workflows, argo-events deferred)
 │   │   └── observability/    # kube-prometheus-stack, loki, alloy
@@ -52,8 +54,8 @@ ykube/
 │   ├── eko-servis/           # eko-servis tenant (no domain yet)
 │   ├── ofnir/                # ofnir.dev tenant (placeholder)
 │   └── raf/                  # raf-project.com tenant (school projects)
-├── seed-k3s/                 # k3s/firelink(nixos) bootstrap (current cluster)
-├── seed-talos/               # Talos+Proxmox bootstrap (deferred future target)
+├── seed/talos/               # Talos+Proxmox bootstrap (OpenTofu stages 00-07)
+├── seed/k3s/                 # previous k3s/firelink (NixOS) bootstrap
 ├── flake.nix                 # dev shell: kubectl, helm, kustomize, argocd, talosctl, opentofu, cilium, hubble, vault
 └── renovate.json             # PR-only, no automerge
 ```

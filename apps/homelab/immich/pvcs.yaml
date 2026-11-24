@@ -1,7 +1,7 @@
 # Library volume — all photos, thumbnails, encoded video, profile images.
-# Starts at 100Gi to fit current Longhorn schedulable budget (~113Gi free
-# after raf-banka/harbor/etc. reservations). Longhorn supports online expansion —
-# raise this number once you've freed disk elsewhere or added a Longhorn disk.
+# Starts at 100Gi; Ceph RBD supports online expansion (allowVolumeExpansion on
+# ceph-block), so raise this number as the library grows. Each GiB here costs
+# 3 GiB of raw Ceph capacity (3 replicas, one per Proxmox host).
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -10,7 +10,7 @@ metadata:
   namespace: immich
 spec:
   accessModes: [ReadWriteOnce]
-  storageClassName: longhorn
+  storageClassName: ceph-block
   resources:
     requests:
       storage: 50Gi
@@ -23,7 +23,7 @@ metadata:
   namespace: immich
 spec:
   accessModes: [ReadWriteOnce]
-  storageClassName: longhorn
+  storageClassName: ceph-block
   resources:
     requests:
       storage: 10Gi

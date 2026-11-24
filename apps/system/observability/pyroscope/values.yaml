@@ -26,7 +26,7 @@ pyroscope:
 
   persistence:
     enabled: true
-    storageClassName: longhorn
+    storageClassName: ceph-block
     accessModes: [ReadWriteOnce]
     size: 5Gi
 

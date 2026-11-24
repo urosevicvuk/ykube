@@ -2,10 +2,10 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: kube-prometheus-stack
-  # PodSecurity admission removed. node-exporter is a DaemonSet that needs
-  # hostNetwork + hostPID + hostPath + hostPort to read node metrics, all
-  # of which `baseline` blocks. The chart can't run any other way, and
-  # forcing `privileged` for the whole namespace just to fit one DaemonSet
-  # made the labels load-bearing. Drop them entirely (consistent with the
-  # rest of the namespaces during stabilization). Restrict per-pod later
-  # via custom CCNPs if needed.
+  # privileged: node-exporter is a DaemonSet that needs hostNetwork + hostPID +
+  # hostPath + hostPort to read node metrics, all of which `baseline` blocks.
+  # On k3s this namespace simply had no PSS labels; on Talos an unlabelled
+  # namespace gets `baseline` enforced by the apiserver's default admission
+  # config, so the label is required now.
+  labels:
+    pod-security.kubernetes.io/enforce: privileged

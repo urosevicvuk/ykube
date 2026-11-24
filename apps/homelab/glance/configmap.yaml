@@ -92,7 +92,7 @@ data:
                   - argoproj/argo-cd
                   - argoproj/argo-workflows
                   - cloudnative-pg/cloudnative-pg
-                  - longhorn/longhorn
+                  - rook/rook
                   - cilium/cilium
                   - immich-app/immich
                   - n8n-io/n8n
