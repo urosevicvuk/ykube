@@ -5,7 +5,7 @@ to host workloads and services for multiple companies and domains under one clus
 with tenant isolation, observability, and a clean public surface.
 
 Runs on **Talos** VMs on a three-host **Proxmox** cluster: per host, one
-controlplane and two workers, with the hosts joined by a 20G full mesh and
+controlplane and two workers, with the hosts joined by a 25G full mesh (direct DAC cables) and
 **Rook-Ceph** providing block and S3 storage (see
 [`seed/talos/`](seed/talos/README.md)). The previous single-node k3s
 bootstrap for the NixOS host `firelink` is kept in [`seed/k3s/`](seed/k3s/README.md).

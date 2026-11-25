@@ -31,7 +31,7 @@ spec:
       - vchord.so
   storage:
     size: 20Gi
-    storageClass: ceph-block
+    storageClass: ceph-block-2x
   bootstrap:
     initdb:
       database: immich

@@ -1,5 +1,5 @@
-# Loki SingleBinary on Ceph RBD. Single replica — the volume is replicated 3x
-# by Ceph, so the pod reschedules onto another node with its data intact.
+# Loki SingleBinary on Ceph RBD (2-copy tier). Single replica — Ceph keeps
+# the volume on two hosts, so the pod reschedules with its data intact.
 # Alloy pushes to http://loki.loki:3100, Grafana datasource the same.
 
 deploymentMode: SingleBinary
@@ -53,7 +53,7 @@ singleBinary:
   replicas: 1
   persistence:
     enabled: true
-    storageClass: ceph-block
+    storageClass: ceph-block-2x
     size: 15Gi
     accessModes: [ReadWriteOnce]
   resources:

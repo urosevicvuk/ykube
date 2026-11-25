@@ -62,26 +62,26 @@ portal:
     limits:
       memory: 128Mi
 
-# Persistence on Ceph RBD (the default ceph-block class).
+# Persistence on Ceph RBD, 2-copy tier: every image can be re-pushed from CI.
 persistence:
   enabled: true
   resourcePolicy: "keep"
   persistentVolumeClaim:
     registry:
-      storageClass: ceph-block
+      storageClass: ceph-block-2x
       accessMode: ReadWriteOnce
       size: 50Gi
     jobservice:
       jobLog:
-        storageClass: ceph-block
+        storageClass: ceph-block-2x
         accessMode: ReadWriteOnce
         size: 2Gi
     redis:
-      storageClass: ceph-block
+      storageClass: ceph-block-2x
       accessMode: ReadWriteOnce
       size: 2Gi
     trivy:
-      storageClass: ceph-block
+      storageClass: ceph-block-2x
       accessMode: ReadWriteOnce
       size: 5Gi
 

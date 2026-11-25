@@ -5,7 +5,7 @@ metadata:
   namespace: ntfy
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: ceph-block
+  storageClassName: ceph-block-2x
   resources:
     requests:
       storage: 2Gi

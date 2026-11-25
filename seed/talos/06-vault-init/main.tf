@@ -2,7 +2,7 @@
 # create the policy + role that External Secrets Operator binds to.
 #
 # Runs after stage 05 has applied the GitOps root: Vault's chart is deployed
-# by Argo (apps/system/foundation/vault/, raft HA, 3 replicas) and pods come
+# by Argo (apps/system/security/vault/, raft HA, 3 replicas, one per Proxmox host) and pods come
 # up Running but sealed. This stage drives them to Initialised + Unsealed,
 # then plumbs in the auth path that ESO uses to read kv/* secrets.
 #
@@ -147,7 +147,7 @@ POLICY
 # ------------------------------------------------------------
 # Role: bind the ESO ServiceAccount to the policy above
 # ------------------------------------------------------------
-# Matches apps/system/foundation/external-secrets/cluster-secret-store.yaml:
+# Matches apps/system/security/external-secrets/cluster-secret-store.yaml:
 #   role:               external-secrets
 #   serviceAccount:     external-secrets/external-secrets
 resource "null_resource" "vault_role_external_secrets" {

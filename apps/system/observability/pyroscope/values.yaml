@@ -26,7 +26,7 @@ pyroscope:
 
   persistence:
     enabled: true
-    storageClassName: ceph-block
+    storageClassName: ceph-block-2x
     accessModes: [ReadWriteOnce]
     size: 5Gi
 

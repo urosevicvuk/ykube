@@ -33,9 +33,16 @@ ipam:
 # Multi-node, native routing stays the right call: every node's InternalIP is
 # on the same L2 mesh segment, so autoDirectNodeRoutes installs a plain kernel
 # route per peer node's pod CIDR (via that node's mesh IP) and pod-to-pod
-# traffic crosses the 20G mesh unencapsulated at jumbo MTU. If the mesh ever
-# stops being one L2 segment (e.g. a routed OpenFabric mesh), this breaks —
-# switch to tunnel mode or BGP then.
+# traffic crosses the 25G mesh unencapsulated. If the mesh ever stops being
+# one L2 segment (e.g. a routed OpenFabric mesh), this breaks — switch to
+# tunnel mode or BGP then.
+#
+# MTU: left to auto-detection, which takes the LOWEST MTU of the node's NICs —
+# ens18 (uplink) is 1500, so pods get 1500 even though the mesh runs 9000.
+# Deliberate: forcing 9000 would let pods emit 9000-byte packets toward the
+# internet, which leave via the 1500 uplink and get black-holed. The jumbo
+# frames on the mesh still pay off where volume is: Ceph runs on host
+# networking (rook-ceph/cluster-values.yaml), as do etcd and the kubelets.
 #
 # ipv4NativeRoutingCIDR = the Talos pod CIDR (10.244.0.0/16, set explicitly in
 # seed/talos/03-talos-configure). Traffic inside it is routed natively and NOT
@@ -67,12 +74,16 @@ socketLB:
   enabled: true
   hostNamespaceOnly: true
 
-# eBPF masquerade instead of iptables. The iptables masquerade reconciler in
-# Cilium 1.19 has a startup bug where it tries to delete a phantom rule from
-# OLD_CILIUM_POST_nat, fails with "iptables: Bad rule", and aborts the entire
-# reconcile cycle — leaving CILIUM_POST_nat empty. Pods then can't egress to
-# the internet (no SNAT), CoreDNS can't forward to upstream DNS, Argo can't
-# pull from GitHub. BPF masquerade bypasses iptables for this path entirely.
+# Masquerading = rewriting a pod's source IP (10.244.x.x, meaningless outside
+# the cluster) to the node's IP when traffic leaves for the internet, so
+# replies can find their way back. eBPF does it in-kernel without iptables;
+# it is Cilium's recommended mode with kubeProxyReplacement and the faster
+# one. It also sidesteps an iptables masquerade reconciler bug seen in Cilium
+# 1.19 (phantom OLD_CILIUM_POST_nat rule -> "iptables: Bad rule" -> no SNAT at
+# all -> pods, CoreDNS and Argo lose the internet).
+# Talos caveat: Talos's default of routing CoreDNS through the host DNS cache
+# (forwardKubeDNSToHost) breaks under BPF masquerade, so the seed turns that
+# off (seed/talos/03-talos-configure, ResolverConfig). Keep the two together.
 bpf:
   masquerade: true
   # NOTE: bpf.tproxy was set while trying to make the Cilium L7 gateway work; it's
@@ -81,12 +92,12 @@ bpf:
   # gatewayAPI note below + memory project_cilium_gateway_l7_broken. L7 lives on
   # Envoy Gateway; Cilium owns L3/L4 + policy + Hubble-L4 here.
 
-  # --- Perf tuning for this box (40 vCPU / 400 GB RAM — favour speed over memory) ---
+  # --- Perf tuning: favour speed over memory ---
   # Preallocate BPF maps at full size on startup instead of growing on demand:
   # trades memory for lower, steadier latency (no rehash stalls under load).
   preallocateMaps: true
-  # Size CT/NAT/policy maps as a fraction of total RAM (default 0.0025). Bumped so
-  # the conntrack + NAT tables are effectively never the bottleneck on this host.
+  # Size CT/NAT/policy maps as a fraction of each node's RAM (default 0.0025).
+  # 0.005 = ~40 MiB on an 8 GiB controlplane, ~160 MiB on a 32 GiB worker.
   mapDynamicSizeRatio: 0.005
   # Full per-packet flow visibility in Hubble (default "medium" aggregates flows).
   # We want the richest observability and don't care about the extra trace volume.
@@ -94,19 +105,19 @@ bpf:
 
   # --- Phase 2, needs a NODE REBOOT — enable on its own, after 1.20-pre is healthy ---
   # netkit: replace veth pod devices with netkit for ~host-network datapath perf.
-  # Requires kernel >=6.8 (have 7.0) + native routing (have it). Invasive: every
+  # Requires kernel >=6.8 (Talos 1.14 ships 6.x well past that) + native routing (have it). Invasive: every
   # pod's netdev is recreated, so expect a dataplane blip. To enable, uncomment:
   # datapathMode: netkit
 
 # ===========================================================================
-# Advanced datapath features (2026-06-26, Cilium 1.20.0-pre.3).
+# Advanced datapath features (added 2026-06-26 on 1.20.0-pre.3; now on 1.20 stable).
 # L7 stays on standalone Envoy Gateway; here we turn Cilium up to the best
 # L3/L4 datapath this box can run. (Cilium's own L7 proxy/Gateway is still
 # wired up + retested on every bump, but Envoy Gateway is the load-bearing L7.)
 # ===========================================================================
 
 # EDT-based egress shaping + BBR congestion control for pod traffic. BBR beats
-# CUBIC on throughput/latency under load; needs kernel >=5.18 (on 7.0). This is
+# CUBIC on throughput/latency under load; needs kernel >=5.18 (Talos kernel qualifies). This is
 # the modern eBPF replacement for the tc/HTB shaper.
 bandwidthManager:
   enabled: true

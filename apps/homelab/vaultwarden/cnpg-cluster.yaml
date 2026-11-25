@@ -19,7 +19,7 @@ spec:
   imageName: ghcr.io/cloudnative-pg/postgresql:16.4
   storage:
     size: 5Gi
-    storageClass: ceph-block
+    storageClass: ceph-block-2x
   bootstrap:
     initdb:
       database: vaultwarden

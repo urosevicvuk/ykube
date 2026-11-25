@@ -1,7 +1,8 @@
 # Library volume — all photos, thumbnails, encoded video, profile images.
-# Starts at 100Gi; Ceph RBD supports online expansion (allowVolumeExpansion on
-# ceph-block), so raise this number as the library grows. Each GiB here costs
-# 3 GiB of raw Ceph capacity (3 replicas, one per Proxmox host).
+# Starts at 50Gi; Ceph RBD supports online expansion (allowVolumeExpansion on
+# ceph-block), so raise this number as the library grows. The library is the
+# only copy of the photos, so it stays on the 3-copy tier (3 GiB raw per GiB).
+# The ML cache below is re-downloadable, so it uses the cheaper 2-copy tier.
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -23,7 +24,7 @@ metadata:
   namespace: immich
 spec:
   accessModes: [ReadWriteOnce]
-  storageClassName: ceph-block
+  storageClassName: ceph-block-2x
   resources:
     requests:
       storage: 10Gi
