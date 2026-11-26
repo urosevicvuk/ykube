@@ -1,18 +1,19 @@
-# Cilium values, tuned for Talos on Proxmox (3 hosts x 1 controlplane + 2
-# workers; seed/talos/).
+# Cilium values for RKE2 on bare-metal NixOS: 3 nodes (kiln1-3), each a
+# control plane + etcd + worker. Hosts are declared in ynix
+# (modules/features/kiln/); see seed/rke2/PLAN.md.
 #
-# Talos prerequisites (set in seed/talos/03-talos-configure):
-#   cluster.network.cni.name = none   # we install Cilium ourselves (stage 04)
-#   cluster.proxy.disabled   = true   # Cilium replaces kube-proxy
-#   machine.features.kubePrism        # in-node apiserver LB on localhost:7445
+# RKE2 prerequisites (ynix modules/features/kiln/rke2.nix):
+#   cni: none                  # we install Cilium ourselves (seed/rke2 stage 02)
+#   disable-kube-proxy: true   # Cilium replaces kube-proxy
+#   cluster-cidr: 10.244.0.0/16  (= ipv4NativeRoutingCIDR below)
 #
-# Node networking: each VM's kubelet node IP sits on the 20G mesh (ens19,
-# 10.10.0.0/24, one L2 segment via the hosts' RSTP bridge); ens18 is the 1G
-# uplink with the default route.
+# Node networking: each node's InternalIP sits on the 25G mesh (`mesh0`,
+# 10.10.0.0/24, one L2 segment via the OVS RSTP bridge over the DAC
+# triangle); `lan0` is the 1G uplink with the default route.
 #
 # References:
 #   - https://docs.cilium.io/en/stable/installation/k8s-install-helm/
-#   - https://www.talos.dev/latest/kubernetes-guides/network/deploying-cilium/
+#   - https://docs.rke2.io/networking/basic_network_options
 
 # Use Kubernetes IPAM.
 ipam:
@@ -38,18 +39,26 @@ ipam:
 # tunnel mode or BGP then.
 #
 # MTU: left to auto-detection, which takes the LOWEST MTU of the node's NICs —
-# ens18 (uplink) is 1500, so pods get 1500 even though the mesh runs 9000.
+# lan0 (uplink) is 1500, so pods get 1500 even though the mesh runs 9000.
 # Deliberate: forcing 9000 would let pods emit 9000-byte packets toward the
 # internet, which leave via the 1500 uplink and get black-holed. The jumbo
 # frames on the mesh still pay off where volume is: Ceph runs on host
 # networking (rook-ceph/cluster-values.yaml), as do etcd and the kubelets.
 #
-# ipv4NativeRoutingCIDR = the Talos pod CIDR (10.244.0.0/16, set explicitly in
-# seed/talos/03-talos-configure). Traffic inside it is routed natively and NOT
+# ipv4NativeRoutingCIDR = RKE2's cluster-cidr (10.244.0.0/16, ynix
+# ykube.cluster.podCidr). Traffic inside it is routed natively and NOT
 # masqueraded; everything else is BPF-masqueraded out the default-route NIC.
 routingMode: native
 ipv4NativeRoutingCIDR: 10.244.0.0/16
 autoDirectNodeRoutes: true
+
+# Attach the datapath to the LAN uplink and the mesh only. Auto-detection
+# would also pick up tailscale0 (it has a global address and routes) and put
+# BPF programs on the host's own tailnet interface. Names are stable: ynix
+# renames the NICs by PCI path/MAC (modules/features/kiln/network.nix).
+devices:
+  - lan0
+  - mesh0
 
 # Replace kube-proxy entirely.
 kubeProxyReplacement: true
@@ -69,7 +78,7 @@ kubeProxyReplacement: true
 # the proxy pod's conntrack, so SYN goes out but SYN-ACK never gets back to the
 # tailnet client. (See cilium/cilium#17738 for the apiserver-reachability caveat
 # in some setups — it did not bite on k3s; re-check apiserver reachability
-# from pods on first Talos boot.)
+# from pods on first RKE2 boot.)
 socketLB:
   enabled: true
   hostNamespaceOnly: true
@@ -81,9 +90,9 @@ socketLB:
 # one. It also sidesteps an iptables masquerade reconciler bug seen in Cilium
 # 1.19 (phantom OLD_CILIUM_POST_nat rule -> "iptables: Bad rule" -> no SNAT at
 # all -> pods, CoreDNS and Argo lose the internet).
-# Talos caveat: Talos's default of routing CoreDNS through the host DNS cache
-# (forwardKubeDNSToHost) breaks under BPF masquerade, so the seed turns that
-# off (seed/talos/03-talos-configure, ResolverConfig). Keep the two together.
+# CoreDNS (rke2-coredns) forwards to the node's resolv.conf upstreams (the
+# LAN DNS servers from ynix), not to a host-local cache, so BPF masquerade
+# doesn't affect it.
 bpf:
   masquerade: true
   # NOTE: bpf.tproxy was set while trying to make the Cilium L7 gateway work; it's
@@ -105,7 +114,7 @@ bpf:
 
   # --- Phase 2, needs a NODE REBOOT — enable on its own, after 1.20-pre is healthy ---
   # netkit: replace veth pod devices with netkit for ~host-network datapath perf.
-  # Requires kernel >=6.8 (Talos 1.14 ships 6.x well past that) + native routing (have it). Invasive: every
+  # Requires kernel >=6.8 (NixOS LTS kernel is well past that) + native routing (have it). Invasive: every
   # pod's netdev is recreated, so expect a dataplane blip. To enable, uncomment:
   # datapathMode: netkit
 
@@ -117,7 +126,7 @@ bpf:
 # ===========================================================================
 
 # EDT-based egress shaping + BBR congestion control for pod traffic. BBR beats
-# CUBIC on throughput/latency under load; needs kernel >=5.18 (Talos kernel qualifies). This is
+# CUBIC on throughput/latency under load; needs kernel >=5.18 (NixOS LTS qualifies). This is
 # the modern eBPF replacement for the tc/HTB shaper.
 bandwidthManager:
   enabled: true
@@ -133,38 +142,19 @@ localRedirectPolicy: true
 ciliumEndpointSlice:
   enabled: true
 
-# KubePrism: Talos runs a local apiserver load balancer on every node at
-# localhost:7445, fronting all three controlplanes. Cilium (which replaces
-# kube-proxy, so can't rely on the kubernetes Service) talks to it.
-k8sServiceHost: localhost
-k8sServicePort: "7445"
+# Cilium replaces kube-proxy, so it can't reach the API through the
+# `kubernetes` Service — it needs a real address. Every node runs an RKE2
+# API server, so each agent talks to its own node's on 127.0.0.1:6443 (in the
+# API server's certificate SANs). No dependency on the VIP or on another
+# node (the property KubePrism gave in the old Talos design). If agent-only nodes are ever
+# added, RKE2 runs a client-side API load balancer on their 127.0.0.1:6443
+# too, so this still holds.
+k8sServiceHost: 127.0.0.1
+k8sServicePort: "6443"
 
-# Talos already mounts cgroup2 — leave Cilium's automount disabled (Talos's
-# documented Cilium install).
-cgroup:
-  autoMount:
-    enabled: false
-  hostRoot: /sys/fs/cgroup
-
-# Talos requires explicit capability sets — Cilium's defaults assume host-managed cgroups.
-securityContext:
-  capabilities:
-    ciliumAgent:
-      - CHOWN
-      - KILL
-      - NET_ADMIN
-      - NET_RAW
-      - IPC_LOCK
-      - SYS_ADMIN
-      - SYS_RESOURCE
-      - DAC_OVERRIDE
-      - FOWNER
-      - SETGID
-      - SETUID
-    cleanCiliumState:
-      - NET_ADMIN
-      - SYS_ADMIN
-      - SYS_RESOURCE
+# cgroup2 and capabilities: chart defaults. On NixOS systemd mounts cgroup2 at
+# /sys/fs/cgroup and Cilium mounts its own view at /run/cilium/cgroupv2. (The
+# Talos design needed automount off and explicit capability sets; not here.)
 
 # Gateway API: DISABLED (2026-06-27). Cilium's L7 proxy has no working entry path
 # on this single all-same-node node — it's built for traffic ARRIVING at a node
@@ -176,7 +166,7 @@ securityContext:
 # origin. Upstream confirms: #36004 (our exact case, open), #46284 (TX-path TPROXY
 # limit), #45485 (host-network status bug). L7 stays on standalone Envoy Gateway.
 #
-# REVISIT on Talos+3VM: gateway in LoadBalancer mode + cloudflared as a DaemonSet
+# REVISIT on the 3-node cluster: gateway in LoadBalancer mode + cloudflared as a DaemonSet
 # (mirror okwilkins/h8s) so cross-node ingress paths exist. See memory
 # project_cilium_gateway_l7_broken for the full plan.
 gatewayAPI:
@@ -184,7 +174,7 @@ gatewayAPI:
 
 # Dedicated cilium-envoy DaemonSet — only needed for Cilium's L7 (Gateway /
 # L7 policy), which is disabled here. Off, so no idle Envoy DaemonSet; re-enable
-# with gatewayAPI on Talos+3VM.
+# with gatewayAPI on the 3-node cluster.
 envoy:
   enabled: false
 

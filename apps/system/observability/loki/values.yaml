@@ -53,7 +53,7 @@ singleBinary:
   replicas: 1
   persistence:
     enabled: true
-    storageClass: ceph-block-2x
+    storageClass: ceph-block-ssd
     size: 15Gi
     accessModes: [ReadWriteOnce]
   resources:

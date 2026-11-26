@@ -1,5 +1,5 @@
 {
-  description = "ykube — homelab GitOps repo. Dev shell with the k8s/argo/talos toolchain.";
+  description = "ykube — homelab GitOps repo. Dev shell with the k8s/argo/rke2 bootstrap toolchain.";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -30,10 +30,14 @@
           argocd
           cloudflared
 
-          # Talos + Proxmox bootstrap
-          talosctl
-          opentofu # OpenTofu (Terraform fork) — used for the bootstrap pipeline
+          # Bootstrap (seed/rke2) and host installs (ynix, nixos-anywhere)
           go-task # Taskfile runner — orchestrates seed/ stages
+          nixos-anywhere
+          shellcheck
+
+          # Only for the abandoned seed/talos pipeline; drop together with it.
+          talosctl
+          opentofu
 
           # Cilium
           cilium-cli

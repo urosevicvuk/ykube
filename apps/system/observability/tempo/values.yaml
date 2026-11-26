@@ -52,7 +52,7 @@ persistence:
   # the chart rendered `storageClassName: null` and Argo saw permanent drift
   # against the live PVC (the default class bound it either way, so
   # the volume bound correctly — but the rendered YAML never matched live).
-  storageClassName: ceph-block-2x
+  storageClassName: ceph-block-ssd
   size: 10Gi
   accessModes: [ReadWriteOnce]
   # Empty map (not omitted/null) so the chart's `toYaml | nindent` renders

@@ -11,10 +11,10 @@
 # and reference the cert Secrets by name (no cross-ns refs, no ReferenceGrant).
 #
 # Gateway API + Envoy Gateway CRDs are NOT managed here (this chart doesn't
-# ship them anymore). The Talos bootstrap installs them — seed/talos/04-cilium,
-# resource null_resource.gateway_crds — from Envoy's gateway-crds-helm chart at
-# the SAME version as gateway-helm below (it reads this file), experimental
-# channel, via `kubectl apply --server-side`.
+# ship them anymore). The bootstrap installs them — seed/rke2 stage 01
+# (scripts/01-crds.sh) — from Envoy's gateway-crds-helm chart at the SAME
+# version as gateway-helm below (it reads this file), experimental channel,
+# via `kubectl apply --server-side`.
 # Reason: HTTPRoute's OpenAPI schema is too large for client-side apply's
 # last-applied-configuration annotation (256KB limit). Argo can apply it
 # once via SSA, but subsequent diffs fall back to client-side and bust the

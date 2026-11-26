@@ -6,7 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "-10"
 spec:
-  # Primary + one streaming replica, required to sit on a different Proxmox
+  # Primary + one streaming replica, required to sit on a different physical
   # host. The operator promotes the replica if the primary's host dies.
   instances: 2
   affinity:
@@ -16,7 +16,7 @@ spec:
   imageName: ghcr.io/cloudnative-pg/postgresql:16.4
   storage:
     size: 5Gi
-    storageClass: ceph-block-2x
+    storageClass: ceph-block-ssd
   bootstrap:
     initdb:
       database: n8n

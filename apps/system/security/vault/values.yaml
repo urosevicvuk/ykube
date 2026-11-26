@@ -1,11 +1,11 @@
-# Vault, HA with integrated raft storage: 3 replicas, one per Proxmox host.
+# Vault, HA with integrated raft storage: 3 replicas, one per host.
 # TLS terminates at the cluster Gateway; Vault speaks HTTP in-cluster.
 # ESO consumes via Kubernetes auth (SA: external-secrets/external-secrets).
 #
-# Bootstrap: seed/talos/06-vault-init inits vault-0 and unseals all three;
-# vault-1/2 join raft on their own via the retry_join blocks below.
+# Bootstrap: seed/rke2 stage 04 (vault:init) inits vault-0 and unseals all
+# three; vault-1/2 join raft on their own via the retry_join blocks below.
 # Auto-unseal is not configured — after node reboots run
-# `task -d seed/talos vault:status` / `vault:unseal`. Raft keeps serving as
+# `task -d seed/rke2 vault:status` / `vault:unseal`. Raft keeps serving as
 # long as 2 of 3 members are unsealed.
 
 global:
@@ -22,7 +22,8 @@ server:
   dataStorage:
     enabled: true
     size: 10Gi
-    storageClass: ceph-block
+    # Fast tier, 2 copies: raft already keeps 3 replicas across hosts.
+    storageClass: ceph-block-ssd
 
   # Audit goes to stdout (collected by Alloy → Loki).
   auditStorage:
@@ -34,9 +35,9 @@ server:
     serviceAccountToken:
       enabled: true
 
-  # The chart's default anti-affinity is per *hostname*; two workers share each
-  # Proxmox host, so that could put 2 of 3 raft members on one machine. Spread
-  # by zone (= Proxmox host) instead. Required, not preferred: a raft cluster
+  # The chart's default anti-affinity is per *hostname*. On bare metal node =
+  # host, but spread by zone (= physical host) anyway so it stays correct if a
+  # host ever runs more than one node. Required, not preferred: a raft cluster
   # with two members on one box loses quorum with that box.
   affinity: |
     podAntiAffinity:

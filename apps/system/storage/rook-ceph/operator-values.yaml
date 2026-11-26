@@ -2,7 +2,7 @@
 
 # PrometheusRules / ServiceMonitors — kube-prometheus-stack auto-discovers
 # them cluster-wide. The Prometheus Operator CRDs are pre-installed by the
-# seed (seed/talos/04-cilium), so these apply cleanly on first sync.
+# seed (seed/rke2 stage 01), so these apply cleanly on first sync.
 monitoring:
   enabled: true
 

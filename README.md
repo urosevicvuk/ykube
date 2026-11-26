@@ -4,11 +4,16 @@ GitOps source of truth for a small professional Kubernetes platform - built
 to host workloads and services for multiple companies and domains under one cluster,
 with tenant isolation, observability, and a clean public surface.
 
-Runs on **Talos** VMs on a three-host **Proxmox** cluster: per host, one
-controlplane and two workers, with the hosts joined by a 25G full mesh (direct DAC cables) and
-**Rook-Ceph** providing block and S3 storage (see
-[`seed/talos/`](seed/talos/README.md)). The previous single-node k3s
-bootstrap for the NixOS host `firelink` is kept in [`seed/k3s/`](seed/k3s/README.md).
+Runs on **RKE2** (CIS profile) on three bare-metal **NixOS** hosts, kiln1-3:
+every host is a control plane, etcd member and worker. The hosts are joined
+by a 25G full mesh (direct DAC cables, one L2 segment with spanning tree),
+and **Rook-Ceph** provides block and S3 storage on their raw disks. The hosts
+are declared in [`ynix`](https://github.com/urosevicvuk/ynix)
+(`modules/features/kiln/`); the cluster bootstrap and the plan live in
+[`seed/rke2/`](seed/rke2/README.md). The live cluster is still the
+single-node k3s on the NixOS host `firelink` ([`seed/k3s/`](seed/k3s/README.md))
+until the migration; the abandoned Proxmox + Talos design is in `seed/talos/`
+until it is deleted.
 
 ArgoCD reconciles everything in this repo into the cluster; nothing is
 applied imperatively after the initial bootstrap.
@@ -54,9 +59,10 @@ ykube/
 │   ├── eko-servis/           # eko-servis tenant (no domain yet)
 │   ├── ofnir/                # ofnir.dev tenant (placeholder)
 │   └── raf/                  # raf-project.com tenant (school projects)
-├── seed/talos/               # Talos+Proxmox bootstrap (OpenTofu stages 00-07)
-├── seed/k3s/                 # previous k3s/firelink (NixOS) bootstrap
-├── flake.nix                 # dev shell: kubectl, helm, kustomize, argocd, talosctl, opentofu, cilium, hubble, vault
+├── seed/rke2/                # RKE2 cluster bootstrap (Taskfile stages 00-05) + PLAN.md
+├── seed/k3s/                 # current k3s/firelink (NixOS) bootstrap, until the migration
+├── seed/talos/               # abandoned Talos+Proxmox design, to be deleted
+├── flake.nix                 # dev shell: kubectl, helm, kustomize, argocd, cilium, hubble, vault, shellcheck
 └── renovate.json             # PR-only, no automerge
 ```
 

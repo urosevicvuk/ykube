@@ -26,7 +26,9 @@ sources:
   - gateway-httproute
   - service
 
-# Each cluster owns its own txt records; firelink today, talos later.
+# Each cluster owns its own txt records. The RKE2 cluster keeps the owner ID
+# "firelink" on purpose: at cut-over it adopts the existing records instead of
+# refusing to touch them. Stop firelink's external-dns before syncing it there.
 txtOwnerId: firelink
 txtPrefix: _externaldns.
 

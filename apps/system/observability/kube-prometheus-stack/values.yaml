@@ -25,7 +25,7 @@ prometheus:
     storageSpec:
       volumeClaimTemplate:
         spec:
-          storageClassName: ceph-block-2x
+          storageClassName: ceph-block-ssd
           accessModes: [ReadWriteOnce]
           resources:
             requests:
@@ -56,7 +56,7 @@ alertmanager:
     storage:
       volumeClaimTemplate:
         spec:
-          storageClassName: ceph-block-2x
+          storageClassName: ceph-block-ssd
           accessModes: [ReadWriteOnce]
           resources:
             requests:
@@ -85,7 +85,7 @@ grafana:
   persistence:
     enabled: true
     type: pvc
-    storageClassName: ceph-block-2x
+    storageClassName: ceph-block-ssd
     accessModes: [ReadWriteOnce]
     size: 5Gi
 
@@ -197,33 +197,22 @@ nodeExporter:
 kube-state-metrics:
   enabled: true
 
-# Control-plane scrapes, Talos edition. seed/talos/03-talos-configure binds
-# controller-manager and scheduler to 0.0.0.0 and etcd's metrics listener to
-# 0.0.0.0:2381 on the controlplanes, so all three are reachable from Prometheus.
+# Control-plane scrapes, RKE2 edition. ynix (modules/features/kiln/rke2.nix)
+# binds controller-manager and scheduler to 0.0.0.0 and sets
+# etcd-expose-metrics (etcd's plain-HTTP metrics listener on :2381), so all
+# three are reachable from Prometheus. The host firewall admits them only
+# from the mesh and pod interfaces.
 #
-# controller-manager / scheduler run as Talos static pods labelled
-# k8s-app=<component> (not kubeadm's component=<component>), so point the
-# chart's Services at that label. They serve HTTPS with a self-signed cert;
-# the chart's defaults (https on 10257/10259, insecureSkipVerify) cover it.
+# RKE2 runs them as static pods labelled component=<name>, exactly like
+# kubeadm, which is what the chart's Services select by default. They serve
+# HTTPS with a self-signed cert; the chart's defaults (https on 10257/10259,
+# insecureSkipVerify) cover it.
 kubeControllerManager:
   enabled: true
-  service:
-    selector:
-      k8s-app: kube-controller-manager
 kubeScheduler:
   enabled: true
-  service:
-    selector:
-      k8s-app: kube-scheduler
-# etcd is a Talos system service, not a pod, so there's nothing to select —
-# list the controlplanes' mesh IPs instead. MUST match the controlplane
-# mesh_ip values in seed/talos/shared/secrets.auto.tfvars.
 kubeEtcd:
   enabled: true
-  endpoints:
-    - 10.10.0.11
-    - 10.10.0.12
-    - 10.10.0.13
   service:
     port: 2381
     targetPort: 2381

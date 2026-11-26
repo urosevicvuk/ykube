@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: cloudflared
 spec:
   # Two connectors for the same tunnel — Cloudflare load-balances across them
-  # and fails over if one drops. Spread across Proxmox hosts.
+  # and fails over if one drops. Spread across hosts.
   replicas: 2
   selector:
     matchLabels:
@@ -91,7 +91,7 @@ spec:
       port: 2000
       targetPort: metrics
 ---
-# Keep one connector up through node drains (Talos upgrades).
+# Keep one connector up through node drains (rolling OS/RKE2 upgrades).
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:

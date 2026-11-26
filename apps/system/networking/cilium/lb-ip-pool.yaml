@@ -1,16 +1,18 @@
 # Cilium LoadBalancer IP pool.
 # These IPs get handed out to Services of type=LoadBalancer and ARP-announced
-# on the workers' LAN uplink (l2-announcement-policy.yaml).
+# on the nodes' LAN uplink (l2-announcement-policy.yaml).
 #
-# LAN is 192.168.1.0/24, router = .1. The pool is the static range .2-.9 —
-# 8 IPs, plenty for the 2-3 LoadBalancer services this cluster owns. Most
-# ingress doesn't use it at all: cloudflared and the tailscale proxies dial
-# out, and gateway-internal is tailscale's LB class, not Cilium's.
+# Office LAN, assumed 192.168.1.0/24 with the router at .1. TODO(on-site):
+# confirm against the office network, together with the host addresses and
+# API VIP in ynix modules/sites/office.nix (.10 VIP, .11-.13 hosts). The pool
+# is the static range .2-.9: 8 IPs, plenty for the 2-3 LoadBalancer services
+# this cluster owns. Most ingress doesn't use it at all: cloudflared and the
+# tailscale proxies dial out, and gateway-internal is tailscale's LB class,
+# not Cilium's.
 #
-# Keep the pool outside the router's DHCP scope. The Talos VMs' LAN IPs (9
-# nodes) are DHCP reservations by MAC, and the Talos API VIP is a static IP
-# that must ALSO sit outside both the DHCP scope and this pool. If you need
-# more room, shrink DHCP to e.g. .50-.200 and grow this pool to .201-.254.
+# Keep the pool, the host addresses and the VIP outside the DHCP scope and
+# away from each other. If you need more room, shrink DHCP to e.g. .50-.200
+# and grow this pool to .201-.254.
 apiVersion: cilium.io/v2alpha1
 kind: CiliumLoadBalancerIPPool
 metadata:

@@ -15,7 +15,7 @@ spec:
     kubernetes:
       envoyService:
         type: ClusterIP
-      # Two data-plane replicas on different Proxmox hosts (preferred, so a
+      # Two data-plane replicas on different hosts (preferred, so a
       # host outage degrades to one replica rather than blocking scheduling),
       # and a PDB so node drains never take the lane to zero.
       envoyDeployment:

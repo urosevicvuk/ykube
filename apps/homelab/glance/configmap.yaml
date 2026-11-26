@@ -99,7 +99,7 @@ data:
                   - binwiederhier/ntfy
                   - dxflrs/garage
                   - glanceapp/glance
-                  - siderolabs/talos
+                  - rancher/rke2
                   - go-gitea/gitea
 
               - type: bookmarks

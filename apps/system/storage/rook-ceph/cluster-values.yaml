@@ -20,7 +20,7 @@ cephClusterSpec:
     ssl: false
 
   # Host networking, bound to the 25G mesh. Ceph daemons (mons, OSDs, mgrs)
-  # listen on the workers' mesh IPs directly instead of on pod IPs, so
+  # listen on the nodes' mesh IPs directly instead of on pod IPs, so
   # replication and client I/O run host-to-host at jumbo-frame MTU and skip
   # the Cilium datapath. (Pods are capped at 1500 MTU — Cilium uses the lowest
   # MTU of the node's NICs, and the uplink is 1500.) The CSI/RBD clients
@@ -28,8 +28,8 @@ cephClusterSpec:
   # the mesh too.
   #
   # CREATE-TIME ONLY: Rook does not support changing the network provider or
-  # these ranges on a running cluster. The CIDR must match mesh_cidr in
-  # seed/talos/shared/variables.tf.
+  # these ranges on a running cluster. The CIDR must match the mesh addresses
+  # in ynix modules/sites/office.nix (ykube.cluster.nodes.*.meshAddress).
   network:
     provider: host
     addressRanges:
@@ -39,9 +39,9 @@ cephClusterSpec:
         - 10.10.0.0/24
 
   # Chart defaults are already 3 mons / 2 mgrs with allowMultiplePerNode: false.
-  # That only spreads them across *nodes* — two workers share each Proxmox
-  # host, so it could still put 2 of 3 mons on one machine and lose quorum
-  # with it. Spread them across zones (= Proxmox hosts) instead.
+  # On bare metal node = host = zone, so this is belt and braces: it keeps the
+  # spread correct if a host ever runs more than one node (e.g. KubeVirt or
+  # Kiln test nodes labelled with their host's zone).
   placement:
     mon:
       topologySpreadConstraints:
@@ -60,30 +60,45 @@ cephClusterSpec:
             matchLabels:
               app: rook-ceph-mgr
 
-  # OSDs: every empty SCSI disk on every worker. Those are exactly the
-  # physical disks seed/talos/02-proxmox-provision passes through (scsi1.. ->
-  # /dev/sdX); the Talos OS disk is virtio (/dev/vda) and never matches.
-  # Rook still skips any sdX that carries partitions or a filesystem, so wipe
-  # reused disks on the Proxmox host first.
-  # Controlplanes keep their NoSchedule taint, so no Ceph daemons land there.
-  # Device class (ssd/hdd/nvme) is auto-detected from what the guest sees,
-  # which follows the `ssd` flag in secrets.auto.tfvars.
+  # OSDs: every empty sdX disk on every node: the SAS HDDs and SATA SSDs
+  # behind the ServeRAID (JBOD) / Smart Array (HBA mode). The boot disk is
+  # NVMe on the M5s and never matches; wherever it is an sdX (check kiln3),
+  # it carries partitions, and Rook skips any disk with partitions or a
+  # filesystem. Wipe reused disks first (`wipefs -a`, `sgdisk --zap-all`).
+  # Caveat: a BLANK USB stick (sdX) would match too, so don't leave one in.
+  # Once the disks are inventoried, prefer explicit per-node lists:
+  #   useAllNodes: false
+  #   nodes:
+  #     - name: kiln1
+  #       devices:
+  #         - name: /dev/disk/by-id/scsi-35000c500XXXXXXXX
+  # Device class (hdd/ssd) is auto-detected from the kernel's rotational flag;
+  # the pools below are pinned to one class each.
   storage:
     useAllNodes: true
     useAllDevices: false
     deviceFilter: "^sd[a-z]+$"
 
-# Two block tiers. Both put each copy on a different Proxmox host
-# (failureDomain: zone = the topology.kubernetes.io/zone node label).
+# Block tiers. Every pool puts each copy on a different host
+# (failureDomain: zone = the topology.kubernetes.io/zone node label) and is
+# pinned to ONE disk type: a pool mixing HDDs and SSDs runs every write at HDD
+# speed. Usable space per pool is bounded by the host with the least of that
+# disk type, so keep the hosts balanced (buy disks in threes).
 #
-#   ceph-block     3 copies, DEFAULT. Survives losing any one host with a
-#                  spare copy left. For data that exists nowhere else.
-#   ceph-block-2x  2 copies, min_size 1. Survives losing any one host, but
-#                  with no spare copy until it's back — lose a second disk on
-#                  another host in that window and the data is gone. For data
-#                  that is replicated elsewhere (CNPG keeps its own Postgres
-#                  replica on another host) or can be regenerated (metrics,
-#                  logs, traces, caches, container images). 1/3 cheaper.
+#   ceph-block      hdd, 3 copies, DEFAULT. Survives losing any one host with
+#                   a spare copy left. Bulk data that exists nowhere else.
+#   ceph-block-2x   hdd, 2 copies, min_size 1. Survives losing any one host,
+#                   but with no spare copy until it's back. Bulk data that is
+#                   replicated elsewhere or can be regenerated (caches, images).
+#   ceph-block-ssd  ssd, 2 copies, min_size 1. The fast tier, for
+#                   latency-sensitive data that is already replicated by its
+#                   app or regenerable: every CNPG Postgres (own replica on
+#                   another host), Vault (3 raft members), Prometheus / Loki /
+#                   Tempo / Pyroscope / Grafana / Alertmanager. 2 copies because
+#                   the SSDs are small.
+#
+# Don't use an SSD as DB/WAL device for the HDD OSDs: one SSD failure would
+# take every HDD OSD behind it down with it.
 #
 # Nothing on the 2x tier is the only copy of something you'd mourn. Move a
 # PVC between tiers = new PVC + copy; the class is immutable on a PVC.
@@ -91,6 +106,7 @@ cephBlockPools:
   - name: ceph-blockpool
     spec:
       failureDomain: zone
+      deviceClass: hdd
       replicated:
         size: 3
     storageClass:
@@ -120,16 +136,36 @@ cephBlockPools:
   - name: ceph-blockpool-2x
     spec:
       failureDomain: zone
+      deviceClass: hdd
       replicated:
         size: 2
       # Keep serving I/O with a single copy while a host is down. With the
       # Ceph default (min_size 2) every 2x volume would freeze whenever any
-      # one host is offline — i.e. on every Talos/Proxmox upgrade reboot.
+      # one host is offline — i.e. on every rolling OS/RKE2 upgrade reboot.
       parameters:
         min_size: "1"
     storageClass:
       enabled: true
       name: ceph-block-2x
+      isDefault: false
+      reclaimPolicy: Delete
+      allowVolumeExpansion: true
+      volumeBindingMode: Immediate
+      parameters: *rbd-storageclass-parameters
+
+  - name: ceph-blockpool-ssd
+    spec:
+      failureDomain: zone
+      deviceClass: ssd
+      replicated:
+        size: 2
+      # Same reasoning as the 2x tier: keep serving with one copy while a host
+      # is down for a rolling reboot.
+      parameters:
+        min_size: "1"
+    storageClass:
+      enabled: true
+      name: ceph-block-ssd
       isDefault: false
       reclaimPolicy: Delete
       allowVolumeExpansion: true
@@ -149,8 +185,12 @@ cephFileSystems: []
 cephObjectStores:
   - name: ceph-objectstore
     spec:
+      # Both pools on the HDDs: every host has HDDs, not necessarily SSDs.
+      # Bucket index latency would benefit from moving metadataPool to `ssd`
+      # once every host has SSD capacity.
       metadataPool:
         failureDomain: zone
+        deviceClass: hdd
         replicated:
           size: 3
       # Erasure coded 2+1 across the 3 hosts: the same protection level as
@@ -159,6 +199,7 @@ cephObjectStores:
       # irreplaceable that lands in S3 also needs a copy off this cluster.
       dataPool:
         failureDomain: zone
+        deviceClass: hdd
         erasureCoded:
           dataChunks: 2
           codingChunks: 1
@@ -170,7 +211,7 @@ cephObjectStores:
         instances: 2
         # RGW stays on the pod network (behind its Service on :80) rather
         # than inheriting the cluster's host networking — nothing gains from
-        # it binding a port on the workers.
+        # it binding a port on the nodes.
         hostNetwork: false
         resources:
           limits:

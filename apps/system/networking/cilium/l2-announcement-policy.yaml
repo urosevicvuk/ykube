@@ -10,17 +10,14 @@ spec:
   # Empty selector → applies to every Service of type=LoadBalancer.
   serviceSelector:
     matchLabels: {}
-  # Workers only. Controlplanes keep their NoSchedule taint and run no
-  # workload pods; announcing from them would just add ARP churn on the LAN.
-  nodeSelector:
-    matchExpressions:
-      - key: node-role.kubernetes.io/control-plane
-        operator: DoesNotExist
-  # The 1G LAN uplink only (Proxmox net0 → ens18 in Talos; see
-  # seed/talos/02-proxmox-provision). Never the mesh (ens19): LAN clients
-  # can't reach it, so an IP announced there would be a black hole. Also
-  # never tailscale0, cilium_host or the lxc* veths.
+  # No nodeSelector: every node is control plane + worker, so any of the three
+  # may announce. Cilium elects one announcer per Service through a Lease and
+  # moves it if that node goes down.
+  #
+  # The 1G LAN uplink only (`lan0`, renamed by ynix). Never the mesh (`mesh0`):
+  # LAN clients can't reach it, so an IP announced there would be a black hole.
+  # Also never tailscale0, cilium_host or the lxc* veths.
   interfaces:
-    - ^ens18$
+    - ^lan0$
   externalIPs: true
   loadBalancerIPs: true

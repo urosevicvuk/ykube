@@ -6,11 +6,12 @@
 # consuming apps request their own units from it — a PVC for block, an
 # ObjectBucketClaim for a bucket.
 #
-# Topology this assumes (seed/talos/): 3 Proxmox hosts, each with 2 worker
-# VMs that own the host's passed-through OSD disks (/dev/sdX). Every node is
-# labelled topology.kubernetes.io/zone=<proxmox host>; Rook maps that label
-# into the CRUSH map, and every pool uses failureDomain: zone so the copies
-# land on different physical machines — not merely different VMs.
+# Topology this assumes (seed/rke2/PLAN.md): 3 bare-metal NixOS hosts, each
+# one Kubernetes node owning its own data disks (raw: ServeRAID in JBOD mode,
+# Smart Array in HBA mode). Every node is labelled
+# topology.kubernetes.io/zone=<host> by RKE2 (ynix ykube.node.zone); Rook maps
+# that label into the CRUSH map and every pool uses failureDomain: zone, so
+# each copy lands on a different physical machine.
 # Ceph runs on host networking bound to the 25G mesh (cluster-values.yaml).
 #
 # Both charts land in the `rook-ceph` namespace so this stays a single
