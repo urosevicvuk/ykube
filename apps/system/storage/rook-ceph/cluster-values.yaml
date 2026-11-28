@@ -60,24 +60,43 @@ cephClusterSpec:
             matchLabels:
               app: rook-ceph-mgr
 
-  # OSDs: every empty sdX disk on every node: the SAS HDDs and SATA SSDs
-  # behind the ServeRAID (JBOD) / Smart Array (HBA mode). The boot disk is
-  # NVMe on the M5s and never matches; wherever it is an sdX (check kiln3),
-  # it carries partitions, and Rook skips any disk with partitions or a
-  # filesystem. Wipe reused disks first (`wipefs -a`, `sgdisk --zap-all`).
-  # Caveat: a BLANK USB stick (sdX) would match too, so don't leave one in.
-  # Once the disks are inventoried, prefer explicit per-node lists:
-  #   useAllNodes: false
-  #   nodes:
-  #     - name: kiln1
-  #       devices:
-  #         - name: /dev/disk/by-id/scsi-35000c500XXXXXXXX
+  # OSDs: every non-boot disk, listed per node by stable id (sdX letters move
+  # between boots), so a disk added later or a stray USB stick is never
+  # taken. Boot disks, never listed: the NVMe on firelink1/2, and
+  # ata-SQF-S25V1-128GDDBZ_AO2250813235001572 on firelink3.
+  # HDDs: 838 GB Seagate ST9900805SS (SAS). SSDs: 112 GB SSD120GXQC8B017T,
+  # 119 GB SQF-S25V1 and one 119 GB Samsung MZ7PC128 (SATA). Rook skips a
+  # disk with partitions or a filesystem: wipe reused disks first.
   # Device class (hdd/ssd) is auto-detected from the kernel's rotational flag;
   # the pools below are pinned to one class each.
   storage:
-    useAllNodes: true
+    useAllNodes: false
     useAllDevices: false
-    deviceFilter: "^sd[a-z]+$"
+    nodes:
+      - name: firelink1
+        devices:
+          - name: /dev/disk/by-id/wwn-0x5000c50059c45d07 # HDD
+          - name: /dev/disk/by-id/wwn-0x5000c50059be018b # HDD
+          - name: /dev/disk/by-id/wwn-0x5000c50059bdb98b # HDD
+          - name: /dev/disk/by-id/ata-SQF-S25V1-128GDDBZ_AO2250711166000932 # SSD
+          - name: /dev/disk/by-id/ata-SSD120GXQC8B017T_7FC0072408B301264426 # SSD
+          - name: /dev/disk/by-id/ata-SSD120GXQC8B017T_7F5F0724080801262850 # SSD
+      - name: firelink2
+        devices:
+          - name: /dev/disk/by-id/wwn-0x5000c50059c5712b # HDD
+          - name: /dev/disk/by-id/wwn-0x5000c50059be190f # HDD
+          - name: /dev/disk/by-id/ata-SQF-S25V1-128GDDBZ_AO2250602114001423 # SSD
+          - name: /dev/disk/by-id/ata-SSD120GXQC8B017T_7FEF0724150801270999 # SSD
+          - name: /dev/disk/by-id/wwn-0x5002538043584d30 # SSD (Samsung)
+      - name: firelink3
+        devices:
+          - name: /dev/disk/by-id/wwn-0x5000c50059c41727 # HDD
+          - name: /dev/disk/by-id/wwn-0x5000c50059c3e2f3 # HDD
+          - name: /dev/disk/by-id/wwn-0x5000c50059c45cbf # HDD
+          - name: /dev/disk/by-id/ata-SSD120GXQC8B017T_7D070724080801264212 # SSD
+          - name: /dev/disk/by-id/ata-SSD120GXQC8B017T_7FC0072408B301264416 # SSD
+          - name: /dev/disk/by-id/ata-SQF-S25V1-128GDDBZ_AO2250711166001272 # SSD
+          - name: /dev/disk/by-id/ata-SSD120GXQC8B017T_FF2E07241A8201274946 # SSD
 
 # Block tiers. Every pool puts each copy on a different host
 # (failureDomain: zone = the topology.kubernetes.io/zone node label) and is
