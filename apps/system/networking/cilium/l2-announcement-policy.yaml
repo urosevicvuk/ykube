@@ -10,14 +10,21 @@ spec:
   # Empty selector → applies to every Service of type=LoadBalancer.
   serviceSelector:
     matchLabels: {}
-  # No nodeSelector: every node is control plane + worker, so any of the three
-  # may announce. Cilium elects one announcer per Service through a Lease and
-  # moves it if that node goes down.
+  # Cilium elects one announcer per Service through a Lease and moves it if
+  # that node goes down. Every node is control plane + worker, so any of the
+  # three may announce...
   #
-  # The 1G LAN uplink only (`lan0`, renamed by ynix). Never the mesh (`mesh0`):
-  # LAN clients can't reach it, so an IP announced there would be a black hole.
-  # Also never tailscale0, cilium_host or the lxc* veths.
+  # TEMPORARY: ...once all three are cabled to the LAN. Until the switch
+  # arrives only firelink2's eno1 is; an IP announced from firelink1/3 would be
+  # a black hole. Drop the nodeSelector then.
+  nodeSelector:
+    matchLabels:
+      kubernetes.io/hostname: firelink2
+  #
+  # The 1G LAN uplink only (`eno1`). Never the mesh (`mesh0`): LAN clients
+  # can't reach it, so an IP announced there would be a black hole. Also never
+  # tailscale0, cilium_host or the lxc* veths.
   interfaces:
-    - ^lan0$
+    - ^eno1$
   externalIPs: true
   loadBalancerIPs: true

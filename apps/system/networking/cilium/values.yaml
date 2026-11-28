@@ -8,8 +8,12 @@
 #   cluster-cidr: 10.244.0.0/16  (= ipv4NativeRoutingCIDR below)
 #
 # Node networking: each node's InternalIP sits on the 25G mesh (`mesh0`,
-# 10.10.0.0/24, one L2 segment via the OVS RSTP bridge over the DAC
-# triangle); `lan0` is the 1G uplink with the default route.
+# 10.10.0.0/24, one L2 segment: a kernel bridge with STP over the DAC
+# triangle, ynix modules/features/server/mesh.nix); `eno1` is the 1G LAN
+# uplink. Until the switch arrives only firelink2's eno1 is cabled:
+# firelink1/3 route out via firelink2's mesh address (10.10.0.2), which NATs
+# out its eno1, so their pod egress is BPF-masqueraded to their mesh IP and
+# then NATed again on firelink2.
 #
 # References:
 #   - https://docs.cilium.io/en/stable/installation/k8s-install-helm/
@@ -54,10 +58,11 @@ autoDirectNodeRoutes: true
 
 # Attach the datapath to the LAN uplink and the mesh only. Auto-detection
 # would also pick up tailscale0 (it has a global address and routes) and put
-# BPF programs on the host's own tailnet interface. Names are stable: ynix
-# renames the NICs by PCI path/MAC (modules/features/kiln/network.nix).
+# BPF programs on the host's own tailnet interface. Names are stable: the
+# onboard 1G NIC is eno1 on all three hosts (firmware naming), and mesh0 is
+# ynix's bridge.
 devices:
-  - lan0
+  - eno1
   - mesh0
 
 # Replace kube-proxy entirely.
