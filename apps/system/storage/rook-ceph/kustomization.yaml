@@ -26,8 +26,8 @@ resources:
   - httproute.yaml
 
 helmCharts:
-  # The operator + CSI drivers. Installs the ceph.rook.io / objectbucket.io
-  # CRDs that the second chart's CRs depend on.
+  # The operator + the ceph-csi-operator. Installs the ceph.rook.io /
+  # objectbucket.io / csi.ceph.io CRDs that the other charts' CRs depend on.
   - name: rook-ceph
     repo: https://charts.rook.io/release
     version: v1.21.3  # renovate: depName=rook/rook
@@ -44,6 +44,17 @@ helmCharts:
     namespace: rook-ceph
     valuesFile: cluster-values.yaml
 
+  # The RBD + CephFS CSI drivers (Driver / OperatorConfig CRs the
+  # ceph-csi-operator turns into the provisioner and node-plugin pods). Since
+  # Rook 1.21 they're a separate chart; without it no PVC ever binds. Keep the
+  # version on the ceph-csi-operator the rook-ceph chart bundles.
+  - name: ceph-csi-drivers
+    repo: https://ceph.github.io/ceph-csi-operator
+    version: 1.1.0
+    releaseName: ceph-csi-drivers
+    namespace: rook-ceph
+    valuesFile: csi-drivers-values.yaml
+
 # The Ceph CRs and the CRDs that define them are created by the same Argo
 # sync. Argo dry-runs every resource before applying, and that dry-run fails
 # for a CR whose CRD does not exist yet — on a fresh cluster this app would go
@@ -55,6 +66,15 @@ patches:
       group: ceph.rook.io
     patch: |
       apiVersion: ceph.rook.io/v1
+      kind: Any
+      metadata:
+        name: any
+        annotations:
+          argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+  - target:
+      group: csi.ceph.io
+    patch: |
+      apiVersion: csi.ceph.io/v1
       kind: Any
       metadata:
         name: any
