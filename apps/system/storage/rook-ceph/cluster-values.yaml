@@ -99,7 +99,8 @@ cephClusterSpec:
           - name: /dev/disk/by-id/ata-SSD120GXQC8B017T_FF2E07241A8201274946 # SSD
 
 # Block tiers. Every pool puts each copy on a different host
-# (failureDomain: zone = the topology.kubernetes.io/zone node label) and is
+# (failureDomain: host; not zone: Rook drops a zone label whose value equals
+# the hostname, so CRUSH has no zone buckets here) and is
 # pinned to ONE disk type: a pool mixing HDDs and SSDs runs every write at HDD
 # speed. Usable space per pool is bounded by the host with the least of that
 # disk type, so keep the hosts balanced (buy disks in threes).
@@ -124,7 +125,7 @@ cephClusterSpec:
 cephBlockPools:
   - name: ceph-blockpool
     spec:
-      failureDomain: zone
+      failureDomain: host
       deviceClass: hdd
       replicated:
         size: 3
@@ -154,7 +155,7 @@ cephBlockPools:
 
   - name: ceph-blockpool-2x
     spec:
-      failureDomain: zone
+      failureDomain: host
       deviceClass: hdd
       replicated:
         size: 2
@@ -174,7 +175,7 @@ cephBlockPools:
 
   - name: ceph-blockpool-ssd
     spec:
-      failureDomain: zone
+      failureDomain: host
       deviceClass: ssd
       replicated:
         size: 2
@@ -208,7 +209,7 @@ cephObjectStores:
       # Bucket index latency would benefit from moving metadataPool to `ssd`
       # once every host has SSD capacity.
       metadataPool:
-        failureDomain: zone
+        failureDomain: host
         deviceClass: hdd
         replicated:
           size: 3
@@ -217,7 +218,7 @@ cephObjectStores:
       # at 1.5x raw overhead instead of 2x. Fine for bulk S3; anything
       # irreplaceable that lands in S3 also needs a copy off this cluster.
       dataPool:
-        failureDomain: zone
+        failureDomain: host
         deviceClass: hdd
         erasureCoded:
           dataChunks: 2
