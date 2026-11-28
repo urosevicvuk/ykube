@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Common helpers used by every seed-k3s/scripts/*.sh
+# Common helpers used by every seed/k3s/scripts/*.sh
 
 set -euo pipefail
 

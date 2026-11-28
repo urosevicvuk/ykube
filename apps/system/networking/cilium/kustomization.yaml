@@ -1,8 +1,9 @@
-# Cilium installs into kube-system per Talos+Cilium convention.
+# Cilium installs into kube-system (the usual convention, and RKE2 exempts
+# kube-system from Pod Security, which the agent's privileged pods need).
 # The AppSet's destination.namespace is "cilium" (from {{path.basename}}) but
 # kustomize rewrites every namespaced resource here to kube-system, and the
 # AppSet no longer carries CreateNamespace=true — so no stray empty namespace
-# is created. kube-system itself is created by Talos at cluster init.
+# is created. kube-system itself is created by RKE2 at cluster init.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: kube-system
@@ -10,6 +11,7 @@ namespace: kube-system
 resources:
   - lb-ip-pool.yaml
   - l2-announcement-policy.yaml
+  - kube-system-allow-cluster.yaml
   - httproute.yaml
   # CCNPs disabled — a CCNP that selects reserved:host implicitly turns on
   # host-firewall enforcement, which adds another moving piece while we're
@@ -19,7 +21,7 @@ resources:
 helmCharts:
   - name: cilium
     repo: https://helm.cilium.io
-    version: 1.20.0-pre.3  # renovate: depName=cilium/cilium
+    version: 1.20.5  # renovate: depName=cilium/cilium
     releaseName: cilium
     namespace: kube-system
     valuesFile: values.yaml

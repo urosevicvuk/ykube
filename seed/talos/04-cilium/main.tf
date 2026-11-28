@@ -10,13 +10,18 @@
 # same chart with literally the same values.
 
 locals {
-  # path.module is this stage's directory; ../.. is the repo root.
-  repo_root = "${path.module}/../.."
+  # path.module is this stage's directory (seed/talos/<stage>); ../../.. is the repo root.
+  repo_root = "${path.module}/../../.."
 
   cilium_dir           = "${local.repo_root}/apps/system/networking/cilium"
   cilium_kustomization = yamldecode(file("${local.cilium_dir}/kustomization.yaml"))
   cilium_chart_version = local.cilium_kustomization.helmCharts[0].version
   cilium_values        = file("${local.cilium_dir}/values.yaml")
+
+  # Envoy Gateway's CRD chart is versioned in lockstep with the controller
+  # chart that apps/system/networking/envoy deploys — read it from there.
+  envoy_kustomization = yamldecode(file("${local.repo_root}/apps/system/networking/envoy/kustomization.yaml"))
+  envoy_chart_version = [for c in local.envoy_kustomization.helmCharts : c.version if c.name == "gateway-helm"][0]
 }
 
 resource "null_resource" "wait_for_kubernetes_api" {
@@ -76,6 +81,79 @@ resource "null_resource" "cilium_resources" {
     environment = {
       INFRA_ROOT = "${path.module}/.."
       TF_DIR     = "${path.module}/../03-talos-configure"
+    }
+  }
+
+  depends_on = [helm_release.cilium]
+
+  lifecycle {
+    ignore_changes = all
+  }
+}
+
+# Gateway API + Envoy Gateway CRDs (Gateway, HTTPRoute, ListenerSet, TCPRoute,
+# EnvoyProxy, ClientTrafficPolicy, ...). Nothing else installs them: the
+# envoy app's gateway-helm chart no longer bundles CRDs (they moved to the
+# separate gateway-crds-helm chart), and every Gateway/HTTPRoute in the repo
+# — including root/argocd-route.yaml in the very first Argo sync — needs them.
+# Experimental channel because the repo uses ListenerSet and TCPRoute.
+# Server-side apply because HTTPRoute's schema is too large for client-side
+# apply's last-applied annotation; the bootstrap owns these CRDs, not Argo
+# (see apps/system/networking/envoy/kustomization.yaml). To update them later,
+# bump the envoy chart and re-run the same pipeline by hand.
+resource "null_resource" "gateway_crds" {
+  triggers = {
+    version    = local.envoy_chart_version
+    infra_root = "${path.module}/.."
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      source ${self.triggers.infra_root}/scripts/common.sh
+      load_tf_kube_env
+      create_cert_dir
+      helm template gateway-crds oci://docker.io/envoyproxy/gateway-crds-helm \
+        --version ${self.triggers.version} \
+        --set crds.gatewayAPI.enabled=true \
+        --set crds.gatewayAPI.channel=experimental \
+        --set crds.envoyGateway.enabled=true \
+        | kubectl_wrapper apply --server-side -f -
+    EOT
+    environment = {
+      INFRA_ROOT = self.triggers.infra_root
+      TF_DIR     = "${self.triggers.infra_root}/03-talos-configure"
+    }
+  }
+
+  depends_on = [helm_release.cilium]
+
+  lifecycle {
+    ignore_changes = all
+  }
+}
+
+# Prometheus Operator CRDs (ServiceMonitor, PodMonitor, PrometheusRule, ...).
+# Most system charts render ServiceMonitors and would SyncFail until
+# kube-prometheus-stack itself lands. Pre-installing the CRDs decouples the
+# order; kube-prometheus-stack adopts them via server-side apply. The version
+# must match the Prometheus Operator that kube-prometheus-stack ships (its
+# chart appVersion) — bump both together.
+resource "null_resource" "prometheus_operator_crds" {
+  triggers = {
+    version    = "v0.95.2" # = kube-prometheus-stack 93.10.0 appVersion; bump together
+    infra_root = "${path.module}/.."
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      source ${self.triggers.infra_root}/scripts/common.sh
+      load_tf_kube_env
+      create_cert_dir
+      kubectl_wrapper apply --server-side -f https://github.com/prometheus-operator/prometheus-operator/releases/download/${self.triggers.version}/stripped-down-crds.yaml
+    EOT
+    environment = {
+      INFRA_ROOT = self.triggers.infra_root
+      TF_DIR     = "${self.triggers.infra_root}/03-talos-configure"
     }
   }
 

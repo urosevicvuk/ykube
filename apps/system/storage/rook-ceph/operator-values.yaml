@@ -1,0 +1,11 @@
+# Rook operator values. Defaults are sane; only monitoring is switched on.
+
+# PrometheusRules / ServiceMonitors — kube-prometheus-stack auto-discovers
+# them cluster-wide. The Prometheus Operator CRDs are pre-installed by the
+# seed (seed/rke2 stage 01), so these apply cleanly on first sync.
+monitoring:
+  enabled: true
+
+csi:
+  serviceMonitor:
+    enabled: true

@@ -6,7 +6,7 @@ metadata:
   namespace: stirling-pdf
 spec:
   accessModes: [ReadWriteOnce]
-  storageClassName: longhorn
+  storageClassName: ceph-block-2x
   resources:
     requests:
       storage: 100Mi

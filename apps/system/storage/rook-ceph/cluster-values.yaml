@@ -1,0 +1,233 @@
+# Rook CephCluster + pools + object store.
+#
+# Only overrides are listed. Maps deep-merge with the chart defaults; LISTS
+# (cephBlockPools, cephFileSystems, cephObjectStores) replace them wholesale,
+# which is why the block pools repeat the chart's CSI secret parameters.
+
+# `ceph` CLI in a pod: kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph status
+toolbox:
+  enabled: true
+
+# ServiceMonitor for the mgr's Prometheus module + Ceph's alerting rules.
+monitoring:
+  enabled: true
+  createPrometheusRules: true
+
+cephClusterSpec:
+  # TLS terminates at the Gateway (httproute.yaml); the mgr serves HTTP on 7000.
+  dashboard:
+    enabled: true
+    ssl: false
+
+  # Host networking, bound to the 25G mesh. Ceph daemons (mons, OSDs, mgrs)
+  # listen on the nodes' mesh IPs directly instead of on pod IPs, so
+  # replication and client I/O run host-to-host at jumbo-frame MTU and skip
+  # the Cilium datapath. (Pods are capped at 1500 MTU — Cilium uses the lowest
+  # MTU of the node's NICs, and the uplink is 1500.) The CSI/RBD clients
+  # already live in the host network namespace, so they talk to the OSDs over
+  # the mesh too.
+  #
+  # CREATE-TIME ONLY: Rook does not support changing the network provider or
+  # these ranges on a running cluster. The CIDR must match the mesh addresses
+  # in ynix modules/sites/office.nix (ykube.cluster.nodes.*.meshAddress).
+  network:
+    provider: host
+    addressRanges:
+      public:
+        - 10.10.0.0/24
+      cluster:
+        - 10.10.0.0/24
+
+  # Chart defaults are already 3 mons / 2 mgrs with allowMultiplePerNode: false.
+  # On bare metal node = host = zone, so this is belt and braces: it keeps the
+  # spread correct if a host ever runs more than one node (e.g. KubeVirt or
+  # Kiln test nodes labelled with their host's zone).
+  placement:
+    mon:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: rook-ceph-mon
+    mgr:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: rook-ceph-mgr
+
+  # OSDs: every empty sdX disk on every node: the SAS HDDs and SATA SSDs
+  # behind the ServeRAID (JBOD) / Smart Array (HBA mode). The boot disk is
+  # NVMe on the M5s and never matches; wherever it is an sdX (check kiln3),
+  # it carries partitions, and Rook skips any disk with partitions or a
+  # filesystem. Wipe reused disks first (`wipefs -a`, `sgdisk --zap-all`).
+  # Caveat: a BLANK USB stick (sdX) would match too, so don't leave one in.
+  # Once the disks are inventoried, prefer explicit per-node lists:
+  #   useAllNodes: false
+  #   nodes:
+  #     - name: kiln1
+  #       devices:
+  #         - name: /dev/disk/by-id/scsi-35000c500XXXXXXXX
+  # Device class (hdd/ssd) is auto-detected from the kernel's rotational flag;
+  # the pools below are pinned to one class each.
+  storage:
+    useAllNodes: true
+    useAllDevices: false
+    deviceFilter: "^sd[a-z]+$"
+
+# Block tiers. Every pool puts each copy on a different host
+# (failureDomain: zone = the topology.kubernetes.io/zone node label) and is
+# pinned to ONE disk type: a pool mixing HDDs and SSDs runs every write at HDD
+# speed. Usable space per pool is bounded by the host with the least of that
+# disk type, so keep the hosts balanced (buy disks in threes).
+#
+#   ceph-block      hdd, 3 copies, DEFAULT. Survives losing any one host with
+#                   a spare copy left. Bulk data that exists nowhere else.
+#   ceph-block-2x   hdd, 2 copies, min_size 1. Survives losing any one host,
+#                   but with no spare copy until it's back. Bulk data that is
+#                   replicated elsewhere or can be regenerated (caches, images).
+#   ceph-block-ssd  ssd, 2 copies, min_size 1. The fast tier, for
+#                   latency-sensitive data that is already replicated by its
+#                   app or regenerable: every CNPG Postgres (own replica on
+#                   another host), Vault (3 raft members), Prometheus / Loki /
+#                   Tempo / Pyroscope / Grafana / Alertmanager. 2 copies because
+#                   the SSDs are small.
+#
+# Don't use an SSD as DB/WAL device for the HDD OSDs: one SSD failure would
+# take every HDD OSD behind it down with it.
+#
+# Nothing on the 2x tier is the only copy of something you'd mourn. Move a
+# PVC between tiers = new PVC + copy; the class is immutable on a PVC.
+cephBlockPools:
+  - name: ceph-blockpool
+    spec:
+      failureDomain: zone
+      deviceClass: hdd
+      replicated:
+        size: 3
+    storageClass:
+      enabled: true
+      name: ceph-block
+      isDefault: true
+      reclaimPolicy: Delete
+      allowVolumeExpansion: true
+      volumeBindingMode: Immediate
+      parameters: &rbd-storageclass-parameters
+        imageFormat: "2"
+        imageFeatures: layering
+        csi.storage.k8s.io/provisioner-secret-name: rook-csi-rbd-provisioner
+        csi.storage.k8s.io/provisioner-secret-namespace: "{{ .Release.Namespace }}"
+        csi.storage.k8s.io/controller-expand-secret-name: rook-csi-rbd-provisioner
+        csi.storage.k8s.io/controller-expand-secret-namespace: "{{ .Release.Namespace }}"
+        csi.storage.k8s.io/controller-publish-secret-name: rook-csi-rbd-provisioner
+        csi.storage.k8s.io/controller-publish-secret-namespace: "{{ .Release.Namespace }}"
+        csi.storage.k8s.io/node-stage-secret-name: rook-csi-rbd-node
+        csi.storage.k8s.io/node-stage-secret-namespace: "{{ .Release.Namespace }}"
+        csi.storage.k8s.io/controller-modify-secret-name: rook-csi-rbd-provisioner
+        csi.storage.k8s.io/controller-modify-secret-namespace: "{{ .Release.Namespace }}"
+        csi.storage.k8s.io/node-publish-secret-name: rook-csi-rbd-node
+        csi.storage.k8s.io/node-publish-secret-namespace: "{{ .Release.Namespace }}"
+        csi.storage.k8s.io/fstype: ext4
+
+  - name: ceph-blockpool-2x
+    spec:
+      failureDomain: zone
+      deviceClass: hdd
+      replicated:
+        size: 2
+      # Keep serving I/O with a single copy while a host is down. With the
+      # Ceph default (min_size 2) every 2x volume would freeze whenever any
+      # one host is offline — i.e. on every rolling OS/RKE2 upgrade reboot.
+      parameters:
+        min_size: "1"
+    storageClass:
+      enabled: true
+      name: ceph-block-2x
+      isDefault: false
+      reclaimPolicy: Delete
+      allowVolumeExpansion: true
+      volumeBindingMode: Immediate
+      parameters: *rbd-storageclass-parameters
+
+  - name: ceph-blockpool-ssd
+    spec:
+      failureDomain: zone
+      deviceClass: ssd
+      replicated:
+        size: 2
+      # Same reasoning as the 2x tier: keep serving with one copy while a host
+      # is down for a rolling reboot.
+      parameters:
+        min_size: "1"
+    storageClass:
+      enabled: true
+      name: ceph-block-ssd
+      isDefault: false
+      reclaimPolicy: Delete
+      allowVolumeExpansion: true
+      volumeBindingMode: Immediate
+      parameters: *rbd-storageclass-parameters
+
+# No CephFS for now — every workload here is fine with RWO block. The chart
+# default would run an always-on MDS pair (4Gi each) for nothing. Add a
+# filesystem here if something genuinely needs ReadWriteMany.
+cephFileSystems: []
+
+# S3 object storage (replaces AIStor). Buckets are declarative: an app ships
+# an ObjectBucketClaim with storageClassName: ceph-bucket, and Rook creates
+# the bucket plus a Secret (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY) and a
+# ConfigMap (BUCKET_HOST / BUCKET_NAME / BUCKET_PORT) named after the claim.
+# In-cluster endpoint: http://rook-ceph-rgw-ceph-objectstore.rook-ceph.svc:80
+cephObjectStores:
+  - name: ceph-objectstore
+    spec:
+      # Both pools on the HDDs: every host has HDDs, not necessarily SSDs.
+      # Bucket index latency would benefit from moving metadataPool to `ssd`
+      # once every host has SSD capacity.
+      metadataPool:
+        failureDomain: zone
+        deviceClass: hdd
+        replicated:
+          size: 3
+      # Erasure coded 2+1 across the 3 hosts: the same protection level as
+      # the 2x tier (any one host can be lost; no spare copy while it's down)
+      # at 1.5x raw overhead instead of 2x. Fine for bulk S3; anything
+      # irreplaceable that lands in S3 also needs a copy off this cluster.
+      dataPool:
+        failureDomain: zone
+        deviceClass: hdd
+        erasureCoded:
+          dataChunks: 2
+          codingChunks: 1
+        parameters:
+          bulk: "true"
+      preservePoolsOnDelete: true
+      gateway:
+        port: 80
+        instances: 2
+        # RGW stays on the pod network (behind its Service on :80) rather
+        # than inheriting the cluster's host networking — nothing gains from
+        # it binding a port on the nodes.
+        hostNetwork: false
+        resources:
+          limits:
+            memory: 2Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        priorityClassName: system-cluster-critical
+    storageClass:
+      enabled: true
+      name: ceph-bucket
+      reclaimPolicy: Delete
+      volumeBindingMode: Immediate
+      parameters:
+        region: us-east-1
+    ingress:
+      enabled: false
+    route:
+      enabled: false

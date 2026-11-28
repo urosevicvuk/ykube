@@ -1,6 +1,6 @@
-# task -d seed-k3s/ <task-name>
+# task -d seed/k3s/ <task-name>
 #
-# k3s/firelink bootstrap. For the future Talos+Proxmox cluster, see seed-talos/.
+# k3s/firelink bootstrap. For the future Talos+Proxmox cluster, see seed/talos/.
 
 version: "3"
 run: once

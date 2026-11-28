@@ -6,7 +6,9 @@ metadata:
   labels:
     app.kubernetes.io/name: cloudflared
 spec:
-  replicas: 1
+  # Two connectors for the same tunnel — Cloudflare load-balances across them
+  # and fails over if one drops. Spread across hosts.
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: cloudflared
@@ -16,6 +18,13 @@ spec:
         app.kubernetes.io/name: cloudflared
     spec:
       serviceAccountName: cloudflared
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: cloudflared
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
@@ -81,3 +90,15 @@ spec:
     - name: metrics
       port: 2000
       targetPort: metrics
+---
+# Keep one connector up through node drains (rolling OS/RKE2 upgrades).
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cloudflared
+  namespace: cloudflared
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloudflared

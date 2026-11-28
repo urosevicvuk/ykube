@@ -34,3 +34,18 @@ spec:
           # replicas (gateway-ingress-0/1) already use `tag:k8s-ingress` and
           # the ACLs are set up for it — tag the Service the same way.
           tailscale.com/tags: "tag:k8s-ingress"
+      # Two data-plane replicas on different hosts (preferred, so a
+      # host outage degrades to one replica rather than blocking scheduling),
+      # and a PDB so node drains never take the lane to zero.
+      envoyDeployment:
+        replicas: 2
+        pod:
+          topologySpreadConstraints:
+            - maxSkew: 1
+              topologyKey: topology.kubernetes.io/zone
+              whenUnsatisfiable: ScheduleAnyway
+              labelSelector:
+                matchLabels:
+                  gateway.envoyproxy.io/owning-gateway-name: gateway-internal
+      envoyPDB:
+        minAvailable: 1

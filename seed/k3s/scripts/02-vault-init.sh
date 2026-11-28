@@ -100,4 +100,4 @@ vault write auth/kubernetes/role/external-secrets \
   ttl=24h
 
 log "Vault is initialized, unsealed, and ESO can authenticate."
-log "Next: task -d seed-k3s vault:secrets"
+log "Next: task -d seed/k3s vault:secrets"

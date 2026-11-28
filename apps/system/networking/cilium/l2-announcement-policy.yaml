@@ -1,5 +1,5 @@
 # Cilium L2 announcement policy.
-# Tells Cilium to ARP-announce LB IPs on every node's primary interface.
+# Tells Cilium to ARP-announce LB IPs on the nodes' LAN uplink interface.
 # Without this the LB IPs are assigned but unreachable from the LAN.
 apiVersion: cilium.io/v2alpha1
 kind: CiliumL2AnnouncementPolicy
@@ -10,14 +10,20 @@ spec:
   # Empty selector → applies to every Service of type=LoadBalancer.
   serviceSelector:
     matchLabels: {}
-  # Empty selector → all nodes participate.
+  # Cilium elects one announcer per Service through a Lease and moves it if
+  # that node goes down. Every node is control plane + worker, so any of the
+  # three may announce...
+  #
+  # TEMPORARY: ...once all three are cabled to the LAN. Until the switch
+  # arrives only firelink2's eno1 is; an IP announced from firelink1/3 would be
+  # a black hole. Drop the nodeSelector then.
   nodeSelector:
-    matchLabels: {}
-  # Scope to firelink's LAN NIC only. The blanket `^.*$` would also try to
-  # ARP on tailscale0 (point-to-point, ARP-unaware), cilium_host (internal),
-  # cilium_vxlan, and the dynamic lxc* veth pairs — none of which should
-  # announce LB IPs. When multi-NIC Talos VMs join, add their NIC patterns
-  # (likely `^ens.+$` or `^enp.+$` depending on hardware).
+    matchLabels:
+      kubernetes.io/hostname: firelink2
+  #
+  # The 1G LAN uplink only (`eno1`). Never the mesh (`mesh0`): LAN clients
+  # can't reach it, so an IP announced there would be a black hole. Also never
+  # tailscale0, cilium_host or the lxc* veths.
   interfaces:
     - ^eno1$
   externalIPs: true

@@ -54,7 +54,7 @@
       "groupName": "homelab helm charts"
     },
     {
-      "description": "System charts + the root ArgoCD chart get ONE PR PER DEPENDENCY. No groupName is set for these, and that absence is what splits them. These can take the cluster down (cilium = CNI, longhorn = data, argo-cd = the thing doing the deploying), so each needs its own reviewable diff and its own revert. separateMinorPatch is deliberately NOT set: it opened a second PR for the older line of the same chart (cert-manager 1.20.4 alongside 1.21.2, alloy 1.8.2 alongside 1.12.1, and six more), doubling the queue with PRs that would only ever be closed unread.",
+      "description": "System charts + the root ArgoCD chart get ONE PR PER DEPENDENCY. No groupName is set for these, and that absence is what splits them. These can take the cluster down (cilium = CNI, rook-ceph = data, argo-cd = the thing doing the deploying), so each needs its own reviewable diff and its own revert. separateMinorPatch is deliberately NOT set: it opened a second PR for the older line of the same chart (cert-manager 1.20.4 alongside 1.21.2, alloy 1.8.2 alongside 1.12.1, and six more), doubling the queue with PRs that would only ever be closed unread.",
       "matchFileNames": [
         "apps/system/**",
         "root/**"

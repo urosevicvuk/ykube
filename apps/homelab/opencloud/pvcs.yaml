@@ -6,7 +6,7 @@ metadata:
   namespace: opencloud
 spec:
   accessModes: [ReadWriteOnce]
-  storageClassName: longhorn
+  storageClassName: ceph-block
   resources:
     requests:
       storage: 1Gi
@@ -18,7 +18,7 @@ metadata:
   namespace: opencloud
 spec:
   accessModes: [ReadWriteOnce]
-  storageClassName: longhorn
+  storageClassName: ceph-block
   resources:
     requests:
       storage: 10Gi

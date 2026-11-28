@@ -1,8 +1,8 @@
-# task -d seed-talos/ <task-name>
+# task -d seed/talos <task-name>
 #
-# Talos+Proxmox bootstrap pipeline. For the k3s/firelink cluster see seed-k3s/.
+# Talos+Proxmox bootstrap pipeline. For the k3s/firelink cluster see seed/k3s/.
 # All commands assume INFRA_ROOT is set — the dev shell (flake.nix) does this.
-# (The env var name still says "INFRA" for historical reasons; it points at seed-talos/.)
+# (The env var name still says "INFRA" for historical reasons; it points at seed/talos/.)
 # If running outside the shell:
 #   export INFRA_ROOT="$(pwd)"
 
@@ -23,7 +23,7 @@ tasks:
     desc: 00 — register the Talos schematic with factory.talos.dev
     dir: '{{.TASKFILE_DIR}}/00-talos-factory'
     cmds:
-      - tofu init
+      - tofu init -upgrade
       - tofu apply -var-file=../shared/secrets.auto.tfvars -auto-approve
 
   factory:destroy:
@@ -36,7 +36,7 @@ tasks:
     desc: 01 — download the factory ISO to each Proxmox node's local storage
     dir: '{{.TASKFILE_DIR}}/01-proxmox-iso-upload'
     cmds:
-      - tofu init
+      - tofu init -upgrade
       - tofu apply -var-file=../shared/secrets.auto.tfvars -auto-approve
 
   iso:destroy:
@@ -49,7 +49,7 @@ tasks:
     desc: 02 — create Talos VMs on Proxmox
     dir: '{{.TASKFILE_DIR}}/02-proxmox-provision'
     cmds:
-      - tofu init
+      - tofu init -upgrade
       - tofu apply -var-file=../shared/secrets.auto.tfvars -auto-approve
 
   vms:destroy:
@@ -62,7 +62,7 @@ tasks:
     desc: 03 — apply machine configs, bootstrap etcd, retrieve kubeconfig
     dir: '{{.TASKFILE_DIR}}/03-talos-configure'
     cmds:
-      - tofu init
+      - tofu init -upgrade
       - tofu apply -var-file=../shared/secrets.auto.tfvars -auto-approve
 
   talos:destroy:
@@ -75,7 +75,7 @@ tasks:
     desc: 04 — seed-install Cilium CNI
     dir: '{{.TASKFILE_DIR}}/04-cilium'
     cmds:
-      - tofu init
+      - tofu init -upgrade
       - tofu apply -var-file=../shared/secrets.auto.tfvars -auto-approve
 
   cilium:destroy:
@@ -88,7 +88,7 @@ tasks:
     desc: 05 — seed-install ArgoCD and apply root/app-of-apps.yaml
     dir: '{{.TASKFILE_DIR}}/05-argocd'
     cmds:
-      - tofu init
+      - tofu init -upgrade
       - tofu apply -var-file=../shared/secrets.auto.tfvars -auto-approve
 
   argocd:destroy:
@@ -101,14 +101,14 @@ tasks:
     desc: 06 — initialise + unseal Vault, configure k8s auth + ESO role
     dir: '{{.TASKFILE_DIR}}/06-vault-init'
     cmds:
-      - tofu init
+      - tofu init -upgrade
       - tofu apply -var-file=../shared/secrets.auto.tfvars -auto-approve
 
   vault:secrets:
     desc: 07 — write bootstrap secrets to Vault (cloudflare-api-token, etc.)
     dir: '{{.TASKFILE_DIR}}/07-vault-resources-provision'
     cmds:
-      - tofu init
+      - tofu init -upgrade
       - tofu apply -var-file=../shared/secrets.auto.tfvars -auto-approve
 
   vault:status:

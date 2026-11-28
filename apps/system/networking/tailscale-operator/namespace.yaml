@@ -2,3 +2,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: tailscale
+  # privileged: the operator's proxy pods (ProxyGroup gateway-ingress) run a
+  # privileged init container that enables IP forwarding via sysctl. RKE2
+  # enforces `baseline` on unlabelled namespaces (ynix kiln rke2.nix), which would reject them.
+  labels:
+    pod-security.kubernetes.io/enforce: privileged

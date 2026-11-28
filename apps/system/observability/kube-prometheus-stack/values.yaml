@@ -1,5 +1,6 @@
 # kube-prometheus-stack — Prometheus + Grafana + Alertmanager + node-exporter
-# + kube-state-metrics + the operator. Single replica everywhere (single node).
+# + kube-state-metrics + the operator. Single replica of each — their volumes
+# are on the 2-copy Ceph tier, so a lost node means a reschedule, not lost history.
 #
 # Grafana datasource for Loki is pre-provisioned; logs live in the loki namespace.
 
@@ -24,7 +25,7 @@ prometheus:
     storageSpec:
       volumeClaimTemplate:
         spec:
-          storageClassName: longhorn
+          storageClassName: ceph-block-ssd
           accessModes: [ReadWriteOnce]
           resources:
             requests:
@@ -55,7 +56,7 @@ alertmanager:
     storage:
       volumeClaimTemplate:
         spec:
-          storageClassName: longhorn
+          storageClassName: ceph-block-ssd
           accessModes: [ReadWriteOnce]
           resources:
             requests:
@@ -84,7 +85,7 @@ grafana:
   persistence:
     enabled: true
     type: pvc
-    storageClassName: longhorn
+    storageClassName: ceph-block-ssd
     accessModes: [ReadWriteOnce]
     size: 5Gi
 
@@ -196,14 +197,24 @@ nodeExporter:
 kube-state-metrics:
   enabled: true
 
-# k3s embeds controller-manager + scheduler + etcd in the apiserver process;
-# the separate ServiceMonitors that target them as standalone services fail
-# on k3s. Disable those scrapes; metrics still surface via the apiserver scrape.
+# Control-plane scrapes, RKE2 edition. ynix (modules/features/kiln/rke2.nix)
+# binds controller-manager and scheduler to 0.0.0.0 and sets
+# etcd-expose-metrics (etcd's plain-HTTP metrics listener on :2381), so all
+# three are reachable from Prometheus. The host firewall admits them only
+# from the mesh and pod interfaces.
+#
+# RKE2 runs them as static pods labelled component=<name>, exactly like
+# kubeadm, which is what the chart's Services select by default. They serve
+# HTTPS with a self-signed cert; the chart's defaults (https on 10257/10259,
+# insecureSkipVerify) cover it.
 kubeControllerManager:
-  enabled: false
+  enabled: true
 kubeScheduler:
-  enabled: false
+  enabled: true
 kubeEtcd:
-  enabled: false
+  enabled: true
+  service:
+    port: 2381
+    targetPort: 2381
 kubeProxy:
   enabled: false  # Cilium replaces kube-proxy

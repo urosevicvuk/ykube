@@ -1,10 +1,12 @@
-# Vault, standalone single replica on k3s/firelink.
+# Vault, HA with integrated raft storage: 3 replicas, one per host.
 # TLS terminates at the cluster Gateway; Vault speaks HTTP in-cluster.
 # ESO consumes via Kubernetes auth (SA: external-secrets/external-secrets).
 #
-# For the future Talos cluster (seed-talos/) flip this back to ha+raft with 3 replicas
-# and the anti-affinity rule. On a single-node cluster raft HA is just 3x the
-# footprint with the same failure domain.
+# Bootstrap: seed/rke2 stage 04 (vault:init) inits vault-0 and unseals all
+# three; vault-1/2 join raft on their own via the retry_join blocks below.
+# Auto-unseal is not configured — after node reboots run
+# `task -d seed/rke2 vault:status` / `vault:unseal`. Raft keeps serving as
+# long as 2 of 3 members are unsealed.
 
 global:
   tlsDisable: true
@@ -20,7 +22,8 @@ server:
   dataStorage:
     enabled: true
     size: 10Gi
-    storageClass: longhorn
+    # Fast tier, 2 copies: raft already keeps 3 replicas across hosts.
+    storageClass: ceph-block-ssd
 
   # Audit goes to stdout (collected by Alloy → Loki).
   auditStorage:
@@ -32,41 +35,65 @@ server:
     serviceAccountToken:
       enabled: true
 
-  # Standalone (file storage on Longhorn). Single Vault pod. Single node.
-  # Auto-unseal is not configured — `task -d seed-k3s vault:unseal` after node reboots.
+  # The chart's default anti-affinity is per *hostname*. On bare metal node =
+  # host, but spread by zone (= physical host) anyway so it stays correct if a
+  # host ever runs more than one node. Required, not preferred: a raft cluster
+  # with two members on one box loses quorum with that box.
+  affinity: |
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ template "vault.name" . }}
+              app.kubernetes.io/instance: "{{ .Release.Name }}"
+              component: server
+          topologyKey: topology.kubernetes.io/zone
+
   standalone:
-    enabled: true
-    config: |
-      ui = true
-
-      listener "tcp" {
-        tls_disable = 1
-        address     = "[::]:8200"
-        cluster_address = "[::]:8201"
-        telemetry {
-          unauthenticated_metrics_access = "true"
-        }
-      }
-
-      storage "file" {
-        path = "/vault/data"
-      }
-
-      # service_registration "kubernetes" requires HA storage (raft/consul); it
-      # would crash standalone Vault with: "service_registration is configured,
-      # but storage does not support HA". When this single-node cluster grows to
-      # 3 nodes with raft storage, re-enable it so Vault auto-labels its pod
-      # active/standby via the k8s API.
-
-      telemetry {
-        prometheus_retention_time = "30s"
-        disable_hostname = true
-      }
-
-      log_level = "info"
+    enabled: false
 
   ha:
-    enabled: false
+    enabled: true
+    replicas: 3
+    raft:
+      enabled: true
+      setNodeId: true
+      config: |
+        ui = true
+
+        listener "tcp" {
+          tls_disable = 1
+          address     = "[::]:8200"
+          cluster_address = "[::]:8201"
+          telemetry {
+            unauthenticated_metrics_access = "true"
+          }
+        }
+
+        storage "raft" {
+          path = "/vault/data"
+
+          retry_join {
+            leader_api_addr = "http://vault-0.vault-internal:8200"
+          }
+          retry_join {
+            leader_api_addr = "http://vault-1.vault-internal:8200"
+          }
+          retry_join {
+            leader_api_addr = "http://vault-2.vault-internal:8200"
+          }
+        }
+
+        # Labels each pod vault-active=true|false via the k8s API, so the
+        # `vault-active` Service always points at the leader.
+        service_registration "kubernetes" {}
+
+        telemetry {
+          prometheus_retention_time = "30s"
+          disable_hostname = true
+        }
+
+        log_level = "info"
 
   resources:
     requests:

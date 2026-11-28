@@ -1,0 +1,70 @@
+# task -d seed/rke2 <task-name>
+#
+# Bootstrap for the RKE2 cluster on kiln1-3 (bare-metal NixOS; hosts are
+# declared in ynix). Takes the cluster from "3 RKE2 servers up, nodes
+# NotReady" to "Argo CD reconciling this repo, Vault unsealed". Plan and
+# runbook: PLAN.md, README.md.
+
+version: "3"
+run: once
+
+tasks:
+  default:
+    desc: List all tasks
+    cmds:
+      - task --list
+
+  kubeconfig:
+    desc: 00 — fetch the admin kubeconfig from a node, point it at the API VIP (needs API_VIP=...)
+    cmds:
+      - bash {{.TASKFILE_DIR}}/scripts/00-kubeconfig.sh
+
+  crds:
+    desc: 01 — pre-install Gateway API / Envoy Gateway and Prometheus Operator CRDs
+    cmds:
+      - bash {{.TASKFILE_DIR}}/scripts/01-crds.sh
+
+  cilium:
+    desc: 02 — install Cilium (CNI, kube-proxy replacement, L2 LB) from the repo's values
+    cmds:
+      - bash {{.TASKFILE_DIR}}/scripts/02-cilium.sh
+
+  argocd:
+    desc: 03 — install Argo CD and apply root/app-of-apps.yaml
+    cmds:
+      - bash {{.TASKFILE_DIR}}/scripts/03-argocd.sh
+
+  vault:init:
+    desc: 04 — wait for Vault, init + unseal all replicas, configure kv / k8s auth / ESO role
+    cmds:
+      - bash {{.TASKFILE_DIR}}/scripts/04-vault-init.sh
+
+  vault:secrets:
+    desc: 05 — write the bootstrap secrets every ExternalSecret reads (interactive)
+    interactive: true
+    cmds:
+      - bash {{.TASKFILE_DIR}}/scripts/05-vault-secrets.sh
+
+  vault:unseal:
+    desc: Unseal every Vault replica (after node reboots)
+    cmds:
+      - bash {{.TASKFILE_DIR}}/scripts/vault-unseal.sh
+
+  vault:status:
+    desc: Seal/HA status of every Vault replica
+    cmds:
+      - bash {{.TASKFILE_DIR}}/scripts/vault-status.sh
+
+  check:
+    desc: Phase 3 exit checks (nodes, Cilium, Argo, Vault, Ceph, PSA rejections)
+    cmds:
+      - bash {{.TASKFILE_DIR}}/scripts/check.sh
+
+  cluster:bootstrap:
+    desc: Stages 01 → 05 in order (run `kubeconfig` first). Fresh-cluster path.
+    cmds:
+      - task: crds
+      - task: cilium
+      - task: argocd
+      - task: vault:init
+      - task: vault:secrets

@@ -8,10 +8,10 @@
 # After this stage finishes, the root Application is created. From there:
 # Argo creates AppProjects + AppSets, AppSets generate Applications, and the
 # whole cluster starts converging. Stage 06/07 still need to run to unblock
-# the ESO/cert-manager chain — see seed/README.md.
+# the ESO/cert-manager chain — see seed/talos/README.md.
 
 locals {
-  repo_root = "${path.module}/../.."
+  repo_root = "${path.module}/../../.."
 
   argocd_dir           = "${local.repo_root}/root"
   argocd_kustomization = yamldecode(file("${local.argocd_dir}/kustomization.yaml"))

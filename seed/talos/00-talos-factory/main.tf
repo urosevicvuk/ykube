@@ -8,8 +8,10 @@
 #
 # Extensions:
 #   - siderolabs/qemu-guest-agent  (Proxmox shutdown / IP reporting / snapshots)
-#   - siderolabs/iscsi-tools       (Longhorn requirement)
-#   - siderolabs/util-linux-tools  (Longhorn requirement)
+#
+# Rook-Ceph needs nothing extra: the rbd/ceph kernel modules ship in the stock
+# Talos kernel. (The iscsi-tools / util-linux-tools pair this used to carry was
+# a Longhorn requirement.)
 #
 # Adding extensions later is a re-apply away — but doing so changes the
 # schematic ID, which means a new ISO and a `talosctl upgrade` of every node.
@@ -20,8 +22,6 @@ resource "talos_image_factory_schematic" "this" {
       systemExtensions = {
         officialExtensions = [
           "siderolabs/qemu-guest-agent",
-          "siderolabs/iscsi-tools",
-          "siderolabs/util-linux-tools",
         ]
       }
     }

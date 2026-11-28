@@ -9,7 +9,7 @@
 # WHAT IT CANNOT DO: it proves the manifests render, validate, and are internally
 # consistent. It does NOT prove the upgrade works. It will not catch a required
 # manual migration step, a changed chart default that breaks this cluster's
-# specific config, or Longhorn's no-skipping-minors rule. Read the changelog for
+# specific config, or Rook's one-minor-at-a-time upgrade rule. Read the changelog for
 # anything under apps/system/.
 name: manifests
 

@@ -1,0 +1,22 @@
+# RKE2's CIS profile puts a `default-network-policy` in kube-system (and
+# default, kube-public) that only admits traffic from pods in the same
+# namespace, plus DNS. In this cluster that would block:
+#   - Prometheus (kube-prometheus-stack) scraping CoreDNS and Hubble Relay,
+#   - Envoy Gateway (envoy-gateway-system) reaching Hubble UI (httproute.yaml),
+#   - API servers on OTHER nodes reaching metrics-server (remote-node traffic).
+#
+# NetworkPolicies are additive: this admits everything from inside the
+# cluster (pods, nodes, the hosts) to kube-system pods. Traffic from outside
+# the cluster (`world`) stays blocked by RKE2's policy. Kept as a
+# CiliumNetworkPolicy because only Cilium can express "any node" (`host`,
+# `remote-node`) instead of IP blocks.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-in-cluster
+  namespace: kube-system
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEntities:
+        - cluster

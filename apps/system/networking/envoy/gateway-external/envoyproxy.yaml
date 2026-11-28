@@ -15,3 +15,18 @@ spec:
     kubernetes:
       envoyService:
         type: ClusterIP
+      # Two data-plane replicas on different hosts (preferred, so a
+      # host outage degrades to one replica rather than blocking scheduling),
+      # and a PDB so node drains never take the lane to zero.
+      envoyDeployment:
+        replicas: 2
+        pod:
+          topologySpreadConstraints:
+            - maxSkew: 1
+              topologyKey: topology.kubernetes.io/zone
+              whenUnsatisfiable: ScheduleAnyway
+              labelSelector:
+                matchLabels:
+                  gateway.envoyproxy.io/owning-gateway-name: gateway-external
+      envoyPDB:
+        minAvailable: 1

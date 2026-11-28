@@ -1,5 +1,5 @@
 # Vaultwarden Helm values. Postgres from CNPG (vaultwarden-pg), attachments
-# on Longhorn, admin token from Vault via ExternalSecret. Tailnet-only ingress
+# on Ceph RBD, admin token from Vault via ExternalSecret. Tailnet-only ingress
 # via gateway-internal (see httproute.yaml).
 
 image:
@@ -34,7 +34,7 @@ storage:
   data:
     name: vaultwarden-data
     size: 10Gi
-    class: longhorn
+    class: ceph-block
     accessMode: ReadWriteOnce
 
 # Don't deploy chart ingress; Gateway API HTTPRoute does the work.

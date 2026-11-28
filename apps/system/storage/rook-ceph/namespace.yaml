@@ -1,0 +1,9 @@
+# privileged: OSDs, mons and the CSI node plugins need hostPath, hostNetwork
+# and privileged containers. RKE2 (ynix kiln rke2.nix) enforces `baseline` on any namespace that
+# doesn't say otherwise, so this label is load-bearing.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rook-ceph
+  labels:
+    pod-security.kubernetes.io/enforce: privileged

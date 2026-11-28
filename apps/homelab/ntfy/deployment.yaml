@@ -5,7 +5,7 @@ metadata:
   namespace: ntfy
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: longhorn
+  storageClassName: ceph-block-2x
   resources:
     requests:
       storage: 2Gi

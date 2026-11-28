@@ -1,11 +1,11 @@
-# seed-k3s/
+# seed/k3s/
 
 Bootstrap pipeline for the **k3s/firelink** cluster. Takes the cluster from
 "k3s flags swapped to disable Flannel + kube-proxy + servicelb" to "ArgoCD
 reconciling the GitOps repo".
 
-The Talos+Proxmox pipeline lives at [`seed-talos/`](../seed-talos/README.md)
-— that's the future target and is currently deferred.
+The Talos+Proxmox pipeline lives at [`seed/talos/`](../talos/README.md)
+— that is the target cluster this one is being replaced by.
 
 ## What this assumes
 
@@ -49,7 +49,7 @@ You'll need three things in your hand before running:
 ```bash
 nix develop
 export KUBECONFIG=/path/to/k3s.yaml   # or merge into ~/.kube/config
-task -d seed-k3s cluster:bootstrap
+task -d seed/k3s cluster:bootstrap
 ```
 
 This runs stages 00 → 03 in order:
@@ -76,7 +76,7 @@ first-sync transients (auto-resolve):
 Vault's file storage requires unseal after every restart:
 
 ```bash
-task -d seed-k3s vault:unseal
+task -d seed/k3s vault:unseal
 ```
 
 This reads `secrets/vault-init.json` and replays three of the five unseal keys.
@@ -113,7 +113,7 @@ Single-node cluster + file-storage Vault means a hard storage failure on
 firelink wipes the cluster. Before you put anything you care about on here,
 **at minimum** copy these off-box:
 
-- [ ] `seed-k3s/secrets/vault-init.json` (Vault unseal keys + root token)
+- [ ] `seed/k3s/secrets/vault-init.json` (Vault unseal keys + root token)
 - [ ] `~/.cloudflared/*.json` (tunnel credentials, also stored in Vault)
 - [ ] CNPG Postgres data — periodically `pg_dump` from each Cluster
 
